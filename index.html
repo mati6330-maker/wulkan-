@@ -85,7 +85,7 @@ button:active{transform:translateY(0);box-shadow:none}
 .done{border-left-color:var(--green)!important;background:rgba(74,222,128,0.04)!important;}
 .notdone{border-left-color:var(--red)!important;background:rgba(248,113,113,0.04)!important;}
 .card button{margin-top:10px;margin-right:6px;width:auto;padding:8px 16px;font-size:12px;letter-spacing:1px;display:inline-block;}
-#livePrice,#orderPrice{font-family:var(--mono);font-size:20px;color:var(--accent);text-align:center;padding:12px;letter-spacing:3px;text-shadow:0 0 12px rgba(249,115,22,0.4);min-height:20px;}
+
 #editBanner{background:repeating-linear-gradient(-45deg,#92400e,#92400e 10px,#1c1200 10px,#1c1200 20px)!important;color:#fbbf24!important;font-family:var(--mono);font-size:12px;letter-spacing:3px;padding:10px!important;text-align:center;}
 #adminBar{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:1px;display:flex;align-items:center;padding:6px 10px;}
 #adminBar button{width:auto;padding:6px 14px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35);margin-left:10px;letter-spacing:1px;}
@@ -168,7 +168,7 @@ button:active{transform:translateY(0);box-shadow:none}
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('cash',this)">Kasa</div>
   <div class="tab" onclick="showTab('pricing',this)">Cennik</div>
 </div>
-<button id="printBtn" onclick="printDay()" style="margin:8px 10px;width:calc(100% - 20px);background:transparent;color:var(--accent);border:1px solid var(--accent);letter-spacing:2px">⎙ DRUKUJ DZIEŃ</button>
+<button id="printBtn" onclick="printDay()" style="display:none;margin:8px 10px;width:calc(100% - 20px);background:transparent;color:var(--accent);border:1px solid var(--accent);letter-spacing:2px">⎙ DRUKUJ DZIEŃ</button>
 <div class="container">
 
 <div class="section active" id="main">
@@ -219,7 +219,7 @@ button:active{transform:translateY(0);box-shadow:none}
   <label><input type="checkbox" id="cb_valve"> Nowy wentyl</label>
 </div>
 <textarea id="note" placeholder="Notatka (opcjonalna)..." style="resize:vertical;min-height:60px"></textarea>
-<div id="livePrice"></div>
+
 <div id="visitValidation" class="validation-box">
   <div class="v-title">⚠ Brakujące pola:</div>
   <div id="visitValidationList"></div>
@@ -281,7 +281,7 @@ button:active{transform:translateY(0);box-shadow:none}
   <option value="własny">Własny termin</option>
 </select>
 <input id="o_custom_date" style="display:none" type="date"/>
-<div id="orderPrice"></div>
+
 <div id="orderValidation" class="validation-box">
   <div class="v-title">⚠ Brakujące pola:</div>
   <div id="orderValidationList"></div>
@@ -422,6 +422,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('adminBar').style.display = 'flex';
     document.getElementById('guestBar').style.display = 'none';
     document.getElementById('adminEmail').textContent = user.email;
+    document.getElementById('printBtn').style.display = 'block';
     // Odblokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.remove('tab-locked');
@@ -434,6 +435,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminBar').style.display = 'none';
     document.getElementById('guestBar').style.display = 'flex';
+    document.getElementById('printBtn').style.display = 'none';
     // Zablokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.add('tab-locked');
@@ -462,6 +464,8 @@ function unsubscribeAll() {
 function initPublic() {
   unsubscribeAll();
   selectedDate = new Date(); selectedTime = null; startOffset = 0;
+  initCalendar();
+  renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
     visits = snap.val() || {};
     renderGrid();
@@ -469,7 +473,6 @@ function initPublic() {
   }, () => {
     setSyncStatus('err', '✕ Błąd połączenia');
   });
-  initCalendar();
   setSyncStatus('syncing', '⟳ Ładowanie grafiku...');
 }
 
@@ -477,6 +480,8 @@ function initPublic() {
 function initApp() {
   unsubscribeAll();
   selectedDate = new Date(); selectedTime = null; startOffset = 0; editOrderKey = null; editKey = null;
+  initCalendar();
+  renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
     visits = snap.val() || {};
     renderList();
@@ -490,7 +495,6 @@ function initApp() {
   document.getElementById('o_time').onchange = function() {
     document.getElementById('o_custom_date').style.display = this.value==='własny' ? 'block' : 'none';
   };
-  initCalendar();
   setSyncStatus('syncing', '⟳ Łączenie z bazą...');
 }
 
@@ -508,13 +512,12 @@ function initApp() {
 function updateLivePrice() {
   const v = { service:document.getElementById('service').value, wheel:document.getElementById('wheel').value, tireSize:document.getElementById('tireSize').value, runflat:document.getElementById('cb_runflat').checked, low:document.getElementById('cb_low').checked, valve:document.getElementById('cb_valve').checked };
   const price = calcVisitPrice(v);
-  document.getElementById('livePrice').innerText = price ? '💰 Cena: '+price+' zł' : '';
+
 }
 function updateOrderPrice() {
   const v = { service:document.getElementById('o_service').value, wheel:document.getElementById('o_type').value, tireSize:document.getElementById('o_diameter').value };
   const price = calcVisitPrice(v);
-  const el = document.getElementById('orderPrice');
-  if (el) el.innerText = price ? '💰 Cena: '+price+' zł' : '';
+
 }
 
 // ── ROZMIARY ──
@@ -566,42 +569,40 @@ function closeTimePicker() {
   if (existing) existing.remove();
 }
 
-function openTimePicker(anchorEl, hour, dayVisits) {
+function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
   closeTimePicker();
 
   const picker = document.createElement('div');
   picker.id = 'timePicker';
   picker.className = 'time-picker';
 
-  // Pozycja względem anchora
   const rect = anchorEl.getBoundingClientRect();
   picker.style.position = 'fixed';
   picker.style.top = (rect.bottom + 6) + 'px';
   picker.style.left = rect.left + 'px';
 
-  // Godziny co 15 minut
-  for (let m = 0; m < 60; m += 15) {
+  // Tylko 2 opcje: bazowa godzina i +15 minut
+  [0, 15].forEach(offset => {
+    const m = baseMinute + offset;
     const t = String(hour).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-    const takenEntry = dayVisits.find(([k,v]) => v.time === t);
-    const item = document.createElement('div');
-    item.className = 'time-picker-item' + (takenEntry ? ' taken' : '');
-    item.innerText = t + (takenEntry ? ' ✕' : '');
+    const taken = !!dayVisits.find(([k,v]) => v.time === t);
 
-    if (!takenEntry) {
+    const item = document.createElement('div');
+    item.className = 'time-picker-item' + (taken ? ' taken' : '');
+    item.innerText = t + (taken ? ' ✕' : '');
+
+    if (!taken) {
       item.onclick = () => {
         selectedTime = t;
         closeTimePicker();
         renderGrid();
-        // Scroll do formularza
         document.getElementById('visitFormAdmin').scrollIntoView({behavior:'smooth', block:'start'});
       };
     }
     picker.appendChild(item);
-  }
+  });
 
   document.body.appendChild(picker);
-
-  // Zamknij po kliknięciu poza
   setTimeout(() => {
     document.addEventListener('click', closeTimePicker, { once: true });
   }, 0);
@@ -614,73 +615,75 @@ function renderGrid() {
   const dayVisits = Object.entries(visits).filter(([k,v])=>v.date===d);
 
   for (let h=9; h<=17; h++) {
-    if (h===14) continue;
+    for (let half=0; half<2; half++) {
+      if (h===14) continue;
+      const baseMinute = half * 30;
+      const baseTime = String(h).padStart(2,'0')+':'+String(baseMinute).padStart(2,'0');
 
-    // Sprawdź czy jakaś z 4 kwadransów w tej godzinie jest zajęta
-    const timesInHour = [0,15,30,45].map(m => String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));
-    const anyBusy = timesInHour.some(t => dayVisits.find(([k,v])=>v.time===t));
-    const allBusy = timesInHour.every(t => dayVisits.find(([k,v])=>v.time===t));
+      // Kwadranse w tym półgodzinnym slocie: :00/:15 lub :30/:45
+      const timesInSlot = [0,15].map(offset => {
+        const m = baseMinute + offset;
+        return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+      });
 
-    // Sprawdź czy wybrany czas jest w tej godzinie
-    const isSelected = selectedTime && selectedTime.startsWith(String(h).padStart(2,'0')+':');
+      const anyBusy = timesInSlot.some(t => dayVisits.find(([k,v])=>v.time===t));
+      const allBusy = timesInSlot.every(t => dayVisits.find(([k,v])=>v.time===t));
+      const isSelected = selectedTime && timesInSlot.includes(selectedTime);
 
-    const div = document.createElement('div');
-    div.className = 'slot';
+      const div = document.createElement('div');
+      div.className = 'slot';
 
-    if (allBusy) {
-      div.classList.add('busy');
-    } else if (isSelected) {
-      div.classList.add('selected');
-    } else if (anyBusy) {
-      div.classList.add('free'); // częściowo zajęta — dalej można wybrać
-      div.style.borderColor = 'rgba(249,115,22,0.5)'; // pomarańczowa obwódka = częściowo zajęta
-    } else {
-      div.classList.add('free');
-    }
-
-    div.innerText = String(h).padStart(2,'0') + ':00';
-    if (isSelected) div.innerText += '\n' + selectedTime;
-
-    div.onclick = (e) => {
-      e.stopPropagation();
       if (allBusy) {
-        // Wszystkie sloty zajęte
-        if (currentUser) {
-          // Pokaż zajęte — kliknij pierwszy zajęty żeby przejść do listy
-          const firstEntry = dayVisits.find(([k,v]) => timesInHour.includes(v.time));
-          if (firstEntry) {
-            const key = firstEntry[0];
-            const listTab = document.querySelector('.tab[onclick*="list"]');
-            window.showTab('list', listTab);
-            setTimeout(() => {
-              renderList();
-              setTimeout(() => {
-                const el = document.getElementById('card-'+key);
-                if (el) {
-                  el.scrollIntoView({behavior:'smooth',block:'center'});
-                  el.style.outline='2px solid var(--accent)';
-                  setTimeout(()=>el.style.outline='',2000);
-                }
-              }, 100);
-            }, 50);
-          }
-        } else {
-          alert('⛔ Ten termin jest zajęty');
-        }
-        return;
-      }
-
-      if (currentUser) {
-        // Admin — otwórz picker z kwadransami
-        openTimePicker(div, h, dayVisits);
+        div.classList.add('busy');
+      } else if (isSelected) {
+        div.classList.add('selected');
+      } else if (anyBusy) {
+        div.classList.add('free');
+        div.style.borderColor = 'rgba(249,115,22,0.5)';
       } else {
-        // Gość — wybierz pełną godzinę
-        selectedTime = String(h).padStart(2,'0') + ':00';
-        renderGrid();
+        div.classList.add('free');
       }
-    };
 
-    grid.appendChild(div);
+      div.innerText = baseTime;
+      if (isSelected) div.innerText += '\n' + selectedTime;
+
+      div.onclick = (e) => {
+        e.stopPropagation();
+        if (allBusy) {
+          if (currentUser) {
+            const firstEntry = dayVisits.find(([k,v]) => timesInSlot.includes(v.time));
+            if (firstEntry) {
+              const key = firstEntry[0];
+              const listTab = document.querySelector('.tab[onclick*="list"]');
+              window.showTab('list', listTab);
+              setTimeout(() => {
+                renderList();
+                setTimeout(() => {
+                  const el = document.getElementById('card-'+key);
+                  if (el) {
+                    el.scrollIntoView({behavior:'smooth',block:'center'});
+                    el.style.outline='2px solid var(--accent)';
+                    setTimeout(()=>el.style.outline='',2000);
+                  }
+                }, 100);
+              }, 50);
+            }
+          } else {
+            alert('⛔ Ten termin jest zajęty');
+          }
+          return;
+        }
+
+        if (currentUser) {
+          openTimePicker(div, h, baseMinute, dayVisits);
+        } else {
+          selectedTime = baseTime;
+          renderGrid();
+        }
+      };
+
+      grid.appendChild(div);
+    }
   }
 }
 
@@ -763,7 +766,7 @@ function resetVisitForm() {
   document.querySelectorAll('.slot').forEach(x=>x.classList.remove('selected'));
   document.getElementById('editBanner').style.display='none';
   document.getElementById('cancelBtn').style.display='none';
-  document.getElementById('livePrice').innerText='';
+
   editKey=null;
 }
 
@@ -885,7 +888,7 @@ function resetOrderForm() {
   document.getElementById('o_custom_date').value=''; document.getElementById('o_custom_date').style.display='none';
   document.getElementById('o_diameter').value='';
   document.querySelectorAll('#o_diameterButtons button').forEach(b=>b.classList.remove('selected'));
-  document.getElementById('orderPrice').innerText='';
+
 }
 
 function renderOrders() {
@@ -1029,7 +1032,7 @@ window.printDay = function() {
 // ── NAWIGACJA ──
 window.showTab = function(id, el) {
   const btn = document.getElementById('printBtn');
-  if (btn) btn.style.display = (id==='main') ? 'block' : 'none';
+  if (btn) btn.style.display = (id==='main' && currentUser) ? 'block' : 'none';
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
