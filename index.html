@@ -44,7 +44,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 }
 .time-picker-item.taken{
   color:var(--red);
-  opacity:0.5;
+  background:rgba(248,113,113,0.08);
   cursor:not-allowed;
   pointer-events:none;
 }
@@ -665,8 +665,16 @@ function renderGrid() {
       } else if (isSelected) {
         div.classList.add('selected');
       } else if (anyBusy) {
-        div.classList.add('free');
-        div.style.borderColor = 'rgba(249,115,22,0.5)';
+        // Częściowo zajęty — dla gościa czerwony żeby wiedział
+        if (!currentUser) {
+          div.classList.add('busy');
+        } else {
+          // Admin widzi złoty kolor — może wybrać wolny kwadrans
+          div.classList.add('free');
+          div.style.borderColor = 'rgba(234,179,8,0.6)';
+          div.style.color = '#eab308';
+          div.style.background = 'rgba(234,179,8,0.08)';
+        }
       } else {
         div.classList.add('free');
       }
@@ -703,8 +711,13 @@ function renderGrid() {
         if (currentUser) {
           openTimePicker(div, h, baseMinute, dayVisits);
         } else {
-          selectedTime = baseTime;
-          renderGrid();
+          if (anyBusy) {
+            // Gość widzi czerwony slot — informujemy że część terminów zajęta
+            alert('⛔ Część terminów w tej godzinie jest zajęta. Wybierz inną godzinę.');
+          } else {
+            selectedTime = baseTime;
+            renderGrid();
+          }
         }
       };
 
