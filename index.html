@@ -393,7 +393,7 @@ button:active{transform:translateY(0);box-shadow:none}
   <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--red);width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
     <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">🔒 Blokuj dni</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">WYBIERZ DZIEŃ</div>
-    <input type="date" id="blockDateInput"/>
+    <input type="date" id="blockDateInput" placeholder="RRRR-MM-DD"/>
     <input id="blockReasonInput" placeholder="Powód (opcjonalnie, np. Urlop)" style="margin-top:8px"/>
     <button onclick="blockDay()" style="margin-top:10px;background:var(--red)">🔒 Zablokuj dzień</button>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:14px 0 6px">ZABLOKOWANE DNI</div>
@@ -813,6 +813,16 @@ function renderGrid() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
   const d = formatDate(selectedDate);
+
+  // Jeśli dzień zablokowany — pokaż komunikat zamiast slotów
+  if (blockedDays[d]) {
+    const reason = blockedDays[d].reason;
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;font-family:var(--mono);font-size:13px;color:var(--red);letter-spacing:1px">
+      🔒 DZIEŃ NIEDOSTĘPNY${reason ? '<br><span style="font-size:11px;color:var(--muted)">'+reason+'</span>' : ''}
+    </div>`;
+    return;
+  }
+
   const dayVisits = Object.entries(visits).filter(([k,v])=>v.date===d);
 
   for (let h=9; h<=17; h++) {
@@ -978,6 +988,7 @@ window.save = async function() {
   clearVisitError();
   const errors = [];
   if (!selectedTime) errors.push('📅 Wybierz dzień i godzinę wizyty');
+  if (selectedDate && blockedDays[formatDate(selectedDate)]) errors.push('🔒 Ten dzień jest zablokowany');
   const tireSize = document.getElementById('tireSize').value;
   if (!tireSize) { errors.push('🛞 Wybierz średnicę felg (przyciski 12"–24")'); document.getElementById('tireSizeButtons').classList.add('field-error'); }
   const service = document.getElementById('service').value;
@@ -1370,15 +1381,16 @@ function renderBlockedList() {
     box.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:8px 0">Brak zablokowanych dni</div>';
     return;
   }
-  box.innerHTML = entries.map(([key, val]) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+  box.innerHTML = entries.map(([key, val]) => {
+    const reasonHtml = val.reason ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${val.reason}</span>` : '';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
       <div>
         <span style="font-family:var(--mono);color:var(--text)">${val.date}</span>
-        ${val.reason ? '<span style="color:var(--muted);font-size:11px;margin-left:8px">${val.reason}</span>' : ''}
+        ${reasonHtml}
       </div>
       <button onclick="unblockDay('${key}')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35)">Odblokuj</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 window.toggleTheme = function() {
   const isLight = document.body.classList.toggle('light');
