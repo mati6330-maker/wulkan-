@@ -78,7 +78,9 @@ button:active{transform:translateY(0);box-shadow:none}
 .day-count.all-free{color:var(--green)}
 .day-count.partial{color:var(--accent)}
 .day-count.full{color:var(--red)}
-.day.active .day-count{color:rgba(0,0,0,0.7)!important}
+.day.blocked{background:rgba(248,113,113,0.08)!important;border-color:rgba(248,113,113,0.3)!important;cursor:not-allowed!important;}
+.day.blocked .day-count{color:var(--red)!important}
+.day.blocked:hover{border-color:rgba(248,113,113,0.5)!important;color:var(--red)!important}
 
 /* ── TOAST ── */
 #toast{
@@ -187,6 +189,7 @@ button:active{transform:translateY(0);box-shadow:none}
   <span style="color:var(--accent)">● ADMIN</span>
   <span id="adminEmail" style="color:var(--muted);margin-left:8px;font-size:11px"></span>
   <button onclick="toggleTheme()" id="themeBtn" style="width:auto;padding:5px 12px;font-size:14px;margin-left:8px;background:transparent;color:var(--muted);border:1px solid var(--border)">🌙</button>
+  <button onclick="openBlockModal()" style="width:auto;padding:5px 12px;font-size:11px;margin-left:6px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35);letter-spacing:1px">BLOKUJ DNI</button>
   <button onclick="doLogout()">WYLOGUJ</button>
 </div>
 <div id="guestBar" style="display:flex;align-items:center;padding:6px 10px;justify-content:flex-end">
@@ -385,6 +388,20 @@ button:active{transform:translateY(0);box-shadow:none}
 </div><!-- /appScreen -->
 
 <!-- Firebase SDK -->
+<!-- MODAL BLOKOWANIA DNI -->
+<div id="blockModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--red);width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">🔒 Blokuj dni</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">WYBIERZ DZIEŃ</div>
+    <input type="date" id="blockDateInput"/>
+    <input id="blockReasonInput" placeholder="Powód (opcjonalnie, np. Urlop)" style="margin-top:8px"/>
+    <button onclick="blockDay()" style="margin-top:10px;background:var(--red)">🔒 Zablokuj dzień</button>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:14px 0 6px">ZABLOKOWANE DNI</div>
+    <div id="blockedList" style="max-height:180px;overflow-y:auto"></div>
+    <button onclick="closeBlockModal()" style="margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Zamknij</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- EKRAN POTWIERDZENIA -->
@@ -431,6 +448,7 @@ const db = getDatabase(app);
 // ── STAN APLIKACJI ──
 let visits = {};
 let orders = {};
+let blockedDays = {}; // { dateStr: { reason } }
 let selectedDate = new Date();
 let selectedTime = null;
 let weekOffset = 0;
@@ -562,6 +580,10 @@ function initPublic() {
   }, () => {
     setSyncStatus('err', '✕ Błąd połączenia');
   });
+  onValue(ref(db, 'blokady'), snap => {
+    blockedDays = snap.val() || {};
+    initCalendar();
+  });
   setSyncStatus('syncing', '⟳ Ładowanie grafiku...');
 }
 
@@ -581,6 +603,11 @@ function initApp() {
   unsubOrders = onValue(ref(db, 'zlecenia'), snap => {
     orders = snap.val() || {};
     renderOrders();
+  });
+  // Blokady dni
+  onValue(ref(db, 'blokady'), snap => {
+    blockedDays = snap.val() || {};
+    initCalendar();
   });
   document.getElementById('o_time').onchange = function() {
     document.getElementById('o_custom_date').style.display = this.value==='własny' ? 'block' : 'none';
@@ -681,19 +708,32 @@ function initCalendar() {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
     const dateStr = formatDate(d);
-    const free = countFreeSlots(dateStr);
-    const countClass = free === 0 ? 'full' : free === MAX_SLOTS ? 'all-free' : 'partial';
-    const countLabel = free === 0 ? 'BRAK' : free + ' wolnych';
+    const isBlocked = !!blockedDays[dateStr];
     const isActive = dateStr === formatDate(selectedDate);
 
     const div = document.createElement('div');
-    div.className = 'day' + (isActive ? ' active' : '');
+    div.className = 'day' + (isActive ? ' active' : '') + (isBlocked ? ' blocked' : '');
+
+    let countHtml = '';
+    if (isBlocked) {
+      countHtml = '<span class="day-count full">NIECZYNNE</span>';
+    } else {
+      const free = countFreeSlots(dateStr);
+      const countClass = free === 0 ? 'full' : free === MAX_SLOTS ? 'all-free' : 'partial';
+      countHtml = '<span class="day-count ' + countClass + '">' + (free === 0 ? 'BRAK' : free + ' wolnych') + '</span>';
+    }
+
     div.innerHTML =
       d.toLocaleDateString('pl-PL',{weekday:'short'}) +
       '<small>' + d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit'}) + '</small>' +
-      '<span class="day-count ' + countClass + '">' + countLabel + '</span>';
+      countHtml;
 
     div.onclick = () => {
+      if (isBlocked) {
+        const reason = blockedDays[dateStr]?.reason;
+        showToast('🔒 Dzień niedostępny' + (reason ? ': ' + reason : ''), 'var(--red)');
+        return;
+      }
       document.querySelectorAll('.day').forEach(x=>x.classList.remove('active'));
       div.classList.add('active');
       selectedDate = d;
@@ -725,7 +765,8 @@ function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
   [0, 15].forEach(offset => {
     const m = baseMinute + offset;
     const t = String(hour).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-    const taken = !!dayVisits.find(([k,v]) => v.time === t);
+    const entry = dayVisits.find(([k,v]) => v.time === t);
+    const taken = !!entry;
 
     const item = document.createElement('div');
     item.className = 'time-picker-item' + (taken ? ' taken' : '');
@@ -737,6 +778,26 @@ function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
         closeTimePicker();
         renderGrid();
         document.getElementById('visitFormAdmin').scrollIntoView({behavior:'smooth', block:'start'});
+      };
+    } else {
+      item.style.pointerEvents = 'auto';
+      item.style.cursor = 'pointer';
+      item.onclick = () => {
+        closeTimePicker();
+        const key = entry[0];
+        const listTab = document.querySelector('.tab[onclick*="list"]');
+        window.showTab('list', listTab);
+        setTimeout(() => {
+          renderList();
+          setTimeout(() => {
+            const el = document.getElementById('card-'+key);
+            if (el) {
+              el.scrollIntoView({behavior:'smooth', block:'center'});
+              el.style.outline = '2px solid var(--accent)';
+              setTimeout(() => el.style.outline = '', 2000);
+            }
+          }, 100);
+        }, 50);
       };
     }
     picker.appendChild(item);
@@ -1274,7 +1335,47 @@ window.showTab = function(id, el) {
   if (id==='cash') window.calculateCash();
 };
 
-// ── MOTYW ──
+// ── BLOKOWANIE DNI ──
+window.openBlockModal = function() {
+  document.getElementById('blockModal').style.display = 'flex';
+  renderBlockedList();
+};
+window.closeBlockModal = function() {
+  document.getElementById('blockModal').style.display = 'none';
+};
+window.blockDay = async function() {
+  const date = document.getElementById('blockDateInput').value;
+  const reason = document.getElementById('blockReasonInput').value.trim();
+  if (!date) { showToast('Wybierz datę', 'var(--red)'); return; }
+  const key = date.replace(/-/g, '_');
+  await set(ref(db, 'blokady/' + key), { date, reason: reason || '' });
+  document.getElementById('blockDateInput').value = '';
+  document.getElementById('blockReasonInput').value = '';
+  showToast('🔒 Dzień zablokowany');
+  renderBlockedList();
+};
+window.unblockDay = async function(key) {
+  await remove(ref(db, 'blokady/' + key));
+  showToast('✔ Dzień odblokowany', 'var(--green)');
+  renderBlockedList();
+};
+function renderBlockedList() {
+  const box = document.getElementById('blockedList');
+  const entries = Object.entries(blockedDays).sort((a,b) => a[1].date.localeCompare(b[1].date));
+  if (!entries.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:8px 0">Brak zablokowanych dni</div>';
+    return;
+  }
+  box.innerHTML = entries.map(([key, val]) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <div>
+        <span style="font-family:var(--mono);color:var(--text)">${val.date}</span>
+        ${val.reason ? '<span style="color:var(--muted);font-size:11px;margin-left:8px">${val.reason}</span>' : ''}
+      </div>
+      <button onclick="unblockDay('${key}')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35)">Odblokuj</button>
+    </div>
+  `).join('');
+}
 window.toggleTheme = function() {
   const isLight = document.body.classList.toggle('light');
   const icon = isLight ? '☀️' : '🌙';
