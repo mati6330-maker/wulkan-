@@ -1348,11 +1348,15 @@ window.blockDay = async function() {
   const reason = document.getElementById('blockReasonInput').value.trim();
   if (!date) { showToast('Wybierz datę', 'var(--red)'); return; }
   const key = date.replace(/-/g, '_');
-  await set(ref(db, 'blokady/' + key), { date, reason: reason || '' });
-  document.getElementById('blockDateInput').value = '';
-  document.getElementById('blockReasonInput').value = '';
-  showToast('🔒 Dzień zablokowany');
-  renderBlockedList();
+  try {
+    await set(ref(db, 'blokady/' + key), { date, reason: reason || '' });
+    document.getElementById('blockDateInput').value = '';
+    document.getElementById('blockReasonInput').value = '';
+    showToast('🔒 Dzień zablokowany');
+    renderBlockedList();
+  } catch(e) {
+    showToast('❌ Błąd: ' + e.message, 'var(--red)');
+  }
 };
 window.unblockDay = async function(key) {
   await remove(ref(db, 'blokady/' + key));
