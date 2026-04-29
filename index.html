@@ -157,7 +157,7 @@ button:active{transform:translateY(0);box-shadow:none}
 #syncStatus.ok{color:var(--green);}
 #syncStatus.err{color:var(--red);}
 
-@media print{body{background:#fff;color:#000}#clock,#printBtn,.tabs,#adminBar,#editBanner,#syncStatus{display:none!important}.card{background:#fff;border:1px solid #ccc;color:#000}}
+@media print{body{background:#fff;color:#000}#clock,#printBtn,.tabs,#adminBar,#editBanner,#syncStatus,#confirmScreen{display:none!important}.card{background:#fff;border:1px solid #ccc;color:#000}}
 </style>
 </head>
 <body>
@@ -224,6 +224,8 @@ button:active{transform:translateY(0);box-shadow:none}
 <div class="section-label">Dane klienta</div>
 <input id="name" placeholder="Imię (opcjonalne)"/>
 <input id="phone" inputmode="numeric" placeholder="Telefon (opcjonalne)" type="tel"/>
+<input id="email" type="email" placeholder="Email — opcjonalnie"/>
+<div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.5px;margin:-2px 0 6px;padding-left:2px">Podaj email jeśli chcesz otrzymać potwierdzenie wizyty</div>
 <input id="car" placeholder="Auto — marka / model (opcjonalne)"/>
 <div class="section-label">Średnica felg</div>
 <div id="tireSizeButtons">
@@ -382,6 +384,27 @@ button:active{transform:translateY(0);box-shadow:none}
 <!-- Firebase SDK -->
 <div id="toast"></div>
 
+<!-- EKRAN POTWIERDZENIA -->
+<div id="confirmScreen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99990;overflow-y:auto;padding:20px">
+  <div style="max-width:500px;margin:auto">
+    <div style="text-align:center;padding:30px 0 20px">
+      <div style="font-size:48px;margin-bottom:12px">✅</div>
+      <div style="font-family:var(--font);font-weight:700;font-size:22px;color:var(--green);letter-spacing:2px">WIZYTA PRZYJĘTA</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:1px">Wulkanizacja Mielczarek</div>
+    </div>
+    <div id="confirmDetails" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;line-height:2.2;font-size:14px"></div>
+    <div id="confirmEmailInfo" style="display:none;margin-top:12px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.3);border-radius:5px;padding:12px;font-family:var(--mono);font-size:12px;color:var(--green);text-align:center;letter-spacing:1px">
+      ✉ Potwierdzenie zostało wysłane na Twój email
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px">
+      <button onclick="printConfirmation()" style="background:transparent;color:var(--accent);border:1px solid var(--accent)">⎙ Drukuj</button>
+      <button onclick="closeConfirmScreen()">✕ Zamknij</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init('fQbDjavLIUmvDi94S');</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -599,7 +622,10 @@ window.setOrderSize = function(val, btn) {
 // ── KALENDARZ ──
 const MAX_SLOTS = 16;
 function countFreeSlots(dateStr) {
-  const taken = Object.values(visits).filter(v => v.date === dateStr).length;
+  const taken = Object.values(visits).filter(v =>
+    v.date === dateStr &&
+    (v.time.endsWith(':00') || v.time.endsWith(':30'))
+  ).length;
   return Math.max(0, MAX_SLOTS - taken);
 }
 
@@ -830,6 +856,57 @@ function clearOrderError() {
   document.querySelectorAll('#orders .field-error').forEach(el=>el.classList.remove('field-error'));
 }
 
+// ── EKRAN POTWIERDZENIA ──
+window.closeConfirmScreen = function() {
+  document.getElementById('confirmScreen').style.display = 'none';
+};
+
+window.printConfirmation = function() {
+  const details = document.getElementById('confirmDetails').innerHTML;
+  const win = window.open('','_blank');
+  if (!win) { alert('⚠ Zezwól na wyskakujące okna aby drukować'); return; }
+  win.document.write(`
+    <style>body{font-family:Arial;padding:30px;font-size:14px;line-height:2.2}h2{margin-bottom:20px}</style>
+    <h2>✅ Potwierdzenie wizyty – Wulkanizacja Mielczarek</h2>
+    ${details}
+  `);
+  win.document.close();
+  win.print();
+};
+
+function showConfirmScreen(v, emailSent) {
+  const extras = [];
+  if (v.runflat) extras.push('Run-flat');
+  if (v.low) extras.push('Niski profil');
+  if (v.valve) extras.push('Nowy wentyl');
+
+  const rows = [
+    ['📅 Data', v.date],
+    ['🕐 Godzina', v.time],
+    ['🔧 Usługa', v.service],
+    ['⚙️ Felgi', v.wheel],
+    ['🛞 Rozmiar', v.tireSize + '"'],
+    v.name   ? ['👤 Imię', v.name] : null,
+    v.phone  ? ['📞 Telefon', v.phone] : null,
+    v.car    ? ['🚗 Auto', v.car] : null,
+    extras.length ? ['➕ Opcje', extras.join(', ')] : null,
+    v.note   ? ['📝 Notatka', v.note] : null,
+  ].filter(Boolean);
+
+  document.getElementById('confirmDetails').innerHTML = rows.map(([label, val]) =>
+    `<div style="display:flex;gap:12px;border-bottom:1px solid var(--border);padding:4px 0">
+      <span style="color:var(--muted);min-width:110px">${label}</span>
+      <b>${val}</b>
+    </div>`
+  ).join('');
+
+  const emailInfo = document.getElementById('confirmEmailInfo');
+  emailInfo.style.display = emailSent ? 'block' : 'none';
+
+  document.getElementById('confirmScreen').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
 // ── ZAPIS WIZYTY ──
 window.save = async function() {
   clearVisitError();
@@ -843,10 +920,12 @@ window.save = async function() {
   if (!wheel) { errors.push('⚙️ Wybierz typ felg'); document.getElementById('wheel').classList.add('field-error'); }
   if (errors.length) { showVisitError(errors); return; }
 
+  const emailVal = document.getElementById('email').value.trim();
   const v = {
     status: false,
     name: document.getElementById('name').value,
     phone: document.getElementById('phone').value,
+    email: emailVal,
     car: document.getElementById('car').value,
     tireSize, service, wheel,
     note: document.getElementById('note').value,
@@ -867,8 +946,36 @@ window.save = async function() {
       await push(ref(db,'wizyty'), v);
     }
     setSyncStatus('ok','● Zapisano');
+
+    // Wyślij email jeśli podano
+    let emailSent = false;
+    if (emailVal) {
+      const extras = [];
+      if (v.runflat) extras.push('Run-flat');
+      if (v.low) extras.push('Niski profil');
+      if (v.valve) extras.push('Nowy wentyl');
+      try {
+        await emailjs.send('service_odafu8s', 'template_u99tiih', {
+          to_email: emailVal,
+          client_name: v.name || 'Kliencie',
+          date: v.date,
+          time: v.time,
+          service: v.service,
+          wheel: v.wheel,
+          tire_size: v.tireSize,
+          car: v.car || '—',
+          phone: v.phone || '—',
+          extras: extras.join(', ') || '—',
+          note: v.note || '—'
+        });
+        emailSent = true;
+      } catch(emailErr) {
+        console.error('Email error:', emailErr);
+      }
+    }
+
     resetVisitForm();
-    showToast('✔ Wizyta została zapisana pomyślnie');
+    showConfirmScreen(v, emailSent);
   } catch(e) {
     setSyncStatus('err','✕ Błąd zapisu');
     alert('❌ Błąd: '+e.message);
@@ -876,7 +983,7 @@ window.save = async function() {
 };
 
 function resetVisitForm() {
-  ['name','phone','car','tireSize','note'].forEach(id=>document.getElementById(id).value='');
+  ['name','phone','email','car','tireSize','note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('service').selectedIndex=0;
   document.getElementById('wheel').selectedIndex=0;
   document.getElementById('cb_runflat').checked=false;
