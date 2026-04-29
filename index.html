@@ -7,8 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#111111;--surface:#1c1c1c;--surface2:#252525;--border:#3a3a3a;--accent:#f97316;--accent2:#fb923c;--green:#4ade80;--red:#f87171;--text:#e8e0d4;--muted:#aaa;--font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace;}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.025) 39px,rgba(255,255,255,0.025) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.025) 39px,rgba(255,255,255,0.025) 40px);}
+body.light{--bg:#f1f5f9;--surface:#ffffff;--surface2:#f8fafc;--border:#e2e8f0;--accent:#ea580c;--accent2:#f97316;--green:#16a34a;--red:#dc2626;--text:#1e293b;--muted:#64748b;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;transition:background 0.25s,color 0.25s;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,0,0,0.03) 39px,rgba(0,0,0,0.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,0,0,0.03) 39px,rgba(0,0,0,0.03) 40px);}
 .container{padding:16px;max-width:600px;margin:auto;}
 #clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 14px rgba(249,115,22,0.4);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
 .tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;}
@@ -64,17 +64,44 @@ button:active{transform:translateY(0);box-shadow:none}
 #printBtn:hover{background:rgba(249,115,22,0.08)}
 .section-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:18px 0 7px;display:flex;align-items:center;gap:10px;}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
-.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
-.day{font-family:var(--mono);font-size:11px;width:100%;padding:8px 3px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;text-align:center;cursor:pointer;color:var(--text);transition:all 0.12s;line-height:1.5;}
-.day small{color:var(--muted);font-size:10px}
+/* ── KALENDARZ TYGODNIOWY ── */
+.cal-week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;}
+.cal-week-nav button{width:auto;padding:8px 16px;font-size:13px;flex-shrink:0;}
+.cal-week-label{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:1px;text-align:center;flex:1;}
+.calendar{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;}
+.day{font-family:var(--mono);font-size:11px;width:100%;padding:10px 3px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;text-align:center;cursor:pointer;color:var(--text);transition:all 0.12s;line-height:1.5;}
+.day small{color:var(--muted);font-size:10px;display:block;}
 .day:hover{border-color:var(--accent);color:var(--accent)}
 .day.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700;}
 .day.active small{color:rgba(0,0,0,0.6)}
-.day-count{font-size:10px;font-weight:700;display:block;margin-top:3px;}
+.day-count{font-size:10px;font-weight:700;display:block;margin-top:4px;}
 .day-count.all-free{color:var(--green)}
 .day-count.partial{color:var(--accent)}
 .day-count.full{color:var(--red)}
 .day.active .day-count{color:rgba(0,0,0,0.7)!important}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:4px solid var(--green);
+  border-radius:6px;
+  padding:14px 22px;
+  font-family:var(--mono);
+  font-size:13px;
+  letter-spacing:1px;
+  color:var(--green);
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  z-index:99998;
+  transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s;
+  opacity:0;
+  white-space:nowrap;
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px;}
 .slot{padding:13px 6px;border-radius:3px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;transition:all 0.12s;border:1px solid transparent;}
 .free{background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.25);color:var(--green);}
@@ -97,7 +124,7 @@ button:active{transform:translateY(0);box-shadow:none}
 #adminBar button:hover{background:var(--red);color:#fff}
 #f-all,#f-notdone,#f-done{flex:1;padding:10px 6px;font-size:12px;letter-spacing:1px;margin:0 3px 0 0;}
 .check-group{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
-.check-group label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;letter-spacing:0.5px;cursor:pointer;color:var(--text);background:var(--surface2);border:1px solid var(--border);padding:10px 14px;border-radius:3px;transition:all 0.12s;flex:1;min-width:110px;}
+.check-group label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;letter-spacing:0.5px;cursor:pointer;color:var(--text);background:var(--surface2);border:1px solid var(--border);padding:10px 10px;border-radius:3px;transition:all 0.12s;flex:1;min-width:90px;}
 .check-group label:hover{border-color:var(--accent);color:var(--accent)}
 .check-group label:has(input:checked){border-color:var(--accent)!important;background:rgba(249,115,22,0.15)!important;color:var(--accent)!important;}
 .check-group input[type=checkbox]{width:18px;height:18px;margin:0;padding:0;flex-shrink:0;appearance:none;-webkit-appearance:none;background:var(--surface);border:2px solid var(--border);border-radius:3px;cursor:pointer;position:relative;transition:all 0.15s;}
@@ -159,9 +186,11 @@ button:active{transform:translateY(0);box-shadow:none}
 <div id="adminBar" style="display:none">
   <span style="color:var(--accent)">● ADMIN</span>
   <span id="adminEmail" style="color:var(--muted);margin-left:8px;font-size:11px"></span>
+  <button onclick="toggleTheme()" id="themeBtn" style="width:auto;padding:5px 12px;font-size:14px;margin-left:8px;background:transparent;color:var(--muted);border:1px solid var(--border)">🌙</button>
   <button onclick="doLogout()">WYLOGUJ</button>
 </div>
 <div id="guestBar" style="display:flex;align-items:center;padding:6px 10px;justify-content:flex-end">
+  <button onclick="toggleTheme()" id="themeBtnGuest" style="width:auto;padding:6px 12px;font-size:14px;background:transparent;color:var(--muted);border:1px solid var(--border);margin-right:8px">🌙</button>
   <button onclick="showLoginScreen()" style="width:auto;padding:6px 16px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border);letter-spacing:1px">🔐 ADMIN</button>
 </div>
 <div id="syncStatus">⟳ Łączenie...</div>
@@ -178,13 +207,14 @@ button:active{transform:translateY(0);box-shadow:none}
 
 <div class="section active" id="main">
 <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:5px;padding:16px;margin-bottom:14px;line-height:1.8">
-  <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--accent);letter-spacing:1px;margin-bottom:6px">🔧 Wulkanizacja Mielczarek</div>
+  <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--accent);letter-spacing:1px;margin-bottom:8px">🔧 Wulkanizacja Mielczarek</div>
   <div style="font-size:14px;color:var(--muted)">Zapisz się online na wymianę lub naprawę opon. Wybierz wolny termin w kalendarzu, podaj swoje dane i kliknij <b style="color:var(--text)">Zapisz wizytę</b>. Zielone pola oznaczają wolne terminy, czerwone są już zajęte.</div>
 </div>
 <div class="section-label">Kalendarz</div>
-<div style="display:flex;gap:8px;margin-bottom:6px">
-  <button onclick="changeRange(-30)" style="font-size:16px;padding:10px;flex:1">◀ Wstecz</button>
-  <button onclick="changeRange(30)" style="font-size:16px;padding:10px;flex:1">Dalej ▶</button>
+<div class="cal-week-nav">
+  <button onclick="changeWeek(-1)" style="font-size:16px">◀</button>
+  <span class="cal-week-label" id="weekLabel"></span>
+  <button onclick="changeWeek(1)" style="font-size:16px">▶</button>
 </div>
 <div class="calendar" id="calendar"></div>
 <div class="section-label">Godzina wizyty</div>
@@ -236,6 +266,25 @@ button:active{transform:translateY(0);box-shadow:none}
 <button onclick="save()">▶ Zapisz wizytę</button>
 <button id="cancelBtn" onclick="cancelEdit()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);display:none">✕ Anuluj edycję</button>
 </div><!-- /visitFormAdmin -->
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px">
+    <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:8px">GODZINY OTWARCIA</div>
+    <div style="font-size:13px;color:var(--text);line-height:2">
+      Pon – Pt: <b>9:00 – 17:30</b><br>
+      Sobota: <b>9:00 – 13:00</b><br>
+      <span style="color:var(--red)">Niedziela: <b>nieczynne</b></span>
+    </div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px">
+    <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:8px">KONTAKT</div>
+    <div style="font-size:13px;color:var(--text);line-height:2">
+      📞 <b>— — —</b><br>
+      📞 <b>— — —</b><br>
+      📞 <b>— — —</b>
+    </div>
+  </div>
+</div>
 </div>
 
 <div class="section" id="list">
@@ -331,6 +380,8 @@ button:active{transform:translateY(0);box-shadow:none}
 </div><!-- /appScreen -->
 
 <!-- Firebase SDK -->
+<div id="toast"></div>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -356,7 +407,7 @@ let visits = {};
 let orders = {};
 let selectedDate = new Date();
 let selectedTime = null;
-let startOffset = 0;
+let weekOffset = 0;
 let editOrderKey = null;
 let editKey = null;
 let visitFilter = 'all';
@@ -472,7 +523,7 @@ function unsubscribeAll() {
 
 function initPublic() {
   unsubscribeAll();
-  selectedDate = new Date(); selectedTime = null; startOffset = 0;
+  selectedDate = new Date(); selectedTime = null; weekOffset = 0;
   initCalendar();
   renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
@@ -489,7 +540,7 @@ function initPublic() {
 // ── REALTIME LISTENERS (admin) ──
 function initApp() {
   unsubscribeAll();
-  selectedDate = new Date(); selectedTime = null; startOffset = 0; editOrderKey = null; editKey = null;
+  selectedDate = new Date(); selectedTime = null; weekOffset = 0; editOrderKey = null; editKey = null;
   initCalendar();
   renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
@@ -546,37 +597,70 @@ window.setOrderSize = function(val, btn) {
 };
 
 // ── KALENDARZ ──
-window.changeRange = function(v) {
-  const n = startOffset + v;
-  if (n < 0) { alert('⛔ Nie można cofnąć przed dzisiejszy dzień'); return; }
-  startOffset = n;
-  initCalendar();
-};
 const MAX_SLOTS = 16;
-
 function countFreeSlots(dateStr) {
   const taken = Object.values(visits).filter(v => v.date === dateStr).length;
   return Math.max(0, MAX_SLOTS - taken);
 }
 
+// ── TOAST ──
+function showToast(msg, color) {
+  const t = document.getElementById('toast');
+  t.innerText = msg;
+  t.style.borderLeftColor = color || 'var(--green)';
+  t.style.color = color || 'var(--green)';
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── KALENDARZ TYGODNIOWY ──
+let weekOffset = 0; // liczba tygodni od bieżącego
+
+function getWeekStart(offset) {
+  const today = new Date();
+  const day = today.getDay() || 7; // pon=1 ... sob=6
+  const mon = new Date(today);
+  mon.setDate(today.getDate() - day + 1 + offset * 7);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+
+window.changeWeek = function(dir) {
+  const newOffset = weekOffset + dir;
+  if (newOffset < 0) { showToast('Nie można cofnąć przed bieżący tydzień', 'var(--red)'); return; }
+  weekOffset = newOffset;
+  initCalendar();
+};
+
 function initCalendar() {
   const cal = document.getElementById('calendar');
   cal.innerHTML = '';
-  const today = new Date();
-  for (let i = 0; i < 30; i++) {
-    const d = new Date();
-    d.setDate(today.getDate()+startOffset+i);
-    if (d.getDay()===0) continue;
+  const weekStart = getWeekStart(weekOffset);
+
+  // Etykieta tygodnia
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 5); // pon–sob
+  const label = weekStart.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit'}) +
+    ' – ' + weekEnd.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const lbl = document.getElementById('weekLabel');
+  if (lbl) lbl.innerText = label;
+
+  // 6 dni: pon–sob
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
     const dateStr = formatDate(d);
     const free = countFreeSlots(dateStr);
     const countClass = free === 0 ? 'full' : free === MAX_SLOTS ? 'all-free' : 'partial';
-    const countLabel = free === 0 ? 'BRAK MIEJSC' : free + ' wolnych';
+    const countLabel = free === 0 ? 'BRAK' : free + ' wolnych';
+    const isActive = dateStr === formatDate(selectedDate);
 
     const div = document.createElement('div');
-    div.className = 'day';
+    div.className = 'day' + (isActive ? ' active' : '');
     div.innerHTML =
       d.toLocaleDateString('pl-PL',{weekday:'short'}) +
-      '<br><small>' + d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit'}) + '</small>' +
+      '<small>' + d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit'}) + '</small>' +
       '<span class="day-count ' + countClass + '">' + countLabel + '</span>';
 
     div.onclick = () => {
@@ -585,7 +669,6 @@ function initCalendar() {
       selectedDate = d;
       renderGrid();
     };
-    if (i===0) div.classList.add('active');
     cal.appendChild(div);
   }
 }
@@ -786,7 +869,7 @@ window.save = async function() {
     }
     setSyncStatus('ok','● Zapisano');
     resetVisitForm();
-    alert('Wizyta została zapisana pomyślnie.');
+    showToast('✔ Wizyta została zapisana pomyślnie');
   } catch(e) {
     setSyncStatus('err','✕ Błąd zapisu');
     alert('❌ Błąd: '+e.message);
@@ -914,7 +997,7 @@ window.addOrder = async function() {
     else { await push(ref(db,'zlecenia'),o); }
     setSyncStatus('ok','● Zapisano');
     resetOrderForm();
-    alert('Zlecenie zostało dodane pomyślnie.');
+    showToast('✔ Zlecenie zostało dodane pomyślnie');
   } catch(e) {
     setSyncStatus('err','✕ Błąd zapisu');
     alert('❌ Błąd: '+e.message);
@@ -1080,7 +1163,29 @@ window.showTab = function(id, el) {
   if (id==='cash') window.calculateCash();
 };
 
-// ── ZEGAR ──
+// ── MOTYW ──
+window.toggleTheme = function() {
+  const isLight = document.body.classList.toggle('light');
+  const icon = isLight ? '☀️' : '🌙';
+  const btn1 = document.getElementById('themeBtn');
+  const btn2 = document.getElementById('themeBtnGuest');
+  if (btn1) btn1.innerText = icon;
+  if (btn2) btn2.innerText = icon;
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+};
+
+// Przywróć motyw przy starcie
+(function(){
+  if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.add('light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn1 = document.getElementById('themeBtn');
+      const btn2 = document.getElementById('themeBtnGuest');
+      if (btn1) btn1.innerText = '☀️';
+      if (btn2) btn2.innerText = '☀️';
+    });
+  }
+})();
 function updateClock() {
   const now=new Date();
   const d=now.toLocaleDateString('pl-PL',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
