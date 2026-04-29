@@ -259,7 +259,10 @@ button:active{transform:translateY(0);box-shadow:none}
   <label><input type="checkbox" id="cb_low"> Niski profil</label>
   <label><input type="checkbox" id="cb_valve"> Nowy wentyl</label>
 </div>
-<textarea id="note" placeholder="Notatka (opcjonalna)..." style="resize:vertical;min-height:60px"></textarea>
+<div id="noteField" style="display:none">
+<div class="section-label">Notatka admina</div>
+<textarea id="note" placeholder="Notatka..." style="resize:vertical;min-height:60px"></textarea>
+</div>
 
 <div id="visitValidation" class="validation-box">
   <div class="v-title">⚠ Brakujące pola:</div>
@@ -506,6 +509,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('guestBar').style.display = 'none';
     document.getElementById('adminEmail').textContent = user.email;
     document.getElementById('printBtn').style.display = 'block';
+    document.getElementById('noteField').style.display = 'block';
     // Odblokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.remove('tab-locked');
@@ -519,6 +523,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('adminBar').style.display = 'none';
     document.getElementById('guestBar').style.display = 'flex';
     document.getElementById('printBtn').style.display = 'none';
+    document.getElementById('noteField').style.display = 'none';
     // Zablokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.add('tab-locked');
