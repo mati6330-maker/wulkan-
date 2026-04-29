@@ -1174,17 +1174,13 @@ window.toggleTheme = function() {
 };
 
 // Przywróć motyw przy starcie
-(function(){
-  if (localStorage.getItem('theme') === 'light') {
-    document.body.classList.add('light');
-    document.addEventListener('DOMContentLoaded', () => {
-      const btn1 = document.getElementById('themeBtn');
-      const btn2 = document.getElementById('themeBtnGuest');
-      if (btn1) btn1.innerText = '☀️';
-      if (btn2) btn2.innerText = '☀️';
-    });
-  }
-})();
+if (localStorage.getItem('theme') === 'light') {
+  document.body.classList.add('light');
+  const btn1 = document.getElementById('themeBtn');
+  const btn2 = document.getElementById('themeBtnGuest');
+  if (btn1) btn1.innerText = '☀️';
+  if (btn2) btn2.innerText = '☀️';
+}
 function updateClock() {
   const now=new Date();
   const d=now.toLocaleDateString('pl-PL',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
