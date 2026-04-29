@@ -708,7 +708,7 @@ function initCalendar() {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
     const dateStr = formatDate(d);
-    const isBlocked = !!blockedDays[dateStr];
+    const isBlocked = !!isDateBlocked(dateStr);
     const isActive = dateStr === formatDate(selectedDate);
 
     const div = document.createElement('div');
@@ -730,7 +730,7 @@ function initCalendar() {
 
     div.onclick = () => {
       if (isBlocked) {
-        const reason = blockedDays[dateStr]?.reason;
+        const reason = isDateBlocked(dateStr)?.reason;
         showToast('🔒 Dzień niedostępny' + (reason ? ': ' + reason : ''), 'var(--red)');
         return;
       }
@@ -743,7 +743,10 @@ function initCalendar() {
   }
 }
 
-// ── TIME PICKER ──
+function isDateBlocked(dateStr) {
+  const key = dateStr.replace(/-/g, '_');
+  return blockedDays[key] || blockedDays[dateStr] || null;
+}
 function closeTimePicker() {
   const existing = document.getElementById('timePicker');
   if (existing) existing.remove();
@@ -814,11 +817,11 @@ function renderGrid() {
   grid.innerHTML = '';
   const d = formatDate(selectedDate);
 
-  // Jeśli dzień zablokowany — pokaż komunikat zamiast slotów
-  if (blockedDays[d]) {
-    const reason = blockedDays[d].reason;
+  const blocked = isDateBlocked(d);
+  if (blocked) {
+    const reason = blocked.reason;
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;font-family:var(--mono);font-size:13px;color:var(--red);letter-spacing:1px">
-      🔒 DZIEŃ NIEDOSTĘPNY${reason ? '<br><span style="font-size:11px;color:var(--muted)">'+reason+'</span>' : ''}
+      🔒 DZIEŃ NIEDOSTĘPNY${reason ? '<br><span style="font-size:11px;color:var(--muted)">' + reason + '</span>' : ''}
     </div>`;
     return;
   }
@@ -988,7 +991,7 @@ window.save = async function() {
   clearVisitError();
   const errors = [];
   if (!selectedTime) errors.push('📅 Wybierz dzień i godzinę wizyty');
-  if (selectedDate && blockedDays[formatDate(selectedDate)]) errors.push('🔒 Ten dzień jest zablokowany');
+  if (selectedDate && isDateBlocked(formatDate(selectedDate))) errors.push('🔒 Ten dzień jest zablokowany');
   const tireSize = document.getElementById('tireSize').value;
   if (!tireSize) { errors.push('🛞 Wybierz średnicę felg (przyciski 12"–24")'); document.getElementById('tireSizeButtons').classList.add('field-error'); }
   const service = document.getElementById('service').value;
