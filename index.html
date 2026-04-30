@@ -1332,11 +1332,12 @@ window.printDay = function() {
   const win = window.open('','_blank');
   if (!win) { alert('⚠ Zezwól na wyskakujące okna aby drukować'); return; }
 
+  const checkbox = '<span style="display:inline-block;width:16px;height:16px;border:1.5px solid #333;vertical-align:middle"></span>';
+
   const visitRows = dv.map(v => {
     const extras = [v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':''].filter(Boolean).join(', ');
-    const status = v.status ? '✔' : '○';
     return `<tr>
-      <td>${status}</td>
+      <td style="text-align:center">${checkbox}</td>
       <td><b>${v.time}</b></td>
       <td>${v.name||'—'}</td>
       <td>${v.phone||'—'}</td>
@@ -1350,7 +1351,7 @@ window.printDay = function() {
   }).join('');
 
   const orderRows = do_.map(o => `<tr>
-    <td>${o.status?'✔':'○'}</td>
+    <td style="text-align:center">${checkbox}</td>
     <td>${o.name||'—'}</td>
     <td>${o.phone||'—'}</td>
     <td>${o.car||'—'}</td>
@@ -1367,11 +1368,10 @@ window.printDay = function() {
     h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #111;padding-bottom:4px;margin:20px 0 10px}
     table{width:100%;border-collapse:collapse;font-size:11px}
     th{background:#111;color:#fff;padding:7px 8px;text-align:left;font-size:10px;letter-spacing:0.5px;text-transform:uppercase}
-    td{padding:7px 8px;border-bottom:1px solid #e5e5e5;vertical-align:top}
+    td{padding:8px;border-bottom:1px solid #e5e5e5;vertical-align:middle}
     tr:nth-child(even) td{background:#f9f9f9}
-    .done td{color:#888}
-    .summary{margin-top:16px;font-size:11px;color:#666}
-    .logo{font-size:22px;font-weight:bold;letter-spacing:1px}
+    .summary{margin-top:16px;font-size:11px;color:#999}
+    .logo{font-size:20px;font-weight:bold;letter-spacing:1px}
     @media print{body{padding:10px}}
   </style>
   </head><body>
@@ -1382,7 +1382,8 @@ window.printDay = function() {
   <h2>Wizyty (${dv.length})</h2>
   ${dv.length ? `<table>
     <thead><tr>
-      <th>✔</th><th>Godz.</th><th>Klient</th><th>Telefon</th><th>Auto</th>
+      <th style="width:24px"></th>
+      <th>Godz.</th><th>Klient</th><th>Telefon</th><th>Auto</th>
       <th>Rozmiar</th><th>Usługa</th><th>Felgi</th><th>Opcje</th><th>Notatka</th>
     </tr></thead>
     <tbody>${visitRows}</tbody>
@@ -1391,7 +1392,8 @@ window.printDay = function() {
   <h2>Zlecenia (${do_.length})</h2>
   ${do_.length ? `<table>
     <thead><tr>
-      <th>✔</th><th>Klient</th><th>Telefon</th><th>Auto</th>
+      <th style="width:24px"></th>
+      <th>Klient</th><th>Telefon</th><th>Auto</th>
       <th>Rozmiar</th><th>Usługa</th><th>Felgi</th>
     </tr></thead>
     <tbody>${orderRows}</tbody>
