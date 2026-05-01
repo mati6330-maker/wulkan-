@@ -993,7 +993,6 @@ window.save = async function() {
   if (!selectedTime) errors.push('📅 Wybierz dzień i godzinę wizyty');
   if (selectedDate && isDateBlocked(formatDate(selectedDate))) errors.push('🔒 Ten dzień jest zablokowany');
   const tireSize = document.getElementById('tireSize').value;
-  if (!tireSize) { errors.push('🛞 Wybierz średnicę felg (przyciski 12"–24")'); document.getElementById('tireSizeButtons').classList.add('field-error'); }
   const service = document.getElementById('service').value;
   if (!service) { errors.push('🔧 Wybierz rodzaj usługi'); document.getElementById('service').classList.add('field-error'); }
   const wheel = document.getElementById('wheel').value;
@@ -1096,29 +1095,87 @@ function renderList() {
   const entries = Object.entries(visits).filter(([k,v])=>{
     if (visitFilter==='done'&&!v.status) return false;
     if (visitFilter==='notdone'&&v.status) return false;
-    if (search && !(v.name||'').toLowerCase().includes(search) && !(v.phone||'').includes(search)) return false;
+    if (search && !(v.name||'').toLowerCase().includes(search) && !(v.phone||'').includes(search) && !(v.car||'').toLowerCase().includes(search)) return false;
     return true;
   });
-  if (!entries.length) { box.innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px">Brak wyników</div>'; return; }
-  entries.sort((a,b)=>(a[1].date+a[1].time).localeCompare(b[1].date+b[1].time));
-  const html = [];
-  entries.forEach(([k,v])=>{
-    const extras=[];
-    if(v.runflat)extras.push('Run-flat'); if(v.low)extras.push('Niski profil'); if(v.valve)extras.push('Nowy wentyl');
-    html.push(`<div id="card-${k}" class="card ${v.status?'done':'notdone'}">
-      ⭐ ${v.name||'—'}<br>📞 ${v.phone||'—'}<br>🚗 ${v.car||'—'}<br>
-      🔩 ${v.tireSize||'—'}" | ${v.service||'—'} | ${v.wheel||'—'}
-      ${extras.length?'<br>➕ '+extras.join(', '):''}
-      ${v.note?'<br>📝 '+v.note:''}<br>
-      📅 ${v.date} ${v.time}<br>💰 ${v.price||calcVisitPrice(v)} zł
-      <button onclick="toggleVisit('${k}')">${v.status?'✔ Zrobione':'✖ Niezrobione'}</button>
-      <button onclick="editVisit('${k}')">Edytuj</button>
-      <button onclick="deleteVisit('${k}')" style="background:#ef4444">Usuń</button>
-    </div>`);
-  });
-  box.innerHTML = html.join('');}
+  if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak wyników</div>'; return; }
 
-window.toggleVisit = async function(k) {
+  entries.sort((a,b)=>(a[1].date+a[1].time).localeCompare(b[1].date+b[1].time));
+
+  // Grupuj po dacie
+  const grouped = {};
+  entries.forEach(([k,v]) => {
+    if (!grouped[v.date]) grouped[v.date] = [];
+    grouped[v.date].push([k,v]);
+  });
+
+  const html = [];
+  Object.keys(grouped).sort().forEach(date => {
+    const dayEntries = grouped[date];
+    const d = parseDate(date);
+    const dayName = d.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long'});
+    const doneCount = dayEntries.filter(([k,v])=>v.status).length;
+    const total = dayEntries.length;
+
+    html.push(`<div style="margin-top:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase">${dayName}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:${doneCount===total?'var(--green)':'var(--muted)'}">✔ ${doneCount}/${total}</div>
+      </div>`);
+
+    dayEntries.forEach(([k,v]) => {
+      const extras = [v.runflat?'RF':'', v.low?'NP':'', v.valve?'W':''].filter(Boolean).join(' ');
+      const statusColor = v.status ? 'var(--green)' : 'var(--red)';
+      const statusIcon = v.status ? '✔' : '○';
+
+      html.push(`<div id="card-${k}" style="
+        background:var(--surface);
+        border:1px solid var(--border);
+        border-left:3px solid ${statusColor};
+        border-radius:4px;
+        padding:10px 12px;
+        margin-bottom:5px;
+      ">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+          <div>
+            <div style="font-weight:700;font-size:14px;color:var(--text)">${v.time} &nbsp; ${v.name||'—'} <span style="color:var(--muted);font-weight:400;font-size:12px">${v.phone||''}</span></div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">
+              ${v.service||'—'} · ${v.tireSize ? v.tireSize+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${v.wheel||'—'}${extras?' · <span style="color:var(--accent)">'+extras+'</span>':''}${v.car?' · '+v.car:''}${v.note?' · <span style="color:var(--accent)">📝 '+v.note+'</span>':''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            <button onclick="toggleVisit('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:${v.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
+            <button onclick="editVisit('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
+            <button onclick="deleteVisit('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
+          </div>
+        </div>
+        <div id="sizepicker-${k}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">USTAW ŚREDNICĘ FELG</div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+            ${[12,13,14,15,16,17,18,19,20,21,22,23,24].map(s=>`<button onclick="setVisitSize('${k}',${s})" style="padding:6px 2px;font-size:12px;font-family:var(--mono);margin:0;background:${v.tireSize==s?'var(--accent)':'var(--surface2)'};color:${v.tireSize==s?'#000':'var(--text)'};border:1px solid var(--border)">${s}"</button>`).join('')}
+          </div>
+        </div>
+        <button onclick="toggleSizePicker('${k}')" style="width:100%;margin-top:6px;padding:5px;font-size:11px;letter-spacing:1px;background:transparent;color:${v.tireSize?'var(--muted)':'var(--accent)'};border:1px solid ${v.tireSize?'var(--border)':'var(--accent)'}">
+          🛞 ${v.tireSize ? 'Zmień rozmiar ('+v.tireSize+'")' : '⚠ Ustaw rozmiar'}
+        </button>
+      </div>`);
+    });
+
+    html.push('</div>');
+  });
+
+  box.innerHTML = html.join('');
+}
+
+window.toggleSizePicker = function(k) {
+  const el = document.getElementById('sizepicker-'+k);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+window.setVisitSize = async function(k, size) {
+  if (!visits[k]) return;
+  await update(ref(db,'wizyty/'+k), {tireSize: String(size)});
+  showToast('✔ Rozmiar '+size+'" zapisany');
+};
   if (!visits[k]) return;
   await update(ref(db,'wizyty/'+k), {status: !visits[k].status});
 };
@@ -1201,19 +1258,70 @@ function resetOrderForm() {
 
 function renderOrders() {
   const box = document.getElementById('ordersBox');
-  box.innerHTML='';
-  const html = [];
-  Object.entries(orders).forEach(([k,o])=>{
-    html.push(`<div class="card ${o.status?'done':'notdone'}">
-      ⭐ ${o.name||'—'}<br>📞 ${o.phone||'—'}<br>🚗 ${o.car||'—'}<br>
-      🛞 ${o.diameter||'—'}" | Kół: ${o.wheels||'—'}<br>
-      🔧 ${o.service} | ${o.type}<br>💰 ${o.price||0} zł<br>
-      📅 ${o.time} (${o.dateStamp||'-'})
-      <button onclick="toggleOrder('${k}')">${o.status?'✔ Zrobione':'✖ Niezrobione'}</button>
-      <button onclick="editOrder('${k}')">Edytuj</button>
-      <button onclick="deleteOrder('${k}')" style="background:#ef4444">Usuń</button>
-    </div>`);
+  box.innerHTML = '';
+  const entries = Object.entries(orders);
+  if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak zleceń</div>'; return; }
+
+  entries.sort((a,b)=>(a[1].dateStamp||'').localeCompare(b[1].dateStamp||''));
+
+  // Grupuj po dacie
+  const grouped = {};
+  entries.forEach(([k,o]) => {
+    const dateKey = o.dateStamp || 'brak-daty';
+    if (!grouped[dateKey]) grouped[dateKey] = [];
+    grouped[dateKey].push([k,o]);
   });
+
+  const html = [];
+  Object.keys(grouped).sort().forEach(date => {
+    const dayEntries = grouped[date];
+    let dayLabel = date;
+    if (date !== 'brak-daty') {
+      const d = parseDate(date);
+      dayLabel = d.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long'});
+    }
+    const doneCount = dayEntries.filter(([k,o])=>o.status).length;
+    const total = dayEntries.length;
+
+    html.push(`<div style="margin-top:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase">${dayLabel}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:${doneCount===total?'var(--green)':'var(--muted)'}">✔ ${doneCount}/${total}</div>
+      </div>`);
+
+    dayEntries.forEach(([k,o]) => {
+      const statusColor = o.status ? 'var(--green)' : 'var(--red)';
+      const statusIcon = o.status ? '✔' : '○';
+
+      html.push(`<div id="order-${k}" style="
+        background:var(--surface);
+        border:1px solid var(--border);
+        border-left:3px solid ${statusColor};
+        border-radius:4px;
+        padding:10px 12px;
+        margin-bottom:5px;
+        display:grid;
+        grid-template-columns:1fr auto;
+        gap:8px;
+        align-items:center;
+      ">
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text)">${o.name||'—'} <span style="color:var(--muted);font-weight:400;font-size:12px">${o.phone||''}</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">
+            ${o.service||'—'} · ${o.diameter||'—'}" · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
+          <button onclick="editOrder('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
+          <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
+        </div>
+      </div>`);
+    });
+
+    html.push('</div>');
+  });
+
   box.innerHTML = html.join('');
 }
 window.toggleOrder = async function(k) {
@@ -1291,35 +1399,109 @@ window.calculateCash = function calculateCash() {
 }
 
 // ── RAPORTY ──
-function renderReport(title,list,sum) {
-  if(!list.length){alert('Brak danych');return;}
-  let html="<h2>"+title+"</h2><table border='1' cellpadding='6'><tr><th>Data</th><th>Godzina</th><th>Klient</th><th>Kwota</th></tr>";
-  list.forEach(v=>{html+="<tr><td>"+v.date+"</td><td>"+(v.time||'-')+"</td><td>"+(v.name||'-')+"</td><td>"+v.price+" zł</td></tr>";});
-  html+="</table><h3>Suma: "+sum+" zł</h3>";
-  const w=window.open('');
+function renderReport(title, list, sum) {
+  if (!list.length) { alert('Brak danych'); return; }
+  const w = window.open('');
   if (!w) { alert('⚠ Zezwól na wyskakujące okna aby drukować raporty'); return; }
-  w.document.write(html); w.document.close(); w.print();
+
+  // Grupuj po dacie
+  const grouped = {};
+  list.forEach(item => {
+    if (!grouped[item.date]) grouped[item.date] = [];
+    grouped[item.date].push(item);
+  });
+
+  const visitSum = list.filter(i=>i.type!=='zlecenie').reduce((a,i)=>a+i.price,0);
+  const orderSum = list.filter(i=>i.type==='zlecenie').reduce((a,i)=>a+i.price,0);
+
+  let tableRows = '';
+  Object.keys(grouped).sort().forEach(date => {
+    const d = parseDate(date);
+    const dayName = d.toLocaleDateString('pl-PL',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    const dayItems = grouped[date];
+    const daySum = dayItems.reduce((a,i)=>a+i.price,0);
+
+    tableRows += `<tr class="day-header">
+      <td colspan="4" style="background:#f1f5f9;font-weight:700;font-size:12px;color:#475569;letter-spacing:0.5px;text-transform:uppercase;padding:10px 12px">
+        ${dayName} <span style="float:right;color:#64748b">${daySum} zł</span>
+      </td>
+    </tr>`;
+
+    dayItems.sort((a,b)=>(a.time||'').localeCompare(b.time||'')).forEach((item,i) => {
+      tableRows += `<tr style="background:${i%2===0?'#fff':'#f8fafc'}">
+        <td style="font-family:monospace;font-weight:700;color:#f97316">${item.time||'—'}</td>
+        <td>${item.name||'—'}</td>
+        <td style="color:#64748b;font-size:11px">${item.service||'—'}</td>
+        <td style="font-weight:700;text-align:right">${item.price} zł</td>
+      </tr>`;
+    });
+  });
+
+  const content = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;padding:28px;font-size:13px;color:#1e293b;background:#fff}
+    .header{border-bottom:3px solid #111;padding-bottom:16px;margin-bottom:20px}
+    .logo{font-size:22px;font-weight:900;letter-spacing:1px;color:#111}
+    .report-title{font-size:15px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:2px;margin-top:6px}
+    .report-period{font-size:12px;color:#64748b;margin-top:3px}
+    table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+    th{background:#111;color:#fff;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:0.5px;text-transform:uppercase}
+    th:last-child{text-align:right}
+    td{padding:9px 12px;border-bottom:1px solid #e2e8f0;vertical-align:middle}
+    .summary{margin-top:20px;border:2px solid #111;border-radius:6px;overflow:hidden}
+    .summary-row{display:flex;justify-content:space-between;padding:10px 16px;font-size:13px;border-bottom:1px solid #e2e8f0}
+    .summary-row:last-child{border-bottom:none;background:#111;color:#fff;font-size:16px;font-weight:900}
+    .footer{margin-top:16px;font-size:11px;color:#94a3b8;text-align:right}
+    @media print{body{padding:12px}}
+  </style>
+  </head><body>
+  <div class="header">
+    <div class="logo">🔧 Wulkanizacja Mielczarek</div>
+    <div class="report-title">${title}</div>
+    <div class="report-period">Wygenerowano: ${new Date().toLocaleString('pl-PL')}</div>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th>Godzina</th><th>Klient</th><th>Usługa</th><th style="text-align:right">Kwota</th>
+    </tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+
+  <div class="summary">
+    ${visitSum > 0 ? `<div class="summary-row"><span>Wizyty</span><span>${visitSum} zł</span></div>` : ''}
+    ${orderSum > 0 ? `<div class="summary-row"><span>Zlecenia</span><span>${orderSum} zł</span></div>` : ''}
+    <div class="summary-row"><span>SUMA CAŁKOWITA</span><span>${sum} zł</span></div>
+  </div>
+
+  <div class="footer">Liczba pozycji: ${list.length}</div>
+  </body></html>`;
+
+  w.document.write(content);
+  w.document.close();
+  w.print();
 }
 window.printDailyFullReport = function() {
   const today=getToday(); let list=[],sum=0;
-  Object.values(visits).forEach(v=>{if(v.status&&v.date===today){const p=v.price||calcVisitPrice(v);sum+=p;list.push({date:v.date,time:v.time,name:v.name,price:p});}});
-  Object.values(orders).forEach(o=>{if(o.status&&o.dateStamp===today){const p=o.price||0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,price:p});}});
-  renderReport('Raport dzienny',list,sum);
+  Object.values(visits).forEach(v=>{if(v.status&&v.date===today){const p=v.price||calcVisitPrice(v);sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,type:'wizyta'});}});
+  Object.values(orders).forEach(o=>{if(o.status&&o.dateStamp===today){const p=o.price||0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,service:o.service,price:p,type:'zlecenie'});}});
+  renderReport('Raport dzienny — '+today,list,sum);
 };
 window.printWeekFullReport = function() {
   const val=document.getElementById('cashWeek').value; if(!val){alert('Wybierz datę');return;}
   const base=parseDate(val),day=base.getDay()||7,start=new Date(base);
   start.setDate(base.getDate()-day+1); start.setHours(0,0,0,0);
   const end=new Date(start.getTime()+7*86400000); let list=[],sum=0;
-  Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d>=start&&d<end){const p=v.price||calcVisitPrice(v);sum+=p;list.push({date:v.date,time:v.time,name:v.name,price:p});}});
-  Object.values(orders).forEach(o=>{const d=parseDate(o.dateStamp);if(o.status&&d>=start&&d<end){const p=o.price||0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,price:p});}});
+  Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d>=start&&d<end){const p=v.price||calcVisitPrice(v);sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,type:'wizyta'});}});
+  Object.values(orders).forEach(o=>{const d=parseDate(o.dateStamp);if(o.status&&d>=start&&d<end){const p=o.price||0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,service:o.service,price:p,type:'zlecenie'});}});
   renderReport('Raport tygodniowy',list,sum);
 };
 window.printMonthFullReport = function() {
   const val=document.getElementById('cashMonth').value; if(!val){alert('Wybierz miesiąc');return;}
   const[y,m]=val.split('-').map(Number); let list=[],sum=0;
-  Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=v.price||calcVisitPrice(v);sum+=p;list.push({date:v.date,time:v.time,name:v.name,price:p});}});
-  Object.values(orders).forEach(o=>{const d=parseDate(o.dateStamp);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,price:p});}});
+  Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=v.price||calcVisitPrice(v);sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,type:'wizyta'});}});
+  Object.values(orders).forEach(o=>{const d=parseDate(o.dateStamp);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,service:o.service,price:p,type:'zlecenie'});}});
   renderReport('Raport miesięczny',list,sum);
 };
 
