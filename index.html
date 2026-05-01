@@ -1176,10 +1176,7 @@ window.setVisitSize = async function(k, size) {
   await update(ref(db,'wizyty/'+k), {tireSize: String(size)});
   showToast('✔ Rozmiar '+size+'" zapisany');
 };
-  if (!visits[k]) return;
-  await update(ref(db,'wizyty/'+k), {status: !visits[k].status});
-};
-window.editVisit = function(k) {
+window.toggleVisit = async function(k) {
   const v = visits[k];
   if (!v) return;
   editKey = k;
