@@ -439,13 +439,35 @@ button:active{transform:translateY(0);box-shadow:none}
 
 <div class="section" id="archive">
 <h3>Archiwum</h3>
-<input id="archiveSearchBox" placeholder="🔍 Szukaj po imieniu, telefonie lub aucie..." oninput="renderArchive()"/>
-<div style="display:flex;gap:6px;margin:6px 0;align-items:center">
-  <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
-  <input type="date" id="archiveDateFilter" onchange="renderArchive()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
-  <button onclick="clearArchiveDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+
+<!-- Wewnętrzne zakładki -->
+<div style="display:flex;gap:0;margin-bottom:12px;border-bottom:2px solid var(--border)">
+  <button id="arch-tab-visits" onclick="switchArchiveTab('visits')" style="flex:1;background:var(--accent);color:#000;border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">WIZYTY</button>
+  <button id="arch-tab-orders" onclick="switchArchiveTab('orders')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">ZLECENIA</button>
 </div>
-<div id="archiveBox"></div>
+
+<!-- Panel wizyt -->
+<div id="arch-panel-visits">
+  <input id="archiveSearchBox" placeholder="🔍 Szukaj..." oninput="renderArchive()"/>
+  <div style="display:flex;gap:6px;margin:6px 0;align-items:center">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
+    <input type="date" id="archiveDateFilter" onchange="renderArchive()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
+    <button onclick="clearArchiveDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+  </div>
+  <div id="archiveVisitsBox"></div>
+</div>
+
+<!-- Panel zleceń -->
+<div id="arch-panel-orders" style="display:none">
+  <input id="archiveOrderSearchBox" placeholder="🔍 Szukaj..." oninput="renderArchive()"/>
+  <div style="display:flex;gap:6px;margin:6px 0;align-items:center">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
+    <input type="date" id="archiveOrderDateFilter" onchange="renderArchive()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
+    <button onclick="clearArchiveOrderDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+  </div>
+  <div id="archiveOrdersBox"></div>
+</div>
+
 </div>
 
 <div class="section" id="pricing">
@@ -1267,6 +1289,29 @@ window.save = async function() {
       }
     }
 
+    // Powiadomienie dla admina — tylko gdy zapisuje gość
+    if (!currentUser) {
+      const extras = [];
+      if (v.runflat) extras.push('Run-flat');
+      if (v.low) extras.push('Niski profil');
+      if (v.valve) extras.push('Nowy wentyl');
+      try {
+        await emailjs.send('service_odafu8s', 'template_r3i0jyt', {
+          date: v.date,
+          time: v.time,
+          client_name: v.name || '—',
+          phone: v.phone || '—',
+          car: v.car || '—',
+          service: v.service,
+          wheel: v.wheel,
+          tire_size: v.tireSize || '—',
+          extras: extras.join(', ') || '—'
+        });
+      } catch(e) {
+        console.error('Błąd powiadomienia admina:', e);
+      }
+    }
+
     resetVisitForm();
     showConfirmScreen(v, emailSent);
   } catch(e) {
@@ -1316,85 +1361,131 @@ window.clearOrderDateFilter = function() {
   document.getElementById('orderDateFilter').value = '';
   renderOrders();
 };
+let archiveTab = 'visits';
+
+window.switchArchiveTab = function(tab) {
+  archiveTab = tab;
+  document.getElementById('arch-panel-visits').style.display = tab==='visits' ? 'block' : 'none';
+  document.getElementById('arch-panel-orders').style.display = tab==='orders' ? 'block' : 'none';
+  const vBtn = document.getElementById('arch-tab-visits');
+  const oBtn = document.getElementById('arch-tab-orders');
+  vBtn.style.background = tab==='visits' ? 'var(--accent)' : 'transparent';
+  vBtn.style.color = tab==='visits' ? '#000' : 'var(--muted)';
+  oBtn.style.background = tab==='orders' ? 'var(--accent)' : 'transparent';
+  oBtn.style.color = tab==='orders' ? '#000' : 'var(--muted)';
+  renderArchive();
+};
+
 window.clearArchiveDateFilter = function() {
   document.getElementById('archiveDateFilter').value = '';
   renderArchive();
 };
+window.clearArchiveOrderDateFilter = function() {
+  document.getElementById('archiveOrderDateFilter').value = '';
+  renderArchive();
+};
 
 window.renderArchive = function renderArchive() {
-  const box = document.getElementById('archiveBox');
+  if (archiveTab === 'visits') renderArchiveVisits();
+  else renderArchiveOrders();
+};
+
+function renderArchiveVisits() {
+  const box = document.getElementById('archiveVisitsBox');
   if (!box) return;
-  box.innerHTML = '';
   const search = (document.getElementById('archiveSearchBox')||{value:''}).value.toLowerCase();
   const dateFilter = (document.getElementById('archiveDateFilter')||{value:''}).value;
 
-  // Zbierz wszystkie minione wpisy
-  const pastVisits = Object.entries(visits).filter(([k,v]) => {
+  const entries = Object.entries(visits).filter(([k,v]) => {
     if (v.date >= getToday()) return false;
     if (dateFilter && v.date !== dateFilter) return false;
     if (search && !(v.name||'').toLowerCase().includes(search) && !(v.phone||'').includes(search) && !(v.car||'').toLowerCase().includes(search)) return false;
     return true;
   });
-  const pastOrders = Object.entries(orders).filter(([k,o]) => {
+
+  if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak archiwalnych wizyt</div>'; return; }
+
+  entries.sort((a,b)=>(b[1].date+b[1].time).localeCompare(a[1].date+a[1].time));
+
+  const grouped = {};
+  entries.forEach(([k,v]) => { if(!grouped[v.date])grouped[v.date]=[]; grouped[v.date].push([k,v]); });
+
+  const html = [];
+  Object.keys(grouped).sort().reverse().forEach(date => {
+    const dayEntries = grouped[date];
+    const d = parseDate(date);
+    const dayName = d.toLocaleDateString('pl-PL',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    const done = dayEntries.filter(([k,v])=>v.status).length;
+    html.push(`<div style="margin-top:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase">${dayName}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:${done===dayEntries.length?'var(--green)':'var(--muted)'}">✔ ${done}/${dayEntries.length}</div>
+      </div>`);
+    dayEntries.sort((a,b)=>a[1].time.localeCompare(b[1].time)).forEach(([k,v]) => {
+      const statusColor = v.status ? 'var(--green)' : '#555';
+      const extras = [v.runflat?'RF':'',v.low?'NP':'',v.valve?'W':''].filter(Boolean).join(' ');
+      html.push(`<div onclick="showVisitDetail('${k}')" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${statusColor};border-radius:4px;padding:7px 10px;margin-bottom:4px;opacity:0.65;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--muted)">${v.time} · ${v.name||'—'} <span style="font-size:11px;font-weight:400">${v.phone||''}</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${v.service||'—'} · ${v.tireSize||'?'}" · ${v.wheel||'—'}${extras?' · '+extras:''}${v.note?' · 📝 '+v.note:''}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;color:${statusColor}">${v.status?'✔':'○'}</div>
+        </div>
+      </div>`);
+    });
+    html.push('</div>');
+  });
+  box.innerHTML = html.join('');
+}
+
+function renderArchiveOrders() {
+  const box = document.getElementById('archiveOrdersBox');
+  if (!box) return;
+  const search = (document.getElementById('archiveOrderSearchBox')||{value:''}).value.toLowerCase();
+  const dateFilter = (document.getElementById('archiveOrderDateFilter')||{value:''}).value;
+
+  const entries = Object.entries(orders).filter(([k,o]) => {
     if ((o.dateStamp||'') >= getToday()) return false;
     if (dateFilter && o.dateStamp !== dateFilter) return false;
     if (search && !(o.name||'').toLowerCase().includes(search) && !(o.phone||'').includes(search) && !(o.car||'').toLowerCase().includes(search)) return false;
     return true;
   });
 
-  if (!pastVisits.length && !pastOrders.length) {
-    box.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak archiwalnych wpisów</div>';
-    return;
-  }
+  if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak archiwalnych zleceń</div>'; return; }
 
-  // Grupuj po dacie
+  entries.sort((a,b)=>(b[1].dateStamp||'').localeCompare(a[1].dateStamp||''));
+
   const grouped = {};
-  pastVisits.forEach(([k,v]) => {
-    if (!grouped[v.date]) grouped[v.date] = {visits:[],orders:[]};
-    grouped[v.date].visits.push([k,v]);
-  });
-  pastOrders.forEach(([k,o]) => {
-    const d = o.dateStamp || 'brak-daty';
-    if (!grouped[d]) grouped[d] = {visits:[],orders:[]};
-    grouped[d].orders.push([k,o]);
-  });
+  entries.forEach(([k,o]) => { const d=o.dateStamp||'brak'; if(!grouped[d])grouped[d]=[]; grouped[d].push([k,o]); });
 
   const html = [];
   Object.keys(grouped).sort().reverse().forEach(date => {
-    const { visits: dv, orders: do_ } = grouped[date];
+    const dayEntries = grouped[date];
     const d = parseDate(date);
-    const dayName = d.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
-    const total = dv.length + do_.length;
-    const done = dv.filter(([k,v])=>v.status).length + do_.filter(([k,o])=>o.status).length;
-
+    const dayName = d.toLocaleDateString('pl-PL',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    const done = dayEntries.filter(([k,o])=>o.status).length;
     html.push(`<div style="margin-top:18px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase">${dayName}</div>
-        <div style="font-family:var(--mono);font-size:11px;color:${done===total?'var(--green)':'var(--muted)'}">✔ ${done}/${total}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:${done===dayEntries.length?'var(--green)':'var(--muted)'}">✔ ${done}/${dayEntries.length}</div>
       </div>`);
-
-    [...dv, ...do_].sort((a,b)=>{
-      const ta = a[1].time||a[1].dateStamp||'';
-      const tb = b[1].time||b[1].dateStamp||'';
-      return ta.localeCompare(tb);
-    }).forEach(([k,item]) => {
-      const isVisit = !!item.time;
-      const statusColor = item.status ? 'var(--green)' : '#555';
-      const label = isVisit
-        ? `${item.time} · ${item.name||'—'} · ${item.service||'—'} · ${item.tireSize||'?'}" · ${item.wheel||'—'}`
-        : `${item.name||'—'} · ${item.service||'—'} · ${item.diameter||'?'}" · ${item.type||'—'}`;
-
-      html.push(`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${statusColor};border-radius:4px;padding:7px 10px;margin-bottom:4px;opacity:0.65;display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:12px;color:var(--muted)">${label}</div>
-        <div style="font-family:var(--mono);font-size:11px;color:${statusColor}">${item.status?'✔':'○'}</div>
+    dayEntries.forEach(([k,o]) => {
+      const statusColor = o.status ? 'var(--green)' : '#555';
+      html.push(`<div onclick="showOrderDetail('${k}')" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${statusColor};border-radius:4px;padding:7px 10px;margin-bottom:4px;opacity:0.65;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--muted)">${o.name||'—'} <span style="font-size:11px;font-weight:400">${o.phone||''}</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${o.service||'—'} · ${o.diameter||'?'}" · ${o.type||'—'}${o.car?' · '+o.car:''}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;color:${statusColor}">${o.status?'✔':'○'}</div>
+        </div>
       </div>`);
     });
-
     html.push('</div>');
   });
-
   box.innerHTML = html.join('');
-};
+}
 window.clearDateFilter = function() {
   document.getElementById('dateFilter').value = '';
   renderList();
