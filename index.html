@@ -1998,7 +1998,119 @@ function renderReport(title, list, sum) {
   </div>
 
   <div class="footer">Liczba pozycji: ${list.length}</div>
-  </body></html>`;
+  
+<script>
+// --- LIST FIX TURBO ---
+const MAX_VISIBLE = 20;
+
+const _oldRenderList = window.renderList;
+window.renderList = function() {
+  _oldRenderList();
+
+  const listBox = document.getElementById('listBox');
+  if (!listBox) return;
+
+  const items = listBox.children;
+  for (let i = 0; i < items.length; i++) {
+    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
+  }
+
+  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'loadMoreBtn';
+    btn.innerText = 'Pokaż więcej';
+    btn.onclick = () => {
+      for (let el of items) el.style.display = '';
+      btn.remove();
+    };
+    listBox.appendChild(btn);
+  }
+};
+
+// Orders fix
+const _oldRenderOrders = window.renderOrders;
+window.renderOrders = function() {
+  _oldRenderOrders();
+
+  const box = document.getElementById('ordersBox');
+  if (!box) return;
+
+  const items = box.children;
+  for (let i = 0; i < items.length; i++) {
+    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
+  }
+
+  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreOrdersBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'loadMoreOrdersBtn';
+    btn.innerText = 'Pokaż więcej';
+    btn.onclick = () => {
+      for (let el of items) el.style.display = '';
+      btn.remove();
+    };
+    box.appendChild(btn);
+  }
+};
+</script>
+
+
+<script>
+// --- DAY COLLAPSED LIST V20 ---
+window.renderList = function() {
+  const listBox = document.getElementById('listBox');
+  if (!listBox) return;
+
+  const grouped = {};
+
+  Object.values(visits).forEach(v => {
+    if (!grouped[v.date]) grouped[v.date] = [];
+    grouped[v.date].push(v);
+  });
+
+  const dates = Object.keys(grouped).sort();
+
+  let html = '';
+
+  dates.forEach(date => {
+    const dayName = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long' });
+
+    html += `
+      <div class="card" onclick="toggleDay('${date}')">
+        <b>${dayName.toUpperCase()} — ${date}</b>
+        <div id="day-${date}" style="display:none;margin-top:10px"></div>
+      </div>
+    `;
+  });
+
+  listBox.innerHTML = html;
+};
+
+window.toggleDay = function(date) {
+  const box = document.getElementById('day-' + date);
+
+  if (box.dataset.loaded === '1') {
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+
+  const dayVisits = Object.values(visits).filter(v => v.date === date);
+
+  let inner = '';
+  dayVisits.forEach(v => {
+    inner += `
+      <div class="card" style="margin-top:6px">
+        ${v.time} — ${v.name || 'Klient'} — ${v.service || ''}
+      </div>
+    `;
+  });
+
+  box.innerHTML = inner;
+  box.dataset.loaded = '1';
+  box.style.display = 'block';
+};
+</script>
+
+</body></html>`;
 
   w.document.write(content);
   w.document.close();
@@ -2104,7 +2216,119 @@ window.printDay = function() {
   </table>` : '<p style="color:#999">Brak zleceń</p>'}
 
   <div class="summary">Wydrukowano: ${new Date().toLocaleString('pl-PL')}</div>
-  </body></html>`;
+  
+<script>
+// --- LIST FIX TURBO ---
+const MAX_VISIBLE = 20;
+
+const _oldRenderList = window.renderList;
+window.renderList = function() {
+  _oldRenderList();
+
+  const listBox = document.getElementById('listBox');
+  if (!listBox) return;
+
+  const items = listBox.children;
+  for (let i = 0; i < items.length; i++) {
+    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
+  }
+
+  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'loadMoreBtn';
+    btn.innerText = 'Pokaż więcej';
+    btn.onclick = () => {
+      for (let el of items) el.style.display = '';
+      btn.remove();
+    };
+    listBox.appendChild(btn);
+  }
+};
+
+// Orders fix
+const _oldRenderOrders = window.renderOrders;
+window.renderOrders = function() {
+  _oldRenderOrders();
+
+  const box = document.getElementById('ordersBox');
+  if (!box) return;
+
+  const items = box.children;
+  for (let i = 0; i < items.length; i++) {
+    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
+  }
+
+  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreOrdersBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'loadMoreOrdersBtn';
+    btn.innerText = 'Pokaż więcej';
+    btn.onclick = () => {
+      for (let el of items) el.style.display = '';
+      btn.remove();
+    };
+    box.appendChild(btn);
+  }
+};
+</script>
+
+
+<script>
+// --- DAY COLLAPSED LIST V20 ---
+window.renderList = function() {
+  const listBox = document.getElementById('listBox');
+  if (!listBox) return;
+
+  const grouped = {};
+
+  Object.values(visits).forEach(v => {
+    if (!grouped[v.date]) grouped[v.date] = [];
+    grouped[v.date].push(v);
+  });
+
+  const dates = Object.keys(grouped).sort();
+
+  let html = '';
+
+  dates.forEach(date => {
+    const dayName = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long' });
+
+    html += `
+      <div class="card" onclick="toggleDay('${date}')">
+        <b>${dayName.toUpperCase()} — ${date}</b>
+        <div id="day-${date}" style="display:none;margin-top:10px"></div>
+      </div>
+    `;
+  });
+
+  listBox.innerHTML = html;
+};
+
+window.toggleDay = function(date) {
+  const box = document.getElementById('day-' + date);
+
+  if (box.dataset.loaded === '1') {
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+
+  const dayVisits = Object.values(visits).filter(v => v.date === date);
+
+  let inner = '';
+  dayVisits.forEach(v => {
+    inner += `
+      <div class="card" style="margin-top:6px">
+        ${v.time} — ${v.name || 'Klient'} — ${v.service || ''}
+      </div>
+    `;
+  });
+
+  box.innerHTML = inner;
+  box.dataset.loaded = '1';
+  box.style.display = 'block';
+};
+</script>
+
+</body></html>`;
 
   win.document.write(content);
   win.document.close();
@@ -2292,5 +2516,117 @@ function debounceSearch(){
   searchTimeout = setTimeout(()=>renderList(),200);
 }
 </script>
+
+<script>
+// --- LIST FIX TURBO ---
+const MAX_VISIBLE = 20;
+
+const _oldRenderList = window.renderList;
+window.renderList = function() {
+  _oldRenderList();
+
+  const listBox = document.getElementById('listBox');
+  if (!listBox) return;
+
+  const items = listBox.children;
+  for (let i = 0; i < items.length; i++) {
+    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
+  }
+
+  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'loadMoreBtn';
+    btn.innerText = 'Pokaż więcej';
+    btn.onclick = () => {
+      for (let el of items) el.style.display = '';
+      btn.remove();
+    };
+    listBox.appendChild(btn);
+  }
+};
+
+// Orders fix
+const _oldRenderOrders = window.renderOrders;
+window.renderOrders = function() {
+  _oldRenderOrders();
+
+  const box = document.getElementById('ordersBox');
+  if (!box) return;
+
+  const items = box.children;
+  for (let i = 0; i < items.length; i++) {
+    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
+  }
+
+  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreOrdersBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'loadMoreOrdersBtn';
+    btn.innerText = 'Pokaż więcej';
+    btn.onclick = () => {
+      for (let el of items) el.style.display = '';
+      btn.remove();
+    };
+    box.appendChild(btn);
+  }
+};
+</script>
+
+
+<script>
+// --- DAY COLLAPSED LIST V20 ---
+window.renderList = function() {
+  const listBox = document.getElementById('listBox');
+  if (!listBox) return;
+
+  const grouped = {};
+
+  Object.values(visits).forEach(v => {
+    if (!grouped[v.date]) grouped[v.date] = [];
+    grouped[v.date].push(v);
+  });
+
+  const dates = Object.keys(grouped).sort();
+
+  let html = '';
+
+  dates.forEach(date => {
+    const dayName = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long' });
+
+    html += `
+      <div class="card" onclick="toggleDay('${date}')">
+        <b>${dayName.toUpperCase()} — ${date}</b>
+        <div id="day-${date}" style="display:none;margin-top:10px"></div>
+      </div>
+    `;
+  });
+
+  listBox.innerHTML = html;
+};
+
+window.toggleDay = function(date) {
+  const box = document.getElementById('day-' + date);
+
+  if (box.dataset.loaded === '1') {
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+
+  const dayVisits = Object.values(visits).filter(v => v.date === date);
+
+  let inner = '';
+  dayVisits.forEach(v => {
+    inner += `
+      <div class="card" style="margin-top:6px">
+        ${v.time} — ${v.name || 'Klient'} — ${v.service || ''}
+      </div>
+    `;
+  });
+
+  box.innerHTML = inner;
+  box.dataset.loaded = '1';
+  box.style.display = 'block';
+};
+</script>
+
 </body>
 </html>
