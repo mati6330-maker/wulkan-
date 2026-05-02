@@ -544,9 +544,15 @@ button:active{transform:translateY(0);box-shadow:none}
 <div id="confirmScreen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99990;overflow-y:auto;padding:20px">
   <div style="max-width:500px;margin:auto">
     <div style="text-align:center;padding:30px 0 20px">
-      <div style="font-size:48px;margin-bottom:12px">✅</div>
-      <div style="font-family:var(--font);font-weight:700;font-size:22px;color:var(--green);letter-spacing:2px">WIZYTA PRZYJĘTA</div>
-      <div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:1px">Wulkanizacja Mielczarek</div>
+      <div style="margin-bottom:12px">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="26" cy="26" r="25" stroke="var(--green)" stroke-width="2"/>
+          <polyline points="14,27 22,35 38,18" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div style="font-family:var(--font);font-weight:700;font-size:22px;color:var(--green);letter-spacing:3px;margin-top:4px">WIZYTA PRZYJĘTA</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:2px">Wulkanizacja Mielczarek</div>
+      <div style="width:40px;height:2px;background:var(--accent);margin:14px auto 0"></div>
     </div>
     <div id="confirmDetails" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;line-height:2.2;font-size:14px"></div>
     <div id="confirmEmailInfo" style="display:none;margin-top:12px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.3);border-radius:5px;padding:12px;font-family:var(--mono);font-size:12px;color:var(--green);text-align:center;letter-spacing:1px">
@@ -867,7 +873,7 @@ window.showVisitDetail = function(k) {
   ].filter(Boolean);
 
   document.getElementById('detailPopupContent').innerHTML = `
-    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">📋 Szczegóły wizyty</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">Szczegóły wizyty</div>
     ${rows.map(([label,val])=>`<div class="detail-row"><div class="detail-label">${label}</div><div style="color:var(--text);flex:1">${val}</div></div>`).join('')}
     <button onclick="closeDetailPopup()" style="margin-top:14px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:12px;padding:8px">✕ Zamknij</button>
   `;
@@ -892,7 +898,7 @@ window.showOrderDetail = function(k) {
   ].filter(Boolean);
 
   document.getElementById('detailPopupContent').innerHTML = `
-    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">📋 Szczegóły zlecenia</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">Szczegóły zlecenia</div>
     ${rows.map(([label,val])=>`<div class="detail-row"><div class="detail-label">${label}</div><div style="color:var(--text);flex:1">${val}</div></div>`).join('')}
     <button onclick="closeDetailPopup()" style="margin-top:14px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:12px;padding:8px">✕ Zamknij</button>
   `;
@@ -1182,7 +1188,7 @@ window.printConfirmation = function() {
   if (!win) { alert('⚠ Zezwól na wyskakujące okna aby drukować'); return; }
   win.document.write(`
     <style>body{font-family:Arial;padding:30px;font-size:14px;line-height:2.2}h2{margin-bottom:20px}</style>
-    <h2>✅ Potwierdzenie wizyty – Wulkanizacja Mielczarek</h2>
+    <h2>Potwierdzenie wizyty – Wulkanizacja Mielczarek</h2>
     ${details}
   `);
   win.document.close();
@@ -1195,23 +1201,39 @@ function showConfirmScreen(v, emailSent) {
   if (v.low) extras.push('Niski profil');
   if (v.valve) extras.push('Nowy wentyl');
 
+  const ico = (path, viewBox) => `<svg width="14" height="14" viewBox="${viewBox||'0 0 24 24'}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px">${path}</svg>`;
+  const icons = {
+    'DATA':    ico('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'),
+    'GODZINA': ico('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
+    'USŁUGA':  ico('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'),
+    'FELGI':   ico('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/><line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/>'),
+    'ROZMIAR': ico('<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>'),
+    'IMIĘ':    ico('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+    'TELEFON': ico('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.61 4.9 2 2 0 0 1 3.59 2.73h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.09a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>'),
+    'AUTO':    ico('<rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>'),
+    'OPCJE':   ico('<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'),
+    'NOTATKA': ico('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>'),
+  };
+
   const rows = [
-    ['📅 Data', v.date],
-    ['🕐 Godzina', v.time],
-    ['🔧 Usługa', v.service],
-    ['⚙️ Felgi', v.wheel],
-    ['🛞 Rozmiar', v.tireSize + '"'],
-    v.name   ? ['👤 Imię', v.name] : null,
-    v.phone  ? ['📞 Telefon', v.phone] : null,
-    v.car    ? ['🚗 Auto', v.car] : null,
-    extras.length ? ['➕ Opcje', extras.join(', ')] : null,
-    v.note   ? ['📝 Notatka', v.note] : null,
+    ['DATA', v.date],
+    ['GODZINA', v.time],
+    ['USŁUGA', v.service],
+    ['FELGI', v.wheel],
+    ['ROZMIAR', v.tireSize + '"'],
+    v.name   ? ['IMIĘ', v.name] : null,
+    v.phone  ? ['TELEFON', v.phone] : null,
+    v.car    ? ['AUTO', v.car] : null,
+    extras.length ? ['OPCJE', extras.join(', ')] : null,
+    v.note   ? ['NOTATKA', v.note] : null,
   ].filter(Boolean);
 
   document.getElementById('confirmDetails').innerHTML = rows.map(([label, val]) =>
-    `<div style="display:flex;gap:12px;border-bottom:1px solid var(--border);padding:4px 0">
-      <span style="color:var(--muted);min-width:110px">${label}</span>
-      <b>${val}</b>
+    `<div style="display:flex;gap:12px;border-bottom:1px solid var(--border);padding:6px 0;align-items:flex-start">
+      <div style="display:flex;align-items:center;gap:6px;min-width:110px;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">
+        ${icons[label]||''} ${label}
+      </div>
+      <span style="color:var(--text);font-size:13px;font-weight:600">${val}</span>
     </div>`
   ).join('');
 
