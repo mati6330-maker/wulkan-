@@ -748,9 +748,6 @@ function initPublic() {
   unsubscribeAll();
   selectedDate = new Date(); selectedTime = null; weekOffset = 0;
   initCalendar();
-
-setTimeout(()=>{ try{ renderList(); }catch(e){} }, 0);
-
   renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
     visits = snap.val() || {};
@@ -1517,7 +1514,6 @@ window.clearDateFilter = function() {
 };
 
 window.renderList = 
-
 function renderList() {
   const listBox = document.getElementById('listBox');
   if (!listBox) return;
@@ -1528,187 +1524,62 @@ function renderList() {
   const grouped = {};
 
   Object.entries(visits).forEach(([key, v]) => {
-    if (!v.date) return;
+    if (!v || !v.date) return;
     if (!grouped[v.date]) grouped[v.date] = [];
     grouped[v.date].push({ ...v, _key: key });
   });
 
-  // sort by real date desc
-  const dates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+  const dates = Object.keys(grouped).sort((a,b)=> new Date(b)-new Date(a));
 
-  const todayStr = (function(){
-    const d=new Date();
-    const y=d.getFullYear();
-    const m=String(d.getMonth()+1).padStart(2,'0');
-    const da=String(d.getDate()).padStart(2,'0');
-    return `${y}-${m}-${da}`;
-  })();
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
 
   dates.forEach(date => {
     const items = grouped[date];
 
     const d = new Date(date);
-    const dayName = d.toLocaleDateString('pl-PL', { weekday: 'long' });
+    const dayName = d.toLocaleDateString('pl-PL',{weekday:'long'});
 
     const header = document.createElement('div');
     header.className = 'card';
-    header.style.cursor = 'pointer';
-
-    header.innerHTML = `
-      <b style="color:var(--accent)">
-        ${dayName.toUpperCase()} — ${date}
-      </b>
-      <div style="font-size:12px;color:var(--muted)">
-        ${items.length} wizyt
-      </div>
-    `;
+    header.style.cursor='pointer';
+    header.innerHTML = `<b style="color:var(--accent)">
+      ${dayName.toUpperCase()} — ${date}
+    </b>
+    <div style="font-size:12px;color:var(--muted)">
+      ${items.length} wizyt
+    </div>`;
 
     const container = document.createElement('div');
-    container.style.display = 'none';
+    container.style.display='none';
 
-    function toggle() {
-      if (container.style.display === 'none') {
-        container.style.display = 'block';
-        if (!container.dataset.loaded) {
-          container.innerHTML = items.map(v => `
-            <div class="card ${v.status ? 'done' : 'notdone'}">
-              <b>${v.time}</b> — ${v.name || 'Klient'}
-              <br>${v.service || ''} (${v.tireSize || ''}")
+    header.onclick = ()=>{
+      if(container.style.display==='none'){
+        container.style.display='block';
+        if(!container.dataset.loaded){
+          container.innerHTML = items.map(v=>`
+            <div class="card ${v.status?'done':'notdone'}">
+              <b>${v.time}</b> — ${v.name||'Klient'}
             </div>
           `).join('');
-          container.dataset.loaded = '1';
+          container.dataset.loaded='1';
         }
-      } else {
-        container.style.display = 'none';
-      }
-    }
-
-    header.onclick = toggle;
-
-    listBox.appendChild(header);
-    listBox.appendChild(container);
-
-    // auto-open today
-    if (date === todayStr) {
-      toggle();
-    }
-  });
-}
-
-      </b>
-      <div style="font-size:12px;color:var(--muted)">
-        ${items.length} wizyt
-      </div>
-    `;
-
-    const container = document.createElement('div');
-    container.style.display = 'none';
-
-    header.onclick = () => {
-      if (container.style.display === 'none') {
-        container.style.display = 'block';
-
-        if (!container.dataset.loaded) {
-          container.innerHTML = items.map(v => `
-            <div class="card ${v.status ? 'done' : 'notdone'}">
-              <b>${v.time}</b> — ${v.name || 'Klient'}
-              <br>${v.service || ''} (${v.tireSize || ''}")
-            </div>
-          `).join('');
-
-          container.dataset.loaded = '1';
-        }
-
-      } else {
-        container.style.display = 'none';
+      }else{
+        container.style.display='none';
       }
     };
 
     listBox.appendChild(header);
     listBox.appendChild(container);
+
+    if(date===todayStr){
+      header.click();
+    }
   });
 }
 
-
-  entries.sort((a,b)=>(a[1].date+a[1].time).localeCompare(b[1].date+b[1].time));
-
-  // Grupuj po dacie
-  const grouped = {};
-  entries.forEach(([k,v]) => {
-    if (!grouped[v.date]) grouped[v.date] = [];
-    grouped[v.date].push([k,v]);
-  });
-
-  const html = [];
-  Object.keys(grouped).sort().forEach(date => {
-    const dayEntries = grouped[date];
-    const d = parseDate(date);
-    const dayName = d.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long'});
-    const doneCount = dayEntries.filter(([k,v])=>v.status).length;
-    const total = dayEntries.length;
-
-    html.push(`<div style="margin-top:18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase">${dayName}</div>
-        <div style="font-family:var(--mono);font-size:11px;color:${doneCount===total?'var(--green)':'var(--muted)'}">✔ ${doneCount}/${total}</div>
-      </div>`);
-
-    dayEntries.forEach(([k,v]) => {
-      const extras = [v.runflat?'RF':'', v.low?'NP':'', v.valve?'W':''].filter(Boolean).join(' ');
-      const isPast = v.date < getToday();
-      const isOverdue = isPast && !v.status; // miniona i niezrobiona
-      const statusColor = v.status ? 'var(--green)' : isOverdue ? '#666' : 'var(--red)';
-      const statusIcon = v.status ? '✔' : '○';
-      const cardOpacity = isOverdue ? 'opacity:0.5;' : '';
-      const overdueLabel = isOverdue ? '<span style="font-family:var(--mono);font-size:10px;color:#666;letter-spacing:1px;margin-left:6px">MINIONA</span>' : '';
-
-      html.push(`<div id="card-${k}" onclick="showVisitDetail('${k}')" style="
-        background:var(--surface);
-        border:1px solid var(--border);
-        border-left:3px solid ${statusColor};
-        border-radius:4px;
-        padding:7px 10px;
-        margin-bottom:4px;
-        cursor:pointer;
-        ${cardOpacity}
-      ">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <div style="min-width:0;flex:1">
-            <div style="font-weight:700;font-size:13px;color:${isOverdue?'#888':'var(--text)'}">
-              ${v.time} &nbsp; ${v.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)">${v.phone||''}</span>${overdueLabel}
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-              ${v.service||'—'} · ${v.tireSize ? v.tireSize+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${v.wheel||'—'}${extras?' · <span style="color:var(--accent)">'+extras+'</span>':''}${v.car?' · '+v.car:''}${v.note?' · 📝 '+v.note:''}
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
-            <button onclick="toggleVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${v.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
-            <button onclick="editVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
-            <button onclick="deleteVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
-          </div>
-        </div>
-        <div id="sizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USTAW ŚREDNICĘ FELG</div>
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">
-            ${[12,13,14,15,16,17,18,19,20,21,22,23,24].map(s=>`<button onclick="setVisitSize('${k}',${s})" style="padding:5px 2px;font-size:11px;font-family:var(--mono);margin:0;background:${v.tireSize==s?'var(--accent)':'var(--surface2)'};color:${v.tireSize==s?'#000':'var(--text)'};border:1px solid var(--border)">${s}"</button>`).join('')}
-          </div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">TYP FELG</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-            <button onclick="setVisitWheel('${k}','Aluminiowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Aluminiowe'?'var(--accent)':'var(--surface2)'};color:${v.wheel==='Aluminiowe'?'#000':'var(--text)'};border:1px solid var(--border)">Aluminiowe</button>
-            <button onclick="setVisitWheel('${k}','Stalowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Stalowe'?'var(--accent)':'var(--surface2)'};color:${v.wheel==='Stalowe'?'#000':'var(--text)'};border:1px solid var(--border)">Stalowe</button>
-          </div>
-        </div>
-        <button onclick="event.stopPropagation();toggleSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${v.tireSize?'var(--muted)':'var(--accent)'};border:1px solid ${v.tireSize?'var(--border)':'var(--accent)'}">
-          🛞 ${v.tireSize ? 'Zmień ('+v.tireSize+'")' : '⚠ Ustaw rozmiar'}
-        </button>
-      </div>`);
-    });
-
-    html.push('</div>');
-  });
-
-  box.innerHTML = html.join('');
-}
 
 window.toggleSizePicker = function(k) {
   const el = document.getElementById('sizepicker-'+k);
