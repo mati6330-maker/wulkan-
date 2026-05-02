@@ -298,7 +298,8 @@ button:active{transform:translateY(0);box-shadow:none}
 <div class="section" id="list">
 <h3>Lista wizyt</h3>
 <input id="searchBox" placeholder="🔍 Szukaj po imieniu, telefonie lub aucie..." oninput="renderList()"/>
-<div style="display:flex;gap:6px;margin:6px 0">
+<div style="display:flex;gap:6px;margin:6px 0;align-items:center">
+  <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
   <input type="date" id="dateFilter" onchange="renderList()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
   <button onclick="clearDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
 </div>
@@ -1097,7 +1098,7 @@ window.clearDateFilter = function() {
   renderList();
 };
 
-function renderList() {
+window.renderList = function renderList() {
   const box = document.getElementById('listBox');
   box.innerHTML = '';
   const search = (document.getElementById('searchBox')||{value:''}).value.toLowerCase();
