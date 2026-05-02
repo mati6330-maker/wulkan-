@@ -359,6 +359,20 @@ button:active{transform:translateY(0);box-shadow:none}
 </div>
 <button id="orderBtn" onclick="addOrder()">▶ Dodaj zlecenie</button>
 <button id="cancelOrderBtn" onclick="cancelOrderEdit()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);display:none">✕ Anuluj edycję</button>
+
+<div style="margin-top:16px">
+  <input id="orderSearchBox" placeholder="🔍 Szukaj po imieniu, telefonie lub aucie..." oninput="renderOrders()"/>
+  <div style="display:flex;gap:6px;margin:6px 0;align-items:center">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
+    <input type="date" id="orderDateFilter" onchange="renderOrders()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
+    <button onclick="clearOrderDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+  </div>
+  <div style="display:flex;gap:6px;margin:6px 0">
+    <button onclick="setOrderFilter('all')" id="of-all" style="flex:1;font-size:12px;letter-spacing:1px">WSZYSTKIE</button>
+    <button onclick="setOrderFilter('notdone')" id="of-notdone" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">OCZEKUJĄCE</button>
+    <button onclick="setOrderFilter('done')" id="of-done" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">ZROBIONE</button>
+  </div>
+</div>
 <div id="ordersBox"></div>
 </div>
 
@@ -460,6 +474,7 @@ let weekOffset = 0;
 let editOrderKey = null;
 let editKey = null;
 let visitFilter = 'all';
+let orderFilter = 'all';
 
 // ── HELPERS ──
 function formatDate(d) {
@@ -1093,7 +1108,20 @@ window.setFilter = function(f) {
   renderList();
 };
 
-window.clearDateFilter = function() {
+window.setOrderFilter = function(f) {
+  orderFilter = f;
+  ['all','notdone','done'].forEach(x => {
+    const btn = document.getElementById('of-'+x);
+    if (!btn) return;
+    if (x===f) { btn.style.background='var(--accent)'; btn.style.color='#000'; btn.style.border='none'; }
+    else { btn.style.background='#1a1a1a'; btn.style.color='#888'; btn.style.border='1px solid #333'; }
+  });
+  renderOrders();
+};
+window.clearOrderDateFilter = function() {
+  document.getElementById('orderDateFilter').value = '';
+  renderOrders();
+};
   document.getElementById('dateFilter').value = '';
   renderList();
 };
@@ -1275,10 +1303,19 @@ function resetOrderForm() {
 
 }
 
-function renderOrders() {
+window.renderOrders = function renderOrders() {
   const box = document.getElementById('ordersBox');
   box.innerHTML = '';
-  const entries = Object.entries(orders);
+  const search = (document.getElementById('orderSearchBox')||{value:''}).value.toLowerCase();
+  const dateFilter = (document.getElementById('orderDateFilter')||{value:''}).value;
+
+  const entries = Object.entries(orders).filter(([k,o]) => {
+    if (orderFilter==='done'&&!o.status) return false;
+    if (orderFilter==='notdone'&&o.status) return false;
+    if (search && !(o.name||'').toLowerCase().includes(search) && !(o.phone||'').includes(search) && !(o.car||'').toLowerCase().includes(search)) return false;
+    if (dateFilter && o.dateStamp !== dateFilter) return false;
+    return true;
+  });
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak zleceń</div>'; return; }
 
   entries.sort((a,b)=>(a[1].dateStamp||'').localeCompare(b[1].dateStamp||''));
@@ -1317,24 +1354,36 @@ function renderOrders() {
         border:1px solid var(--border);
         border-left:3px solid ${statusColor};
         border-radius:4px;
-        padding:10px 12px;
-        margin-bottom:5px;
-        display:grid;
-        grid-template-columns:1fr auto;
-        gap:8px;
-        align-items:center;
+        padding:7px 10px;
+        margin-bottom:4px;
       ">
-        <div>
-          <div style="font-weight:700;font-size:14px;color:var(--text)">${o.name||'—'} <span style="color:var(--muted);font-weight:400;font-size:12px">${o.phone||''}</span></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">
-            ${o.service||'—'} · ${o.diameter||'—'}" · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="min-width:0;flex:1">
+            <div style="font-weight:700;font-size:13px;color:var(--text)">${o.name||'—'} <span style="color:var(--muted);font-weight:400;font-size:11px">${o.phone||''}</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${o.service||'—'} · ${o.diameter ? o.diameter+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0">
+            <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
+            <button onclick="editOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
+            <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-          <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
-          <button onclick="editOrder('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
-          <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
+        <div id="ordersizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USTAW ŚREDNICĘ FELG</div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">
+            ${[12,13,14,15,16,17,18,19,20,21,22,23,24].map(s=>`<button onclick="setOrderSize2('${k}',${s})" style="padding:5px 2px;font-size:11px;font-family:var(--mono);margin:0;background:${o.diameter==s?'var(--accent)':'var(--surface2)'};color:${o.diameter==s?'#000':'var(--text)'};border:1px solid var(--border)">${s}"</button>`).join('')}
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">TYP FELG</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+            <button onclick="setOrderType('${k}','Aluminiowe')" style="padding:7px;font-size:12px;margin:0;background:${o.type==='Aluminiowe'?'var(--accent)':'var(--surface2)'};color:${o.type==='Aluminiowe'?'#000':'var(--text)'};border:1px solid var(--border)">Aluminiowe</button>
+            <button onclick="setOrderType('${k}','Stalowe')" style="padding:7px;font-size:12px;margin:0;background:${o.type==='Stalowe'?'var(--accent)':'var(--surface2)'};color:${o.type==='Stalowe'?'#000':'var(--text)'};border:1px solid var(--border)">Stalowe</button>
+          </div>
         </div>
+        <button onclick="toggleOrderSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${o.diameter?'var(--muted)':'var(--accent)'};border:1px solid ${o.diameter?'var(--border)':'var(--accent)'}">
+          🛞 ${o.diameter ? 'Zmień ('+o.diameter+'")' : '⚠ Ustaw rozmiar'}
+        </button>
       </div>`);
     });
 
@@ -1343,6 +1392,20 @@ function renderOrders() {
 
   box.innerHTML = html.join('');
 }
+window.toggleOrderSizePicker = function(k) {
+  const el = document.getElementById('ordersizepicker-'+k);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+window.setOrderSize2 = async function(k, size) {
+  if (!orders[k]) return;
+  await update(ref(db,'zlecenia/'+k), {diameter: String(size)});
+  showToast('✔ Rozmiar '+size+'" zapisany');
+};
+window.setOrderType = async function(k, type) {
+  if (!orders[k]) return;
+  await update(ref(db,'zlecenia/'+k), {type});
+  showToast('✔ Typ felg "'+type+'" zapisany');
+};
 window.toggleOrder = async function(k) {
   if (!orders[k]) return;
   await update(ref(db,'zlecenia/'+k),{status:!orders[k].status});
