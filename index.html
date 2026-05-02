@@ -10,7 +10,7 @@
 body.light{--bg:#f1f5f9;--surface:#ffffff;--surface2:#f8fafc;--border:#e2e8f0;--accent:#ea580c;--accent2:#f97316;--green:#16a34a;--red:#dc2626;--text:#1e293b;--muted:#64748b;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;transition:background 0.25s,color 0.25s;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,0,0,0.03) 39px,rgba(0,0,0,0.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,0,0,0.03) 39px,rgba(0,0,0,0.03) 40px);}
 .container{padding:16px;max-width:600px;margin:auto;}
-#clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 14px rgba(249,115,22,0.4);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
+#clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 6px rgba(249,115,22,0.3);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
 .tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;}
 .tab{flex:1;padding:13px 6px;text-align:center;background:transparent;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:all 0.15s;}
 .tab.active{color:var(--accent);border-bottom:3px solid var(--accent);background:rgba(249,115,22,0.06);}
@@ -39,7 +39,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   max-width:440px;
   max-height:80vh;
   overflow-y:auto;
-  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  box-shadow:0 10px 25px rgba(0,0,0,0.4);
 }
 .detail-row{
   display:flex;
@@ -183,7 +183,7 @@ button:active{transform:translateY(0);box-shadow:none}
 
 /* ── EKRAN LOGOWANIA ── */
 #loginScreen{position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.025) 39px,rgba(255,255,255,0.025) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.025) 39px,rgba(255,255,255,0.025) 40px);}
-#loginBox{background:var(--surface);padding:36px 28px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--accent);width:90%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
+#loginBox{background:var(--surface);padding:36px 28px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--accent);width:90%;max-width:380px;box-shadow:0 10px 25px rgba(0,0,0,0.4);}
 .login-logo{text-align:center;margin-bottom:24px;}
 .login-logo div:first-child{font-size:36px;margin-bottom:8px;}
 .login-logo .login-title{font-family:var(--font);font-weight:700;font-size:20px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;}
@@ -520,7 +520,7 @@ button:active{transform:translateY(0);box-shadow:none}
 <!-- Firebase SDK -->
 <!-- MODAL BLOKOWANIA DNI -->
 <div id="blockModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center">
-  <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--red);width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+  <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--red);width:90%;max-width:400px;box-shadow:0 10px 25px rgba(0,0,0,0.4)">
     <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">🔒 Blokuj dni</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">WYBIERZ DZIEŃ</div>
     <input type="date" id="blockDateInput" placeholder="RRRR-MM-DD"/>
@@ -565,8 +565,18 @@ button:active{transform:translateY(0);box-shadow:none}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>emailjs.init('fQbDjavLIUmvDi94S');</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+function debounceSearch(){
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(()=>renderList(),200);
+}
+</script>
+<script>emailjs.init('fQbDjavLIUmvDi94S');
+function debounceSearch(){
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(()=>renderList(),200);
+}
+</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -582,6 +592,12 @@ const firebaseConfig = {
   messagingSenderId: "391424291256",
   appId: "1:391424291256:web:541a0e811fb0f290411f4d"
 };
+
+
+let lastVisitsJSON = '';
+let lastOrdersJSON = '';
+let lastCalendarKey = '';
+let searchTimeout;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -750,6 +766,11 @@ function initPublic() {
   initCalendar();
   renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
+    const newData = snap.val() || {};
+    const newJSON = JSON.stringify(newData);
+    if (newJSON === lastVisitsJSON) return;
+    lastVisitsJSON = newJSON;
+    visits = newData;
     visits = snap.val() || {};
     initCalendar();
     renderGrid();
@@ -774,6 +795,11 @@ function initApp() {
   initCalendar();
   renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
+    const newData = snap.val() || {};
+    const newJSON = JSON.stringify(newData);
+    if (newJSON === lastVisitsJSON) return;
+    lastVisitsJSON = newJSON;
+    visits = newData;
     visits = snap.val() || {};
     initCalendar();
     renderList();
@@ -781,6 +807,11 @@ function initApp() {
     setSyncStatus('ok', '● Zsynchronizowano');
   }, () => { setSyncStatus('err', '✕ Błąd połączenia'); });
   unsubOrders = onValue(ref(db, 'zlecenia'), snap => {
+    const newData = snap.val() || {};
+    const newJSON = JSON.stringify(newData);
+    if (newJSON === lastOrdersJSON) return;
+    lastOrdersJSON = newJSON;
+    orders = newData;
     orders = snap.val() || {};
     renderOrders();
   });
@@ -2255,6 +2286,11 @@ function updateClock() {
 }
 setInterval(updateClock,1000); updateClock();
 
+
+function debounceSearch(){
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(()=>renderList(),200);
+}
 </script>
 </body>
 </html>
