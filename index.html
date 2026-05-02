@@ -297,8 +297,12 @@ button:active{transform:translateY(0);box-shadow:none}
 
 <div class="section" id="list">
 <h3>Lista wizyt</h3>
-<input id="searchBox" placeholder="🔍 Szukaj po imieniu lub telefonie..." oninput="renderList()"/>
-<div style="display:flex;gap:6px;margin:8px 0">
+<input id="searchBox" placeholder="🔍 Szukaj po imieniu, telefonie lub aucie..." oninput="renderList()"/>
+<div style="display:flex;gap:6px;margin:6px 0">
+  <input type="date" id="dateFilter" onchange="renderList()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
+  <button onclick="clearDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+</div>
+<div style="display:flex;gap:6px;margin:6px 0">
   <button onclick="setFilter('all')" id="f-all" style="flex:1;font-size:12px;letter-spacing:1px">WSZYSTKIE</button>
   <button onclick="setFilter('notdone')" id="f-notdone" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">OCZEKUJĄCE</button>
   <button onclick="setFilter('done')" id="f-done" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">ZROBIONE</button>
@@ -1088,14 +1092,21 @@ window.setFilter = function(f) {
   renderList();
 };
 
+window.clearDateFilter = function() {
+  document.getElementById('dateFilter').value = '';
+  renderList();
+};
+
 function renderList() {
   const box = document.getElementById('listBox');
   box.innerHTML = '';
   const search = (document.getElementById('searchBox')||{value:''}).value.toLowerCase();
+  const dateFilter = (document.getElementById('dateFilter')||{value:''}).value;
   const entries = Object.entries(visits).filter(([k,v])=>{
     if (visitFilter==='done'&&!v.status) return false;
     if (visitFilter==='notdone'&&v.status) return false;
     if (search && !(v.name||'').toLowerCase().includes(search) && !(v.phone||'').includes(search) && !(v.car||'').toLowerCase().includes(search)) return false;
+    if (dateFilter && v.date !== dateFilter) return false;
     return true;
   });
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak wyników</div>'; return; }
@@ -1151,8 +1162,13 @@ function renderList() {
         </div>
         <div id="sizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USTAW ŚREDNICĘ FELG</div>
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">
             ${[12,13,14,15,16,17,18,19,20,21,22,23,24].map(s=>`<button onclick="setVisitSize('${k}',${s})" style="padding:5px 2px;font-size:11px;font-family:var(--mono);margin:0;background:${v.tireSize==s?'var(--accent)':'var(--surface2)'};color:${v.tireSize==s?'#000':'var(--text)'};border:1px solid var(--border)">${s}"</button>`).join('')}
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">TYP FELG</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+            <button onclick="setVisitWheel('${k}','Aluminiowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Aluminiowe'?'var(--accent)':'var(--surface2)'};color:${v.wheel==='Aluminiowe'?'#000':'var(--text)'};border:1px solid var(--border)">Aluminiowe</button>
+            <button onclick="setVisitWheel('${k}','Stalowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Stalowe'?'var(--accent)':'var(--surface2)'};color:${v.wheel==='Stalowe'?'#000':'var(--text)'};border:1px solid var(--border)">Stalowe</button>
           </div>
         </div>
         <button onclick="toggleSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${v.tireSize?'var(--muted)':'var(--accent)'};border:1px solid ${v.tireSize?'var(--border)':'var(--accent)'}">
@@ -1175,6 +1191,11 @@ window.setVisitSize = async function(k, size) {
   if (!visits[k]) return;
   await update(ref(db,'wizyty/'+k), {tireSize: String(size)});
   showToast('✔ Rozmiar '+size+'" zapisany');
+};
+window.setVisitWheel = async function(k, wheel) {
+  if (!visits[k]) return;
+  await update(ref(db,'wizyty/'+k), {wheel});
+  showToast('✔ Typ felg "'+wheel+'" zapisany');
 };
 window.toggleVisit = async function(k) {
   const v = visits[k];
