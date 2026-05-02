@@ -1521,20 +1521,27 @@ function renderList() {
   listBox.innerHTML = '';
   if (!visits) return;
 
-  const grouped = {};
-
-  Object.entries(visits).forEach(([key, v]) => {
-    if (!v || !v.date) return;
-    if (!grouped[v.date]) grouped[v.date] = [];
-    grouped[v.date].push({ ...v, _key: key });
-  });
-
-  const dates = Object.keys(grouped).sort((a,b)=> new Date(b)-new Date(a));
-
   const today = new Date();
   const todayStr = today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
+
+  const grouped = {};
+  const archive = {};
+
+  Object.entries(visits).forEach(([key, v]) => {
+    if (!v || !v.date) return;
+
+    if (v.date < todayStr) {
+      if (!archive[v.date]) archive[v.date] = [];
+      archive[v.date].push({ ...v, _key: key });
+    } else {
+      if (!grouped[v.date]) grouped[v.date] = [];
+      grouped[v.date].push({ ...v, _key: key });
+    }
+  });
+
+  const dates = Object.keys(grouped).sort((a,b)=> new Date(a)-new Date(b));
 
   dates.forEach(date => {
     const items = grouped[date];
@@ -1545,39 +1552,45 @@ function renderList() {
     const header = document.createElement('div');
     header.className = 'card';
     header.style.cursor='pointer';
-    header.innerHTML = `<b style="color:var(--accent)">
-      ${dayName.toUpperCase()} — ${date}
-    </b>
-    <div style="font-size:12px;color:var(--muted)">
-      ${items.length} wizyt
-    </div>`;
+
+    header.innerHTML = `
+      <b style="color:var(--accent)">
+        ${dayName.toUpperCase()} — ${date}
+      </b>
+      <div style="font-size:12px;color:var(--muted)">
+        ${items.length} wizyt
+      </div>
+    `;
 
     const container = document.createElement('div');
-    container.style.display='none';
+    container.style.display = date === todayStr ? 'block' : 'none';
 
-    header.onclick = ()=>{
-      if(container.style.display==='none'){
-        container.style.display='block';
-        if(!container.dataset.loaded){
-          container.innerHTML = items.map(v=>`
-            <div class="card ${v.status?'done':'notdone'}">
-              <b>${v.time}</b> — ${v.name||'Klient'}
-            </div>
-          `).join('');
-          container.dataset.loaded='1';
-        }
-      }else{
-        container.style.display='none';
-      }
+    container.innerHTML = items.map(v => `
+      <div class="card ${v.status ? 'done' : 'notdone'}">
+        <b>${v.time}</b> — ${v.name || 'Klient'}
+        <br>${v.service || ''} (${v.tireSize || ''}")
+        <br style="margin-bottom:6px">
+        <button onclick="showVisitDetail('${v._key}')">Szczegóły</button>
+      </div>
+    `).join('');
+
+    header.onclick = () => {
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
     };
 
     listBox.appendChild(header);
     listBox.appendChild(container);
-
-    if(date===todayStr){
-      header.click();
-    }
   });
+
+  // ARCHIVE INFO
+  if (Object.keys(archive).length > 0) {
+    const info = document.createElement('div');
+    info.className = 'card';
+    info.innerHTML = `
+      <b style="color:var(--muted)">Starsze wizyty przeniesione do archiwum</b>
+    `;
+    listBox.appendChild(info);
+  }
 }
 
 
