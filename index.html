@@ -17,7 +17,48 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .tab:hover:not(.active){color:var(--text)}
 .tab-locked{display:none;}
 
-/* ── TIME PICKER DROPDOWN ── */
+/* ── POPUP SZCZEGÓŁÓW ── */
+#detailPopup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.7);
+  z-index:99990;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+#detailPopup.show{display:flex;}
+#detailPopupBox{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-top:3px solid var(--accent);
+  border-radius:6px;
+  padding:20px;
+  width:100%;
+  max-width:440px;
+  max-height:80vh;
+  overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+}
+.detail-row{
+  display:flex;
+  gap:10px;
+  padding:7px 0;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+  line-height:1.5;
+}
+.detail-row:last-child{border-bottom:none;}
+.detail-label{
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:1px;
+  min-width:90px;
+  padding-top:2px;
+  text-transform:uppercase;
+}
 .time-picker{
   position:absolute;
   background:var(--surface);
@@ -469,6 +510,12 @@ button:active{transform:translateY(0);box-shadow:none}
   </div>
 </div>
 
+<div id="detailPopup" onclick="closeDetailPopup(event)">
+  <div id="detailPopupBox">
+    <div id="detailPopupContent"></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- EKRAN POTWIERDZENIA -->
@@ -770,7 +817,65 @@ function countFreeSlots(dateStr) {
   return Math.max(0, MAX_SLOTS - taken);
 }
 
-// ── TOAST ──
+// ── POPUP SZCZEGÓŁÓW ──
+window.closeDetailPopup = function(e) {
+  if (!e || e.target === document.getElementById('detailPopup')) {
+    document.getElementById('detailPopup').classList.remove('show');
+  }
+};
+
+window.showVisitDetail = function(k) {
+  const v = visits[k] || Object.values(visits).find((_,i)=>i===k);
+  if (!v) return;
+  const extras = [v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':''].filter(Boolean).join(', ');
+  const statusColor = v.status ? 'var(--green)' : 'var(--red)';
+
+  const rows = [
+    ['Status', `<span style="color:${statusColor}">${v.status?'✔ Zrobione':'○ Oczekuje'}</span>`],
+    ['Data', v.date],
+    ['Godzina', v.time],
+    ['Klient', v.name||'—'],
+    ['Telefon', v.phone||'—'],
+    ['Auto', v.car||'—'],
+    ['Usługa', v.service||'—'],
+    ['Felgi', v.wheel||'—'],
+    ['Rozmiar', v.tireSize ? v.tireSize+'"' : '—'],
+    extras ? ['Opcje', extras] : null,
+    v.note ? ['Notatka', `<span style="color:var(--text)">${v.note}</span>`] : null,
+  ].filter(Boolean);
+
+  document.getElementById('detailPopupContent').innerHTML = `
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">📋 Szczegóły wizyty</div>
+    ${rows.map(([label,val])=>`<div class="detail-row"><div class="detail-label">${label}</div><div style="color:var(--text);flex:1">${val}</div></div>`).join('')}
+    <button onclick="closeDetailPopup()" style="margin-top:14px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:12px;padding:8px">✕ Zamknij</button>
+  `;
+  document.getElementById('detailPopup').classList.add('show');
+};
+
+window.showOrderDetail = function(k) {
+  const o = orders[k];
+  if (!o) return;
+  const statusColor = o.status ? 'var(--green)' : 'var(--red)';
+
+  const rows = [
+    ['Status', `<span style="color:${statusColor}">${o.status?'✔ Zrobione':'○ Oczekuje'}</span>`],
+    ['Termin', o.dateStamp||'—'],
+    ['Klient', o.name||'—'],
+    ['Telefon', o.phone||'—'],
+    ['Auto', o.car||'—'],
+    ['Usługa', o.service||'—'],
+    ['Felgi', o.type||'—'],
+    ['Rozmiar', o.diameter ? o.diameter+'"' : '—'],
+    o.wheels ? ['Ilość kół', o.wheels] : null,
+  ].filter(Boolean);
+
+  document.getElementById('detailPopupContent').innerHTML = `
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">📋 Szczegóły zlecenia</div>
+    ${rows.map(([label,val])=>`<div class="detail-row"><div class="detail-label">${label}</div><div style="color:var(--text);flex:1">${val}</div></div>`).join('')}
+    <button onclick="closeDetailPopup()" style="margin-top:14px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:12px;padding:8px">✕ Zamknij</button>
+  `;
+  document.getElementById('detailPopup').classList.add('show');
+};
 function showToast(msg, color) {
   const t = document.getElementById('toast');
   t.innerText = msg;
@@ -1342,13 +1447,14 @@ window.renderList = function renderList() {
       const cardOpacity = isOverdue ? 'opacity:0.5;' : '';
       const overdueLabel = isOverdue ? '<span style="font-family:var(--mono);font-size:10px;color:#666;letter-spacing:1px;margin-left:6px">MINIONA</span>' : '';
 
-      html.push(`<div id="card-${k}" style="
+      html.push(`<div id="card-${k}" onclick="showVisitDetail('${k}')" style="
         background:var(--surface);
         border:1px solid var(--border);
         border-left:3px solid ${statusColor};
         border-radius:4px;
         padding:7px 10px;
         margin-bottom:4px;
+        cursor:pointer;
         ${cardOpacity}
       ">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -1360,13 +1466,13 @@ window.renderList = function renderList() {
               ${v.service||'—'} · ${v.tireSize ? v.tireSize+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${v.wheel||'—'}${extras?' · <span style="color:var(--accent)">'+extras+'</span>':''}${v.car?' · '+v.car:''}${v.note?' · 📝 '+v.note:''}
             </div>
           </div>
-          <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0">
+          <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
             <button onclick="toggleVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${v.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
             <button onclick="editVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
         </div>
-        <div id="sizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+        <div id="sizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USTAW ŚREDNICĘ FELG</div>
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">
             ${[12,13,14,15,16,17,18,19,20,21,22,23,24].map(s=>`<button onclick="setVisitSize('${k}',${s})" style="padding:5px 2px;font-size:11px;font-family:var(--mono);margin:0;background:${v.tireSize==s?'var(--accent)':'var(--surface2)'};color:${v.tireSize==s?'#000':'var(--text)'};border:1px solid var(--border)">${s}"</button>`).join('')}
@@ -1377,7 +1483,7 @@ window.renderList = function renderList() {
             <button onclick="setVisitWheel('${k}','Stalowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Stalowe'?'var(--accent)':'var(--surface2)'};color:${v.wheel==='Stalowe'?'#000':'var(--text)'};border:1px solid var(--border)">Stalowe</button>
           </div>
         </div>
-        <button onclick="toggleSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${v.tireSize?'var(--muted)':'var(--accent)'};border:1px solid ${v.tireSize?'var(--border)':'var(--accent)'}">
+        <button onclick="event.stopPropagation();toggleSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${v.tireSize?'var(--muted)':'var(--accent)'};border:1px solid ${v.tireSize?'var(--border)':'var(--accent)'}">
           🛞 ${v.tireSize ? 'Zmień ('+v.tireSize+'")' : '⚠ Ustaw rozmiar'}
         </button>
       </div>`);
@@ -1535,13 +1641,14 @@ window.renderOrders = function renderOrders() {
       const cardOpacity = isOverdue ? 'opacity:0.5;' : '';
       const overdueLabel = isOverdue ? '<span style="font-family:var(--mono);font-size:10px;color:#666;letter-spacing:1px;margin-left:6px">MINIONE</span>' : '';
 
-      html.push(`<div id="order-${k}" style="
+      html.push(`<div id="order-${k}" onclick="showOrderDetail('${k}')" style="
         background:var(--surface);
         border:1px solid var(--border);
         border-left:3px solid ${statusColor};
         border-radius:4px;
         padding:7px 10px;
         margin-bottom:4px;
+        cursor:pointer;
         ${cardOpacity}
       ">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -1553,13 +1660,13 @@ window.renderOrders = function renderOrders() {
               ${o.service||'—'} · ${o.diameter ? o.diameter+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
             </div>
           </div>
-          <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0">
+          <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
             <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
             <button onclick="editOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
         </div>
-        <div id="ordersizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+        <div id="ordersizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USTAW ŚREDNICĘ FELG</div>
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">
             ${[12,13,14,15,16,17,18,19,20,21,22,23,24].map(s=>`<button onclick="setOrderSize2('${k}',${s})" style="padding:5px 2px;font-size:11px;font-family:var(--mono);margin:0;background:${o.diameter==s?'var(--accent)':'var(--surface2)'};color:${o.diameter==s?'#000':'var(--text)'};border:1px solid var(--border)">${s}"</button>`).join('')}
@@ -1570,7 +1677,7 @@ window.renderOrders = function renderOrders() {
             <button onclick="setOrderType('${k}','Stalowe')" style="padding:7px;font-size:12px;margin:0;background:${o.type==='Stalowe'?'var(--accent)':'var(--surface2)'};color:${o.type==='Stalowe'?'#000':'var(--text)'};border:1px solid var(--border)">Stalowe</button>
           </div>
         </div>
-        <button onclick="toggleOrderSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${o.diameter?'var(--muted)':'var(--accent)'};border:1px solid ${o.diameter?'var(--border)':'var(--accent)'}">
+        <button onclick="event.stopPropagation();toggleOrderSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${o.diameter?'var(--muted)':'var(--accent)'};border:1px solid ${o.diameter?'var(--border)':'var(--accent)'}">
           🛞 ${o.diameter ? 'Zmień ('+o.diameter+'")' : '⚠ Ustaw rozmiar'}
         </button>
       </div>`);
