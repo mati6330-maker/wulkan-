@@ -10,7 +10,7 @@
 body.light{--bg:#f1f5f9;--surface:#ffffff;--surface2:#f8fafc;--border:#e2e8f0;--accent:#ea580c;--accent2:#f97316;--green:#16a34a;--red:#dc2626;--text:#1e293b;--muted:#64748b;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;transition:background 0.25s,color 0.25s;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,0,0,0.03) 39px,rgba(0,0,0,0.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,0,0,0.03) 39px,rgba(0,0,0,0.03) 40px);}
 .container{padding:16px;max-width:600px;margin:auto;}
-#clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 6px rgba(249,115,22,0.3);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
+#clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 14px rgba(249,115,22,0.4);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
 .tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;}
 .tab{flex:1;padding:13px 6px;text-align:center;background:transparent;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:all 0.15s;}
 .tab.active{color:var(--accent);border-bottom:3px solid var(--accent);background:rgba(249,115,22,0.06);}
@@ -39,7 +39,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   max-width:440px;
   max-height:80vh;
   overflow-y:auto;
-  box-shadow:0 10px 25px rgba(0,0,0,0.4);
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
 }
 .detail-row{
   display:flex;
@@ -183,7 +183,7 @@ button:active{transform:translateY(0);box-shadow:none}
 
 /* ── EKRAN LOGOWANIA ── */
 #loginScreen{position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.025) 39px,rgba(255,255,255,0.025) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.025) 39px,rgba(255,255,255,0.025) 40px);}
-#loginBox{background:var(--surface);padding:36px 28px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--accent);width:90%;max-width:380px;box-shadow:0 10px 25px rgba(0,0,0,0.4);}
+#loginBox{background:var(--surface);padding:36px 28px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--accent);width:90%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
 .login-logo{text-align:center;margin-bottom:24px;}
 .login-logo div:first-child{font-size:36px;margin-bottom:8px;}
 .login-logo .login-title{font-family:var(--font);font-weight:700;font-size:20px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;}
@@ -520,7 +520,7 @@ button:active{transform:translateY(0);box-shadow:none}
 <!-- Firebase SDK -->
 <!-- MODAL BLOKOWANIA DNI -->
 <div id="blockModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center">
-  <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--red);width:90%;max-width:400px;box-shadow:0 10px 25px rgba(0,0,0,0.4)">
+  <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--red);width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
     <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">🔒 Blokuj dni</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">WYBIERZ DZIEŃ</div>
     <input type="date" id="blockDateInput" placeholder="RRRR-MM-DD"/>
@@ -565,18 +565,8 @@ button:active{transform:translateY(0);box-shadow:none}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
-function debounceSearch(){
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(()=>renderList(),200);
-}
-</script>
-<script>emailjs.init('fQbDjavLIUmvDi94S');
-function debounceSearch(){
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(()=>renderList(),200);
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init('fQbDjavLIUmvDi94S');</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -592,12 +582,6 @@ const firebaseConfig = {
   messagingSenderId: "391424291256",
   appId: "1:391424291256:web:541a0e811fb0f290411f4d"
 };
-
-
-let lastVisitsJSON = '';
-let lastOrdersJSON = '';
-let lastCalendarKey = '';
-let searchTimeout;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -766,11 +750,6 @@ function initPublic() {
   initCalendar();
   renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
-    const newData = snap.val() || {};
-    const newJSON = JSON.stringify(newData);
-    if (newJSON === lastVisitsJSON) return;
-    lastVisitsJSON = newJSON;
-    visits = newData;
     visits = snap.val() || {};
     initCalendar();
     renderGrid();
@@ -795,11 +774,6 @@ function initApp() {
   initCalendar();
   renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
-    const newData = snap.val() || {};
-    const newJSON = JSON.stringify(newData);
-    if (newJSON === lastVisitsJSON) return;
-    lastVisitsJSON = newJSON;
-    visits = newData;
     visits = snap.val() || {};
     initCalendar();
     renderList();
@@ -807,11 +781,6 @@ function initApp() {
     setSyncStatus('ok', '● Zsynchronizowano');
   }, () => { setSyncStatus('err', '✕ Błąd połączenia'); });
   unsubOrders = onValue(ref(db, 'zlecenia'), snap => {
-    const newData = snap.val() || {};
-    const newJSON = JSON.stringify(newData);
-    if (newJSON === lastOrdersJSON) return;
-    lastOrdersJSON = newJSON;
-    orders = newData;
     orders = snap.val() || {};
     renderOrders();
   });
@@ -1544,20 +1513,72 @@ window.clearDateFilter = function() {
   renderList();
 };
 
-window.renderList = function renderList() {
-  const box = document.getElementById('listBox');
-  box.innerHTML = '';
-  const search = (document.getElementById('searchBox')||{value:''}).value.toLowerCase();
-  const dateFilter = (document.getElementById('dateFilter')||{value:''}).value;
-  const entries = Object.entries(visits).filter(([k,v])=>{
-    if (visitFilter==='done'&&!v.status) return false;
-    if (visitFilter==='notdone'&&v.status) return false;
-    if (search && !(v.name||'').toLowerCase().includes(search) && !(v.phone||'').includes(search) && !(v.car||'').toLowerCase().includes(search)) return false;
-    if (dateFilter && v.date !== dateFilter) return false;
-    if (!dateFilter && v.date < getToday()) return false;
-    return true;
+window.renderList = 
+function renderList() {
+  const listBox = document.getElementById('listBox');
+  if (!listBox) return;
+
+  listBox.innerHTML = '';
+
+  if (!visits) return;
+
+  const grouped = {};
+
+  Object.entries(visits).forEach(([key, v]) => {
+    if (!v.date) return;
+    if (!grouped[v.date]) grouped[v.date] = [];
+    grouped[v.date].push({ ...v, _key: key });
   });
-  if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak wyników</div>'; return; }
+
+  const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+  dates.forEach(date => {
+    const items = grouped[date];
+
+    const d = new Date(date);
+    const dayName = d.toLocaleDateString('pl-PL', { weekday: 'long' });
+
+    const header = document.createElement('div');
+    header.className = 'card';
+    header.style.cursor = 'pointer';
+
+    header.innerHTML = `
+      <b style="color:var(--accent)">
+        ${dayName.toUpperCase()} — ${date}
+      </b>
+      <div style="font-size:12px;color:var(--muted)">
+        ${items.length} wizyt
+      </div>
+    `;
+
+    const container = document.createElement('div');
+    container.style.display = 'none';
+
+    header.onclick = () => {
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+
+        if (!container.dataset.loaded) {
+          container.innerHTML = items.map(v => `
+            <div class="card ${v.status ? 'done' : 'notdone'}">
+              <b>${v.time}</b> — ${v.name || 'Klient'}
+              <br>${v.service || ''} (${v.tireSize || ''}")
+            </div>
+          `).join('');
+
+          container.dataset.loaded = '1';
+        }
+
+      } else {
+        container.style.display = 'none';
+      }
+    };
+
+    listBox.appendChild(header);
+    listBox.appendChild(container);
+  });
+}
+
 
   entries.sort((a,b)=>(a[1].date+a[1].time).localeCompare(b[1].date+b[1].time));
 
@@ -1998,119 +2019,7 @@ function renderReport(title, list, sum) {
   </div>
 
   <div class="footer">Liczba pozycji: ${list.length}</div>
-  
-<script>
-// --- LIST FIX TURBO ---
-const MAX_VISIBLE = 20;
-
-const _oldRenderList = window.renderList;
-window.renderList = function() {
-  _oldRenderList();
-
-  const listBox = document.getElementById('listBox');
-  if (!listBox) return;
-
-  const items = listBox.children;
-  for (let i = 0; i < items.length; i++) {
-    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
-  }
-
-  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreBtn')) {
-    const btn = document.createElement('button');
-    btn.id = 'loadMoreBtn';
-    btn.innerText = 'Pokaż więcej';
-    btn.onclick = () => {
-      for (let el of items) el.style.display = '';
-      btn.remove();
-    };
-    listBox.appendChild(btn);
-  }
-};
-
-// Orders fix
-const _oldRenderOrders = window.renderOrders;
-window.renderOrders = function() {
-  _oldRenderOrders();
-
-  const box = document.getElementById('ordersBox');
-  if (!box) return;
-
-  const items = box.children;
-  for (let i = 0; i < items.length; i++) {
-    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
-  }
-
-  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreOrdersBtn')) {
-    const btn = document.createElement('button');
-    btn.id = 'loadMoreOrdersBtn';
-    btn.innerText = 'Pokaż więcej';
-    btn.onclick = () => {
-      for (let el of items) el.style.display = '';
-      btn.remove();
-    };
-    box.appendChild(btn);
-  }
-};
-</script>
-
-
-<script>
-// --- DAY COLLAPSED LIST V20 ---
-window.renderList = function() {
-  const listBox = document.getElementById('listBox');
-  if (!listBox) return;
-
-  const grouped = {};
-
-  Object.values(visits).forEach(v => {
-    if (!grouped[v.date]) grouped[v.date] = [];
-    grouped[v.date].push(v);
-  });
-
-  const dates = Object.keys(grouped).sort();
-
-  let html = '';
-
-  dates.forEach(date => {
-    const dayName = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long' });
-
-    html += `
-      <div class="card" onclick="toggleDay('${date}')">
-        <b>${dayName.toUpperCase()} — ${date}</b>
-        <div id="day-${date}" style="display:none;margin-top:10px"></div>
-      </div>
-    `;
-  });
-
-  listBox.innerHTML = html;
-};
-
-window.toggleDay = function(date) {
-  const box = document.getElementById('day-' + date);
-
-  if (box.dataset.loaded === '1') {
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-    return;
-  }
-
-  const dayVisits = Object.values(visits).filter(v => v.date === date);
-
-  let inner = '';
-  dayVisits.forEach(v => {
-    inner += `
-      <div class="card" style="margin-top:6px">
-        ${v.time} — ${v.name || 'Klient'} — ${v.service || ''}
-      </div>
-    `;
-  });
-
-  box.innerHTML = inner;
-  box.dataset.loaded = '1';
-  box.style.display = 'block';
-};
-</script>
-
-</body></html>`;
+  </body></html>`;
 
   w.document.write(content);
   w.document.close();
@@ -2216,119 +2125,7 @@ window.printDay = function() {
   </table>` : '<p style="color:#999">Brak zleceń</p>'}
 
   <div class="summary">Wydrukowano: ${new Date().toLocaleString('pl-PL')}</div>
-  
-<script>
-// --- LIST FIX TURBO ---
-const MAX_VISIBLE = 20;
-
-const _oldRenderList = window.renderList;
-window.renderList = function() {
-  _oldRenderList();
-
-  const listBox = document.getElementById('listBox');
-  if (!listBox) return;
-
-  const items = listBox.children;
-  for (let i = 0; i < items.length; i++) {
-    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
-  }
-
-  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreBtn')) {
-    const btn = document.createElement('button');
-    btn.id = 'loadMoreBtn';
-    btn.innerText = 'Pokaż więcej';
-    btn.onclick = () => {
-      for (let el of items) el.style.display = '';
-      btn.remove();
-    };
-    listBox.appendChild(btn);
-  }
-};
-
-// Orders fix
-const _oldRenderOrders = window.renderOrders;
-window.renderOrders = function() {
-  _oldRenderOrders();
-
-  const box = document.getElementById('ordersBox');
-  if (!box) return;
-
-  const items = box.children;
-  for (let i = 0; i < items.length; i++) {
-    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
-  }
-
-  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreOrdersBtn')) {
-    const btn = document.createElement('button');
-    btn.id = 'loadMoreOrdersBtn';
-    btn.innerText = 'Pokaż więcej';
-    btn.onclick = () => {
-      for (let el of items) el.style.display = '';
-      btn.remove();
-    };
-    box.appendChild(btn);
-  }
-};
-</script>
-
-
-<script>
-// --- DAY COLLAPSED LIST V20 ---
-window.renderList = function() {
-  const listBox = document.getElementById('listBox');
-  if (!listBox) return;
-
-  const grouped = {};
-
-  Object.values(visits).forEach(v => {
-    if (!grouped[v.date]) grouped[v.date] = [];
-    grouped[v.date].push(v);
-  });
-
-  const dates = Object.keys(grouped).sort();
-
-  let html = '';
-
-  dates.forEach(date => {
-    const dayName = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long' });
-
-    html += `
-      <div class="card" onclick="toggleDay('${date}')">
-        <b>${dayName.toUpperCase()} — ${date}</b>
-        <div id="day-${date}" style="display:none;margin-top:10px"></div>
-      </div>
-    `;
-  });
-
-  listBox.innerHTML = html;
-};
-
-window.toggleDay = function(date) {
-  const box = document.getElementById('day-' + date);
-
-  if (box.dataset.loaded === '1') {
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-    return;
-  }
-
-  const dayVisits = Object.values(visits).filter(v => v.date === date);
-
-  let inner = '';
-  dayVisits.forEach(v => {
-    inner += `
-      <div class="card" style="margin-top:6px">
-        ${v.time} — ${v.name || 'Klient'} — ${v.service || ''}
-      </div>
-    `;
-  });
-
-  box.innerHTML = inner;
-  box.dataset.loaded = '1';
-  box.style.display = 'block';
-};
-</script>
-
-</body></html>`;
+  </body></html>`;
 
   win.document.write(content);
   win.document.close();
@@ -2510,123 +2307,6 @@ function updateClock() {
 }
 setInterval(updateClock,1000); updateClock();
 
-
-function debounceSearch(){
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(()=>renderList(),200);
-}
 </script>
-
-<script>
-// --- LIST FIX TURBO ---
-const MAX_VISIBLE = 20;
-
-const _oldRenderList = window.renderList;
-window.renderList = function() {
-  _oldRenderList();
-
-  const listBox = document.getElementById('listBox');
-  if (!listBox) return;
-
-  const items = listBox.children;
-  for (let i = 0; i < items.length; i++) {
-    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
-  }
-
-  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreBtn')) {
-    const btn = document.createElement('button');
-    btn.id = 'loadMoreBtn';
-    btn.innerText = 'Pokaż więcej';
-    btn.onclick = () => {
-      for (let el of items) el.style.display = '';
-      btn.remove();
-    };
-    listBox.appendChild(btn);
-  }
-};
-
-// Orders fix
-const _oldRenderOrders = window.renderOrders;
-window.renderOrders = function() {
-  _oldRenderOrders();
-
-  const box = document.getElementById('ordersBox');
-  if (!box) return;
-
-  const items = box.children;
-  for (let i = 0; i < items.length; i++) {
-    items[i].style.display = i < MAX_VISIBLE ? '' : 'none';
-  }
-
-  if (items.length > MAX_VISIBLE && !document.getElementById('loadMoreOrdersBtn')) {
-    const btn = document.createElement('button');
-    btn.id = 'loadMoreOrdersBtn';
-    btn.innerText = 'Pokaż więcej';
-    btn.onclick = () => {
-      for (let el of items) el.style.display = '';
-      btn.remove();
-    };
-    box.appendChild(btn);
-  }
-};
-</script>
-
-
-<script>
-// --- DAY COLLAPSED LIST V20 ---
-window.renderList = function() {
-  const listBox = document.getElementById('listBox');
-  if (!listBox) return;
-
-  const grouped = {};
-
-  Object.values(visits).forEach(v => {
-    if (!grouped[v.date]) grouped[v.date] = [];
-    grouped[v.date].push(v);
-  });
-
-  const dates = Object.keys(grouped).sort();
-
-  let html = '';
-
-  dates.forEach(date => {
-    const dayName = new Date(date).toLocaleDateString('pl-PL', { weekday: 'long' });
-
-    html += `
-      <div class="card" onclick="toggleDay('${date}')">
-        <b>${dayName.toUpperCase()} — ${date}</b>
-        <div id="day-${date}" style="display:none;margin-top:10px"></div>
-      </div>
-    `;
-  });
-
-  listBox.innerHTML = html;
-};
-
-window.toggleDay = function(date) {
-  const box = document.getElementById('day-' + date);
-
-  if (box.dataset.loaded === '1') {
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-    return;
-  }
-
-  const dayVisits = Object.values(visits).filter(v => v.date === date);
-
-  let inner = '';
-  dayVisits.forEach(v => {
-    inner += `
-      <div class="card" style="margin-top:6px">
-        ${v.time} — ${v.name || 'Klient'} — ${v.service || ''}
-      </div>
-    `;
-  });
-
-  box.innerHTML = inner;
-  box.dataset.loaded = '1';
-  box.style.display = 'block';
-};
-</script>
-
 </body>
 </html>
