@@ -1615,9 +1615,14 @@ window.renderList = function renderList() {
           </div>
           <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
             <button onclick="toggleVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${v.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
+            <button onclick="applyVisitDiscount('${k}')" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
             <button onclick="editVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
+        </div>
+        <div onclick="event.stopPropagation()" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">CENA</span>
+          <span id="price-${k}" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${v.price||calcVisitPrice(v)} zł</span>
         </div>
         <div id="sizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USTAW ŚREDNICĘ FELG</div>
@@ -1651,7 +1656,27 @@ window.toggleDayGroup = function(id) {
   if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
 };
 
-window.toggleSizePicker = function(k) {
+window.applyVisitDiscount = async function(k) {
+  const v = visits[k];
+  if (!v) return;
+  const basePrice = v.price || calcVisitPrice(v);
+  const newPrice = Math.max(0, basePrice - 10);
+  await update(ref(db,'wizyty/'+k), {price: newPrice});
+  const el = document.getElementById('price-'+k);
+  if (el) el.textContent = newPrice + ' zł';
+  showToast('−10 zł → ' + newPrice + ' zł');
+};
+
+window.applyOrderDiscount = async function(k) {
+  const o = orders[k];
+  if (!o) return;
+  const basePrice = o.price || 0;
+  const newPrice = Math.max(0, basePrice - 10);
+  await update(ref(db,'zlecenia/'+k), {price: newPrice});
+  const el = document.getElementById('oprice-'+k);
+  if (el) el.textContent = newPrice + ' zł';
+  showToast('−10 zł → ' + newPrice + ' zł');
+};
   const el = document.getElementById('sizepicker-'+k);
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 };
@@ -1832,9 +1857,14 @@ window.renderOrders = function renderOrders() {
           </div>
           <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
             <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
+            <button onclick="applyOrderDiscount('${k}')" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
             <button onclick="editOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
+        </div>
+        <div onclick="event.stopPropagation()" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">CENA</span>
+          <span id="oprice-${k}" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${o.price||0} zł</span>
         </div>
         <div id="ordersizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USTAW ŚREDNICĘ FELG</div>
@@ -2101,7 +2131,7 @@ window.printDay = function() {
     td{padding:8px;border-bottom:1px solid #e5e5e5;vertical-align:middle}
     tr:nth-child(even) td{background:#f9f9f9}
     .summary{margin-top:16px;font-size:11px;color:#999}
-    .logo{font-size:20px;font-weight:bold;letter-spacing:1px}
+    .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:bold;letter-spacing:1px}
     @media print{body{padding:10px}}
   </style>
   </head><body>
