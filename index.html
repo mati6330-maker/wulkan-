@@ -203,6 +203,7 @@ button:active{transform:translateY(0);box-shadow:none}
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('orders',this)">Zlecenia</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('stats',this)">Statystyki</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('cash',this)">Kasa</div>
+  <div class="tab admin-tab tab-locked" onclick="requireAdmin('archive',this)">Archiwum</div>
   <div class="tab" onclick="showTab('pricing',this)">Cennik</div>
 </div>
 <button id="printBtn" onclick="printDay()" style="display:none;margin:8px 10px;width:calc(100% - 20px);background:transparent;color:var(--accent);border:1px solid var(--accent);letter-spacing:2px">⎙ DRUKUJ DZIEŃ</button>
@@ -393,6 +394,17 @@ button:active{transform:translateY(0);box-shadow:none}
 <label style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#888;letter-spacing:1px;display:block;margin-top:10px;margin-bottom:2px">MIESIĄC</label>
 <input type="month" id="cashMonth">
 <button onclick="printMonthFullReport()">▶ Raport miesięczny</button>
+</div>
+
+<div class="section" id="archive">
+<h3>Archiwum</h3>
+<input id="archiveSearchBox" placeholder="🔍 Szukaj po imieniu, telefonie lub aucie..." oninput="renderArchive()"/>
+<div style="display:flex;gap:6px;margin:6px 0;align-items:center">
+  <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
+  <input type="date" id="archiveDateFilter" onchange="renderArchive()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
+  <button onclick="clearArchiveDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+</div>
+<div id="archiveBox"></div>
 </div>
 
 <div class="section" id="pricing">
@@ -1199,6 +1211,85 @@ window.clearOrderDateFilter = function() {
   document.getElementById('orderDateFilter').value = '';
   renderOrders();
 };
+window.clearArchiveDateFilter = function() {
+  document.getElementById('archiveDateFilter').value = '';
+  renderArchive();
+};
+
+window.renderArchive = function renderArchive() {
+  const box = document.getElementById('archiveBox');
+  if (!box) return;
+  box.innerHTML = '';
+  const search = (document.getElementById('archiveSearchBox')||{value:''}).value.toLowerCase();
+  const dateFilter = (document.getElementById('archiveDateFilter')||{value:''}).value;
+
+  // Zbierz wszystkie minione wpisy
+  const pastVisits = Object.entries(visits).filter(([k,v]) => {
+    if (v.date >= getToday()) return false;
+    if (dateFilter && v.date !== dateFilter) return false;
+    if (search && !(v.name||'').toLowerCase().includes(search) && !(v.phone||'').includes(search) && !(v.car||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+  const pastOrders = Object.entries(orders).filter(([k,o]) => {
+    if ((o.dateStamp||'') >= getToday()) return false;
+    if (dateFilter && o.dateStamp !== dateFilter) return false;
+    if (search && !(o.name||'').toLowerCase().includes(search) && !(o.phone||'').includes(search) && !(o.car||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (!pastVisits.length && !pastOrders.length) {
+    box.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak archiwalnych wpisów</div>';
+    return;
+  }
+
+  // Grupuj po dacie
+  const grouped = {};
+  pastVisits.forEach(([k,v]) => {
+    if (!grouped[v.date]) grouped[v.date] = {visits:[],orders:[]};
+    grouped[v.date].visits.push([k,v]);
+  });
+  pastOrders.forEach(([k,o]) => {
+    const d = o.dateStamp || 'brak-daty';
+    if (!grouped[d]) grouped[d] = {visits:[],orders:[]};
+    grouped[d].orders.push([k,o]);
+  });
+
+  const html = [];
+  Object.keys(grouped).sort().reverse().forEach(date => {
+    const { visits: dv, orders: do_ } = grouped[date];
+    const d = parseDate(date);
+    const dayName = d.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+    const total = dv.length + do_.length;
+    const done = dv.filter(([k,v])=>v.status).length + do_.filter(([k,o])=>o.status).length;
+
+    html.push(`<div style="margin-top:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase">${dayName}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:${done===total?'var(--green)':'var(--muted)'}">✔ ${done}/${total}</div>
+      </div>`);
+
+    [...dv, ...do_].sort((a,b)=>{
+      const ta = a[1].time||a[1].dateStamp||'';
+      const tb = b[1].time||b[1].dateStamp||'';
+      return ta.localeCompare(tb);
+    }).forEach(([k,item]) => {
+      const isVisit = !!item.time;
+      const statusColor = item.status ? 'var(--green)' : '#555';
+      const label = isVisit
+        ? `${item.time} · ${item.name||'—'} · ${item.service||'—'} · ${item.tireSize||'?'}" · ${item.wheel||'—'}`
+        : `${item.name||'—'} · ${item.service||'—'} · ${item.diameter||'?'}" · ${item.type||'—'}`;
+
+      html.push(`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${statusColor};border-radius:4px;padding:7px 10px;margin-bottom:4px;opacity:0.65;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:12px;color:var(--muted)">${label}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:${statusColor}">${item.status?'✔':'○'}</div>
+      </div>`);
+    });
+
+    html.push('</div>');
+  });
+
+  box.innerHTML = html.join('');
+};
 window.clearDateFilter = function() {
   document.getElementById('dateFilter').value = '';
   renderList();
@@ -1214,6 +1305,7 @@ window.renderList = function renderList() {
     if (visitFilter==='notdone'&&v.status) return false;
     if (search && !(v.name||'').toLowerCase().includes(search) && !(v.phone||'').includes(search) && !(v.car||'').toLowerCase().includes(search)) return false;
     if (dateFilter && v.date !== dateFilter) return false;
+    if (!dateFilter && v.date < getToday()) return false;
     return true;
   });
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak wyników</div>'; return; }
@@ -1312,6 +1404,10 @@ window.setVisitWheel = async function(k, wheel) {
   showToast('✔ Typ felg "'+wheel+'" zapisany');
 };
 window.toggleVisit = async function(k) {
+  if (!visits[k]) return;
+  await update(ref(db,'wizyty/'+k), {status: !visits[k].status});
+};
+window.editVisit = function(k) {
   const v = visits[k];
   if (!v) return;
   editKey = k;
@@ -1392,13 +1488,14 @@ window.renderOrders = function renderOrders() {
   const box = document.getElementById('ordersBox');
   box.innerHTML = '';
   const search = (document.getElementById('orderSearchBox')||{value:''}).value.toLowerCase();
-  const dateFilter = (document.getElementById('orderDateFilter')||{value:''}).value;
+  const dateFilter2 = (document.getElementById('orderDateFilter')||{value:''}).value;
 
   const entries = Object.entries(orders).filter(([k,o]) => {
     if (orderFilter==='done'&&!o.status) return false;
     if (orderFilter==='notdone'&&o.status) return false;
     if (search && !(o.name||'').toLowerCase().includes(search) && !(o.phone||'').includes(search) && !(o.car||'').toLowerCase().includes(search)) return false;
-    if (dateFilter && o.dateStamp !== dateFilter) return false;
+    if (dateFilter2 && o.dateStamp !== dateFilter2) return false;
+    if (!dateFilter2 && (o.dateStamp||'') < getToday()) return false;
     return true;
   });
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak zleceń</div>'; return; }
@@ -1773,6 +1870,7 @@ window.showTab = function(id, el) {
   if (el) el.classList.add('active');
   if (id==='stats') window.renderStats();
   if (id==='cash') window.calculateCash();
+  if (id==='archive') window.renderArchive();
 };
 
 // ── BLOKOWANIE DNI ──
