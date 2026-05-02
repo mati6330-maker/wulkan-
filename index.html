@@ -748,6 +748,9 @@ function initPublic() {
   unsubscribeAll();
   selectedDate = new Date(); selectedTime = null; weekOffset = 0;
   initCalendar();
+
+setTimeout(()=>{ try{ renderList(); }catch(e){} }, 0);
+
   renderGrid(); // pokaż pusty grid od razu
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
     visits = snap.val() || {};
@@ -1514,12 +1517,12 @@ window.clearDateFilter = function() {
 };
 
 window.renderList = 
+
 function renderList() {
   const listBox = document.getElementById('listBox');
   if (!listBox) return;
 
   listBox.innerHTML = '';
-
   if (!visits) return;
 
   const grouped = {};
@@ -1530,7 +1533,16 @@ function renderList() {
     grouped[v.date].push({ ...v, _key: key });
   });
 
-  const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  // sort by real date desc
+  const dates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+
+  const todayStr = (function(){
+    const d=new Date();
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const da=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${da}`;
+  })();
 
   dates.forEach(date => {
     const items = grouped[date];
@@ -1545,6 +1557,44 @@ function renderList() {
     header.innerHTML = `
       <b style="color:var(--accent)">
         ${dayName.toUpperCase()} — ${date}
+      </b>
+      <div style="font-size:12px;color:var(--muted)">
+        ${items.length} wizyt
+      </div>
+    `;
+
+    const container = document.createElement('div');
+    container.style.display = 'none';
+
+    function toggle() {
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+        if (!container.dataset.loaded) {
+          container.innerHTML = items.map(v => `
+            <div class="card ${v.status ? 'done' : 'notdone'}">
+              <b>${v.time}</b> — ${v.name || 'Klient'}
+              <br>${v.service || ''} (${v.tireSize || ''}")
+            </div>
+          `).join('');
+          container.dataset.loaded = '1';
+        }
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    header.onclick = toggle;
+
+    listBox.appendChild(header);
+    listBox.appendChild(container);
+
+    // auto-open today
+    if (date === todayStr) {
+      toggle();
+    }
+  });
+}
+
       </b>
       <div style="font-size:12px;color:var(--muted)">
         ${items.length} wizyt
