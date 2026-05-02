@@ -1243,8 +1243,12 @@ window.renderList = function renderList() {
 
     dayEntries.forEach(([k,v]) => {
       const extras = [v.runflat?'RF':'', v.low?'NP':'', v.valve?'W':''].filter(Boolean).join(' ');
-      const statusColor = v.status ? 'var(--green)' : 'var(--red)';
+      const isPast = v.date < getToday();
+      const isOverdue = isPast && !v.status; // miniona i niezrobiona
+      const statusColor = v.status ? 'var(--green)' : isOverdue ? '#666' : 'var(--red)';
       const statusIcon = v.status ? '✔' : '○';
+      const cardOpacity = isOverdue ? 'opacity:0.5;' : '';
+      const overdueLabel = isOverdue ? '<span style="font-family:var(--mono);font-size:10px;color:#666;letter-spacing:1px;margin-left:6px">MINIONA</span>' : '';
 
       html.push(`<div id="card-${k}" style="
         background:var(--surface);
@@ -1253,10 +1257,13 @@ window.renderList = function renderList() {
         border-radius:4px;
         padding:7px 10px;
         margin-bottom:4px;
+        ${cardOpacity}
       ">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <div style="min-width:0;flex:1">
-            <div style="font-weight:700;font-size:13px;color:var(--text)">${v.time} &nbsp; ${v.name||'—'} <span style="color:var(--muted);font-weight:400;font-size:11px">${v.phone||''}</span></div>
+            <div style="font-weight:700;font-size:13px;color:${isOverdue?'#888':'var(--text)'}">
+              ${v.time} &nbsp; ${v.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)">${v.phone||''}</span>${overdueLabel}
+            </div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
               ${v.service||'—'} · ${v.tireSize ? v.tireSize+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${v.wheel||'—'}${extras?' · <span style="color:var(--accent)">'+extras+'</span>':''}${v.car?' · '+v.car:''}${v.note?' · 📝 '+v.note:''}
             </div>
@@ -1424,8 +1431,12 @@ window.renderOrders = function renderOrders() {
       </div>`);
 
     dayEntries.forEach(([k,o]) => {
-      const statusColor = o.status ? 'var(--green)' : 'var(--red)';
+      const isPast = (o.dateStamp||'') < getToday();
+      const isOverdue = isPast && !o.status;
+      const statusColor = o.status ? 'var(--green)' : isOverdue ? '#666' : 'var(--red)';
       const statusIcon = o.status ? '✔' : '○';
+      const cardOpacity = isOverdue ? 'opacity:0.5;' : '';
+      const overdueLabel = isOverdue ? '<span style="font-family:var(--mono);font-size:10px;color:#666;letter-spacing:1px;margin-left:6px">MINIONE</span>' : '';
 
       html.push(`<div id="order-${k}" style="
         background:var(--surface);
@@ -1434,10 +1445,13 @@ window.renderOrders = function renderOrders() {
         border-radius:4px;
         padding:7px 10px;
         margin-bottom:4px;
+        ${cardOpacity}
       ">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <div style="min-width:0;flex:1">
-            <div style="font-weight:700;font-size:13px;color:var(--text)">${o.name||'—'} <span style="color:var(--muted);font-weight:400;font-size:11px">${o.phone||''}</span></div>
+            <div style="font-weight:700;font-size:13px;color:${isOverdue?'#888':'var(--text)'}">
+              ${o.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)">${o.phone||''}</span>${overdueLabel}
+            </div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
               ${o.service||'—'} · ${o.diameter ? o.diameter+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
             </div>
