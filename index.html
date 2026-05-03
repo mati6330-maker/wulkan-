@@ -2337,11 +2337,6 @@ window.blockSlot = async function(dateStr, time) {
   showToast('🔒 Slot ' + time + ' zablokowany');
 };
 
-window.unblockSlot = async function(dateStr, time) {
-  const key = dateStr.replace(/-/g,'_') + '|' + time.replace(':','_');
-  await remove(ref(db, 'slotBlocks/' + key));
-  showToast('🔓 Slot ' + time + ' odblokowany');
-};
 
 window.saveDayNote = async function(dateStr, val) {
   const key = dateStr.replace(/-/g,'_');
