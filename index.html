@@ -2390,7 +2390,8 @@ window.blockDay = async function() {
     selectAllSlots(false);
     renderBlockedList();
   } catch(e) {
-    showToast('❌ Błąd: ' + e.message, 'var(--red)');
+    showToast('❌ ' + e.message, 'var(--red)');
+    alert('Błąd Firebase:\n' + e.code + '\n' + e.message);
   }
 };
 window.unblockDay = async function(key) {
