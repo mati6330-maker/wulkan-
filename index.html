@@ -1659,24 +1659,45 @@ window.toggleDayGroup = function(id) {
 window.applyVisitDiscount = async function(k) {
   const v = visits[k];
   if (!v) return;
-  const basePrice = v.price || calcVisitPrice(v);
-  const newPrice = Math.max(0, basePrice - 10);
+  const currentPrice = v.price !== undefined ? v.price : calcVisitPrice(v);
+  const originalPrice = calcVisitPrice(v);
+  const isDiscounted = currentPrice < originalPrice;
+  const newPrice = isDiscounted ? originalPrice : Math.max(0, currentPrice - 10);
   await update(ref(db,'wizyty/'+k), {price: newPrice});
   const el = document.getElementById('price-'+k);
   if (el) el.textContent = newPrice + ' zł';
-  showToast('−10 zł → ' + newPrice + ' zł');
+  const btn = document.querySelector(`#card-${k} button[onclick*="applyVisitDiscount"]`);
+  if (btn) {
+    const nextDiscount = newPrice < calcVisitPrice(v);
+    btn.textContent = nextDiscount ? '+10' : '−10';
+    btn.style.color = nextDiscount ? 'var(--green)' : '#f59e0b';
+    btn.style.borderColor = nextDiscount ? 'rgba(74,222,128,0.4)' : 'rgba(251,191,36,0.4)';
+    btn.style.background = nextDiscount ? 'rgba(74,222,128,0.12)' : 'rgba(251,191,36,0.12)';
+  }
+  showToast(isDiscounted ? '+10 zł → ' + newPrice + ' zł' : '−10 zł → ' + newPrice + ' zł');
 };
 
 window.applyOrderDiscount = async function(k) {
   const o = orders[k];
   if (!o) return;
-  const basePrice = o.price || 0;
-  const newPrice = Math.max(0, basePrice - 10);
+  const currentPrice = o.price !== undefined ? o.price : 0;
+  const originalPrice = calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter}, true);
+  const isDiscounted = currentPrice < originalPrice;
+  const newPrice = isDiscounted ? originalPrice : Math.max(0, currentPrice - 10);
   await update(ref(db,'zlecenia/'+k), {price: newPrice});
   const el = document.getElementById('oprice-'+k);
   if (el) el.textContent = newPrice + ' zł';
-  showToast('−10 zł → ' + newPrice + ' zł');
+  const btn = document.querySelector(`#order-${k} button[onclick*="applyOrderDiscount"]`);
+  if (btn) {
+    const nextDiscount = newPrice < originalPrice;
+    btn.textContent = nextDiscount ? '+10' : '−10';
+    btn.style.color = nextDiscount ? 'var(--green)' : '#f59e0b';
+    btn.style.borderColor = nextDiscount ? 'rgba(74,222,128,0.4)' : 'rgba(251,191,36,0.4)';
+    btn.style.background = nextDiscount ? 'rgba(74,222,128,0.12)' : 'rgba(251,191,36,0.12)';
+  }
+  showToast(isDiscounted ? '+10 zł → ' + newPrice + ' zł' : '−10 zł → ' + newPrice + ' zł');
 };
+window.toggleSizePicker = function(k) {
   const el = document.getElementById('sizepicker-'+k);
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 };
