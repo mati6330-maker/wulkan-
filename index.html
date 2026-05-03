@@ -538,23 +538,23 @@ body.light .wm-logo img{filter:none;}
       <button onclick="selectAllSlots(false)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Odznacz</button>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:4px;margin-bottom:10px">
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="09:00" style="margin:0"/>09:00</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="09:30" style="margin:0"/>09:30</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="10:00" style="margin:0"/>10:00</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="10:30" style="margin:0"/>10:30</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="11:00" style="margin:0"/>11:00</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="11:30" style="margin:0"/>11:30</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="12:00" style="margin:0"/>12:00</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="12:30" style="margin:0"/>12:30</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="13:00" style="margin:0"/>13:00</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="13:30" style="margin:0"/>13:30</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="15:00" style="margin:0"/>15:00</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="15:30" style="margin:0"/>15:30</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="16:00" style="margin:0"/>16:00</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="16:30" style="margin:0"/>16:30</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="17:00" style="margin:0"/>17:00</label>
-<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);cursor:pointer"><input type="checkbox" class="slot-cb" value="17:30" style="margin:0"/>17:30</label>
-    </div>
+<button type="button" class="slot-cb" data-time="09:00" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">09:00</button>
+<button type="button" class="slot-cb" data-time="09:30" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">09:30</button>
+<button type="button" class="slot-cb" data-time="10:00" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">10:00</button>
+<button type="button" class="slot-cb" data-time="10:30" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">10:30</button>
+<button type="button" class="slot-cb" data-time="11:00" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">11:00</button>
+<button type="button" class="slot-cb" data-time="11:30" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">11:30</button>
+<button type="button" class="slot-cb" data-time="12:00" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">12:00</button>
+<button type="button" class="slot-cb" data-time="12:30" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">12:30</button>
+<button type="button" class="slot-cb" data-time="13:00" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">13:00</button>
+<button type="button" class="slot-cb" data-time="13:30" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">13:30</button>
+<button type="button" class="slot-cb" data-time="15:00" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">15:00</button>
+<button type="button" class="slot-cb" data-time="15:30" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">15:30</button>
+<button type="button" class="slot-cb" data-time="16:00" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">16:00</button>
+<button type="button" class="slot-cb" data-time="16:30" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">16:30</button>
+<button type="button" class="slot-cb" data-time="17:00" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">17:00</button>
+<button type="button" class="slot-cb" data-time="17:30" onclick="toggleSlotBtn(this)" style="padding:8px 10px;font-size:12px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">17:30</button>
+</div>
     <button onclick="blockDay()" style="margin-top:2px;background:var(--red)">🔒 Zablokuj</button>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:14px 0 6px">ZABLOKOWANE DNI</div>
     <div id="blockedList" style="max-height:180px;overflow-y:auto"></div>
@@ -2353,7 +2353,19 @@ window.saveDayNote = async function(dateStr, val) {
 };
 
 window.selectAllSlots = function(val) {
-  document.querySelectorAll('.slot-cb').forEach(cb => cb.checked = val);
+  document.querySelectorAll('.slot-cb').forEach(btn => {
+    btn.dataset.selected = val ? '1' : '';
+    btn.style.background = val ? 'var(--red)' : 'var(--surface2)';
+    btn.style.color = val ? '#fff' : 'var(--muted)';
+    btn.style.borderColor = val ? 'var(--red)' : 'var(--border)';
+  });
+};
+window.toggleSlotBtn = function(btn) {
+  const on = btn.dataset.selected !== '1';
+  btn.dataset.selected = on ? '1' : '';
+  btn.style.background = on ? 'var(--red)' : 'var(--surface2)';
+  btn.style.color = on ? '#fff' : 'var(--muted)';
+  btn.style.borderColor = on ? 'var(--red)' : 'var(--border)';
 };
 window.openBlockModal = function() {
   document.getElementById('blockModal').style.display = 'flex';
@@ -2367,7 +2379,7 @@ window.blockDay = async function() {
   const reason = document.getElementById('blockReasonInput').value.trim();
   if (!date) { showToast('Wybierz datę', 'var(--red)'); return; }
 
-  const checkedSlots = [...document.querySelectorAll('.slot-cb:checked')].map(cb => cb.value);
+  const checkedSlots = [...document.querySelectorAll('.slot-cb[data-selected="1"]')].map(btn => btn.dataset.time);
 
   try {
     if (checkedSlots.length === 0) {
@@ -2390,8 +2402,7 @@ window.blockDay = async function() {
     selectAllSlots(false);
     renderBlockedList();
   } catch(e) {
-    showToast('❌ ' + e.message, 'var(--red)');
-    alert('Błąd Firebase:\n' + e.code + '\n' + e.message);
+    showToast('❌ Błąd: ' + e.message, 'var(--red)');
   }
 };
 window.unblockDay = async function(key) {
