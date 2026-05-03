@@ -1163,7 +1163,7 @@ function renderGrid() {
       if (h===14) continue;
       const baseMinute = half * 30;
       const baseTime = String(h).padStart(2,'0')+':'+String(baseMinute).padStart(2,'0');
-      const slotKey = d.replace(/-/g,'_') + '|' + baseTime.replace(':','_');
+      const slotKey = d.replace(/-/g,'_') + '--' + baseTime.replace(':','_');
       const isSlotBlocked = !!slotBlocks[slotKey];
 
       const timesInSlot = [0,15].map(offset => {
@@ -1353,7 +1353,7 @@ window.save = async function() {
   if (!selectedTime) errors.push('📅 Wybierz dzień i godzinę wizyty');
   if (selectedDate && parseDate(formatDate(selectedDate)).getDay() === 0) errors.push('🚫 W niedzielę warsztat jest nieczynny');
   if (selectedTime && selectedDate) {
-    const sk = formatDate(selectedDate).replace(/-/g,'_') + '|' + selectedTime.replace(':','_');
+    const sk = formatDate(selectedDate).replace(/-/g,'_') + '--' + selectedTime.replace(':','_');
     if (slotBlocks[sk]) errors.push('🔒 Ten slot jest zablokowany');
   }
   if (selectedDate && isDateBlocked(formatDate(selectedDate))) errors.push('🔒 Ten dzień jest zablokowany');
@@ -2332,7 +2332,7 @@ window.showTab = function(id, el) {
 
 // ── BLOKOWANIE DNI ──
 window.blockSlot = async function(dateStr, time) {
-  const key = dateStr.replace(/-/g,'_') + '|' + time.replace(':','_');
+  const key = dateStr.replace(/-/g,'_') + '--' + time.replace(':','_');
   await set(ref(db, 'slotBlocks/' + key), true);
   showToast('🔒 Slot ' + time + ' zablokowany');
 };
@@ -2379,7 +2379,7 @@ window.blockDay = async function() {
       // Blokada wybranych slotów - update pod gałęzią slotBlocks
       const updates = {};
       checkedSlots.forEach(t => {
-        const key = date.replace(/-/g,'_') + '|' + t.replace(':','_');
+        const key = date.replace(/-/g,'_') + '--' + t.replace(':','_');
         updates[key] = { date, time: t, reason: reason || '' };
       });
       await update(ref(db, 'slotBlocks'), updates);
