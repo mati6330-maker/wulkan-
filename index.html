@@ -1486,6 +1486,16 @@ function renderArchiveVisits() {
     html.push('</div>');
   });
   box.innerHTML = html.join('');
+
+  // Przywróć stan otwartych grup
+  if (openGroups.size > 0) {
+    document.querySelectorAll('[id^="vg-"]').forEach(el => {
+      const isOpen = openGroups.has(el.id);
+      el.style.display = isOpen ? 'block' : 'none';
+      const arrow = document.getElementById(el.id + '-arrow');
+      if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+    });
+  }
 }
 
 function renderArchiveOrders() {
@@ -1534,6 +1544,16 @@ function renderArchiveOrders() {
     html.push('</div>');
   });
   box.innerHTML = html.join('');
+
+  // Przywróć stan otwartych grup
+  if (openGroups.size > 0) {
+    document.querySelectorAll('[id^="og-"]').forEach(el => {
+      const isOpen = openGroups.has(el.id);
+      el.style.display = isOpen ? 'block' : 'none';
+      const arrow = document.getElementById(el.id + '-arrow');
+      if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+    });
+  }
 }
 window.clearDateFilter = function() {
   document.getElementById('dateFilter').value = '';
@@ -1541,6 +1561,12 @@ window.clearDateFilter = function() {
 };
 
 window.renderList = function renderList() {
+  // Zapamiętaj otwarte grupy
+  const openGroups = new Set();
+  document.querySelectorAll('[id^="vg-"]').forEach(el => {
+    if (el.style.display !== 'none') openGroups.add(el.id);
+  });
+
   const box = document.getElementById('listBox');
   box.innerHTML = '';
   const search = (document.getElementById('searchBox')||{value:''}).value.toLowerCase();
@@ -1798,6 +1824,12 @@ function resetOrderForm() {
 }
 
 window.renderOrders = function renderOrders() {
+  // Zapamiętaj otwarte grupy
+  const openGroups = new Set();
+  document.querySelectorAll('[id^="og-"]').forEach(el => {
+    if (el.style.display !== 'none') openGroups.add(el.id);
+  });
+
   const box = document.getElementById('ordersBox');
   box.innerHTML = '';
   const search = (document.getElementById('orderSearchBox')||{value:''}).value.toLowerCase();
