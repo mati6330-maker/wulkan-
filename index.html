@@ -537,23 +537,43 @@ body.light .wm-logo img{filter:none;}
       <button onclick="selectAllSlots(true)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35)">Zaznacz wszystkie</button>
       <button onclick="selectAllSlots(false)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Odznacz</button>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;margin-bottom:10px">
-<button type="button" class="slot-cb" data-time="09:00" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">09:00</button>
-<button type="button" class="slot-cb" data-time="09:30" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">09:30</button>
-<button type="button" class="slot-cb" data-time="10:00" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">10:00</button>
-<button type="button" class="slot-cb" data-time="10:30" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">10:30</button>
-<button type="button" class="slot-cb" data-time="11:00" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">11:00</button>
-<button type="button" class="slot-cb" data-time="11:30" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">11:30</button>
-<button type="button" class="slot-cb" data-time="12:00" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">12:00</button>
-<button type="button" class="slot-cb" data-time="12:30" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">12:30</button>
-<button type="button" class="slot-cb" data-time="13:00" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">13:00</button>
-<button type="button" class="slot-cb" data-time="13:30" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">13:30</button>
-<button type="button" class="slot-cb" data-time="15:00" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">15:00</button>
-<button type="button" class="slot-cb" data-time="15:30" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">15:30</button>
-<button type="button" class="slot-cb" data-time="16:00" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">16:00</button>
-<button type="button" class="slot-cb" data-time="16:30" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">16:30</button>
-<button type="button" class="slot-cb" data-time="17:00" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">17:00</button>
-<button type="button" class="slot-cb" data-time="17:30" onclick="toggleSlotBtn(this)" style="padding:4px 6px;font-size:11px;font-family:var(--mono);letter-spacing:0;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;min-width:0">17:30</button>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;margin-bottom:10px">
+<div class="slot free" data-time="08:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">08:00</div>
+<div class="slot free" data-time="08:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">08:30</div>
+<div class="slot free" data-time="09:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">09:00</div>
+<div class="slot free" data-time="09:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">09:30</div>
+<div class="slot free" data-time="10:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">10:00</div>
+<div class="slot free" data-time="10:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">10:30</div>
+<div class="slot free" data-time="11:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">11:00</div>
+<div class="slot free" data-time="11:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">11:30</div>
+<div class="slot free" data-time="12:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">12:00</div>
+<div class="slot free" data-time="12:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">12:30</div>
+<div class="slot free" data-time="13:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">13:00</div>
+<div class="slot free" data-time="13:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">13:30</div>
+<div class="slot free" data-time="15:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">15:00</div>
+<div class="slot free" data-time="15:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">15:30</div>
+<div class="slot free" data-time="16:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">16:00</div>
+<div class="slot free" data-time="16:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">16:30</div>
+<div class="slot free" data-time="17:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">17:00</div>
+<div class="slot free" data-time="17:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">17:30</div>
+<div class="slot free" data-time="18:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">18:00</div>
+<div class="slot free" data-time="18:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">18:30</div>
+</div>
+<div class="slot free" data-time="09:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">09:30</div>
+<div class="slot free" data-time="10:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">10:00</div>
+<div class="slot free" data-time="10:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">10:30</div>
+<div class="slot free" data-time="11:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">11:00</div>
+<div class="slot free" data-time="11:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">11:30</div>
+<div class="slot free" data-time="12:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">12:00</div>
+<div class="slot free" data-time="12:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">12:30</div>
+<div class="slot free" data-time="13:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">13:00</div>
+<div class="slot free" data-time="13:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">13:30</div>
+<div class="slot free" data-time="15:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">15:00</div>
+<div class="slot free" data-time="15:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">15:30</div>
+<div class="slot free" data-time="16:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">16:00</div>
+<div class="slot free" data-time="16:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">16:30</div>
+<div class="slot free" data-time="17:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">17:00</div>
+<div class="slot free" data-time="17:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">17:30</div>
 </div>
     <button onclick="blockDay()" style="margin-top:2px;background:var(--red)">🔒 Zablokuj</button>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:14px 0 6px">ZABLOKOWANE DNI</div>
@@ -1158,9 +1178,14 @@ function renderGrid() {
 
   const dayVisits = Object.entries(visits).filter(([k,v])=>v.date===d);
 
-  for (let h=9; h<=17; h++) {
+  // Zakresy godzin: 8-8 tylko admin, 9-13 wszyscy, 14 pomijamy, 15-17 wszyscy, 18-18 tylko admin
+  const hourRanges = currentUser
+    ? [[8,8],[9,13],[15,17],[18,18]]
+    : [[9,13],[15,17]];
+
+  for (const [hFrom, hTo] of hourRanges) {
+    for (let h=hFrom; h<=hTo; h++) {
     for (let half=0; half<2; half++) {
-      if (h===14) continue;
       const baseMinute = half * 30;
       const baseTime = String(h).padStart(2,'0')+':'+String(baseMinute).padStart(2,'0');
       const slotKey = d.replace(/-/g,'_') + '--' + baseTime.replace(':','_');
@@ -1254,6 +1279,7 @@ function renderGrid() {
 
       grid.appendChild(div);
     }
+  }
   }
 }
 
@@ -2355,17 +2381,13 @@ window.saveDayNote = async function(dateStr, val) {
 window.selectAllSlots = function(val) {
   document.querySelectorAll('.slot-cb').forEach(btn => {
     btn.dataset.selected = val ? '1' : '';
-    btn.style.background = val ? 'var(--red)' : 'var(--surface2)';
-    btn.style.color = val ? '#fff' : 'var(--muted)';
-    btn.style.borderColor = val ? 'var(--red)' : 'var(--border)';
+    btn.className = val ? 'slot busy' : 'slot free';
   });
 };
 window.toggleSlotBtn = function(btn) {
   const on = btn.dataset.selected !== '1';
   btn.dataset.selected = on ? '1' : '';
-  btn.style.background = on ? 'var(--red)' : 'var(--surface2)';
-  btn.style.color = on ? '#fff' : 'var(--muted)';
-  btn.style.borderColor = on ? 'var(--red)' : 'var(--border)';
+  btn.className = on ? 'slot busy' : 'slot free';
 };
 window.openBlockModal = function() {
   document.getElementById('blockModal').style.display = 'flex';
