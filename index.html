@@ -537,8 +537,28 @@ body.light .wm-logo img{filter:none;}
       <button onclick="selectAllSlots(true)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35)">Zaznacz wszystkie</button>
       <button onclick="selectAllSlots(false)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Odznacz</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;margin-bottom:10px">
-<div class="slot free" data-time="08:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">08:00</div>
+    <div style="display:flex;flex-wrap:wrap;gap:2px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;margin-bottom:10px">
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="08:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>08:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="08:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>08:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="09:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>09:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="09:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>09:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="10:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>10:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="10:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>10:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="11:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>11:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="11:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>11:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="12:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>12:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="12:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>12:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="13:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>13:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="13:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>13:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="15:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>15:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="15:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>15:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="16:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>16:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="16:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>16:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="17:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>17:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="17:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>17:30</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="18:00" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>18:00</label>
+<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);cursor:pointer;padding:6px 8px;border-radius:3px;user-select:none"><input type="checkbox" class="slot-cb" data-time="18:30" style="width:16px;height:16px;cursor:pointer;accent-color:var(--red)"/>18:30</label>
+</div>
 <div class="slot free" data-time="08:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">08:30</div>
 <div class="slot free" data-time="09:00" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">09:00</div>
 <div class="slot free" data-time="09:30" onclick="toggleSlotBtn(this)" style="font-size:12px;padding:10px 4px">09:30</div>
@@ -2379,15 +2399,7 @@ window.saveDayNote = async function(dateStr, val) {
 };
 
 window.selectAllSlots = function(val) {
-  document.querySelectorAll('.slot-cb').forEach(btn => {
-    btn.dataset.selected = val ? '1' : '';
-    btn.className = val ? 'slot busy' : 'slot free';
-  });
-};
-window.toggleSlotBtn = function(btn) {
-  const on = btn.dataset.selected !== '1';
-  btn.dataset.selected = on ? '1' : '';
-  btn.className = on ? 'slot busy' : 'slot free';
+  document.querySelectorAll('.slot-cb').forEach(cb => { cb.checked = val; });
 };
 window.openBlockModal = function() {
   document.getElementById('blockModal').style.display = 'flex';
@@ -2401,7 +2413,7 @@ window.blockDay = async function() {
   const reason = document.getElementById('blockReasonInput').value.trim();
   if (!date) { showToast('Wybierz datę', 'var(--red)'); return; }
 
-  const checkedSlots = [...document.querySelectorAll('.slot-cb[data-selected="1"]')].map(btn => btn.dataset.time);
+  const checkedSlots = [...document.querySelectorAll('.slot-cb:checked')].map(cb => cb.dataset.time || cb.value);
 
   try {
     if (checkedSlots.length === 0) {
