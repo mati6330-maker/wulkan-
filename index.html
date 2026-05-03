@@ -1143,9 +1143,9 @@ function renderGrid() {
     noteDiv.style.cssText = 'grid-column:1/-1;margin-bottom:8px;display:flex;gap:6px;align-items:center';
     noteDiv.innerHTML = `
       <input id="dayNoteInput" value="${noteVal.replace(/"/g,'&quot;')}" placeholder="📝 Notatka do dnia (widoczna na wydruku)..."
-        style="flex:1;font-size:12px;padding:7px 10px;font-family:var(--font);background:rgba(234,179,8,0.07);border:1px solid rgba(234,179,8,0.3);color:var(--text);border-radius:4px"
-        onblur="saveDayNote('${d}',this.value)" onkeydown="if(event.key==='Enter'){this.blur()}"/>
-      <span style="font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap">Enter = zapisz</span>`;
+        style="flex:1;font-size:12px;padding:7px 10px;font-family:var(--font);background:rgba(234,179,8,0.07);border:1px solid rgba(234,179,8,0.3);color:var(--text);border-radius:4px"/>
+      <button onclick="saveDayNote('${d}',document.getElementById('dayNoteInput').value)" title="Zapisz notatkę"
+        style="width:auto;padding:6px 10px;font-size:14px;letter-spacing:0;background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.35);flex-shrink:0">✔</button>`;
     grid.appendChild(noteDiv);
   }
 
