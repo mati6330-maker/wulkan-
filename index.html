@@ -957,14 +957,14 @@ function initCalendar() {
 
   // Etykieta tygodnia
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6); // pon–nie
+  weekEnd.setDate(weekStart.getDate() + 5); // pon–sob
   const label = weekStart.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit'}) +
     ' – ' + weekEnd.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});
   const lbl = document.getElementById('weekLabel');
   if (lbl) lbl.innerText = label;
 
-  // 7 dni: pon–nie
-  for (let i = 0; i < 7; i++) {
+  // 6 dni: pon–sob (niedziela ukryta w kalendarzu ale zablokowana w gridzie)
+  for (let i = 0; i < 6; i++) {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
     const dateStr = formatDate(d);
@@ -1671,7 +1671,14 @@ window.applyVisitDiscount = async function(k, delta) {
   const v = visits[k];
   if (!v) return;
   const current = v.price !== undefined ? v.price : calcVisitPrice(v);
-  const newPrice = Math.max(0, current + delta);
+  const catalog = calcVisitPrice(v);
+  const newPrice = delta > 0
+    ? Math.min(catalog, current + delta)
+    : Math.max(0, current + delta);
+  if (delta > 0 && current >= catalog) {
+    showToast('Cena już jest pełną ceną cennikową', 'var(--muted)');
+    return;
+  }
   await update(ref(db,'wizyty/'+k), {price: newPrice});
   const el = document.getElementById('price-'+k);
   if (el) el.textContent = newPrice + ' zł';
@@ -1682,7 +1689,14 @@ window.applyOrderDiscount = async function(k, delta) {
   const o = orders[k];
   if (!o) return;
   const current = o.price !== undefined ? o.price : 0;
-  const newPrice = Math.max(0, current + delta);
+  const catalog = calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter}, true);
+  const newPrice = delta > 0
+    ? Math.min(catalog, current + delta)
+    : Math.max(0, current + delta);
+  if (delta > 0 && current >= catalog) {
+    showToast('Cena już jest pełną ceną cennikową', 'var(--muted)');
+    return;
+  }
   await update(ref(db,'zlecenia/'+k), {price: newPrice});
   const el = document.getElementById('oprice-'+k);
   if (el) el.textContent = newPrice + ' zł';
