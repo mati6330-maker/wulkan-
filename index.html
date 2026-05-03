@@ -2402,8 +2402,12 @@ window.selectAllSlots = function(val) {
   document.querySelectorAll('.slot-cb').forEach(cb => { cb.checked = val; });
 };
 window.openBlockModal = function() {
-  document.getElementById('blockModal').style.display = 'flex';
-  renderBlockedList();
+  try {
+    document.getElementById('blockModal').style.display = 'flex';
+    renderBlockedList();
+  } catch(e) {
+    alert('openBlockModal błąd: ' + e.message);
+  }
 };
 window.closeBlockModal = function() {
   document.getElementById('blockModal').style.display = 'none';
