@@ -2376,13 +2376,13 @@ window.blockDay = async function() {
       await set(ref(db, 'blokady/' + key), { date, reason: reason || '' });
       showToast('🔒 Zablokowano cały dzień');
     } else {
-      // Blokada wybranych slotów
+      // Blokada wybranych slotów - update pod gałęzią slotBlocks
       const updates = {};
       checkedSlots.forEach(t => {
         const key = date.replace(/-/g,'_') + '|' + t.replace(':','_');
-        updates['slotBlocks/' + key] = { date, time: t, reason: reason || '' };
+        updates[key] = { date, time: t, reason: reason || '' };
       });
-      await update(ref(db), updates);
+      await update(ref(db, 'slotBlocks'), updates);
       showToast(`🔒 Zablokowano ${checkedSlots.length} slot(ów)`);
     }
     document.getElementById('blockDateInput').value = '';
