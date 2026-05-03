@@ -814,10 +814,8 @@ function initPublic() {
   });
   onValue(ref(db, 'dayNotes'), snap => {
     dayNotes = snap.val() || {};
-    renderGrid();
   });
 }
-function initApp() {
   unsubscribeAll();
   selectedDate = new Date(); selectedTime = null; weekOffset = 0; editOrderKey = null; editKey = null;
   initCalendar();
@@ -848,7 +846,13 @@ function initApp() {
   });
   onValue(ref(db, 'dayNotes'), snap => {
     dayNotes = snap.val() || {};
-    renderGrid();
+    // Aktualizuj tylko wartość inputa bez re-renderowania całego gridu
+    const d = formatDate(selectedDate);
+    const key = d.replace(/-/g,'_');
+    const input = document.getElementById('dayNoteInput');
+    if (input && document.activeElement !== input) {
+      input.value = dayNotes[key] || '';
+    }
   });
   document.getElementById('o_time').onchange = function() {
     document.getElementById('o_custom_date').style.display = this.value==='własny' ? 'block' : 'none';
@@ -1140,7 +1144,8 @@ function renderGrid() {
     noteDiv.innerHTML = `
       <input id="dayNoteInput" value="${noteVal.replace(/"/g,'&quot;')}" placeholder="📝 Notatka do dnia (widoczna na wydruku)..."
         style="flex:1;font-size:12px;padding:7px 10px;font-family:var(--font);background:rgba(234,179,8,0.07);border:1px solid rgba(234,179,8,0.3);color:var(--text);border-radius:4px"
-        onchange="saveDayNote('${d}',this.value)" oninput="saveDayNote('${d}',this.value)"/>`;
+        onblur="saveDayNote('${d}',this.value)" onkeydown="if(event.key==='Enter'){this.blur()}"/>
+      <span style="font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap">Enter = zapisz</span>`;
     grid.appendChild(noteDiv);
   }
 
@@ -2331,17 +2336,18 @@ window.unblockSlot = async function(dateStr, time) {
   showToast('🔓 Slot ' + time + ' odblokowany');
 };
 
-let dayNoteTimer = null;
-window.saveDayNote = function(dateStr, val) {
-  clearTimeout(dayNoteTimer);
-  dayNoteTimer = setTimeout(async () => {
-    const key = dateStr.replace(/-/g,'_');
+window.saveDayNote = async function(dateStr, val) {
+  const key = dateStr.replace(/-/g,'_');
+  try {
     if (val.trim()) {
       await set(ref(db, 'dayNotes/' + key), val.trim());
     } else {
       await remove(ref(db, 'dayNotes/' + key));
     }
-  }, 600);
+    showToast('📝 Notatka zapisana', 'var(--green)');
+  } catch(e) {
+    showToast('❌ Błąd zapisu: ' + e.message, 'var(--red)');
+  }
 };
 
 window.selectAllSlots = function(val) {
