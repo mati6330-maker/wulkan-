@@ -251,7 +251,7 @@ body.light .wm-logo img{filter:none;}
   <div class="tab active" onclick="showTab('main',this)">Grafik</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('list',this)">Lista</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('orders',this)">Zlecenia</div>
-  <div class="tab admin-tab tab-locked" onclick="requireAdmin('stats',this)">Statystyki</div>
+  <div class="tab admin-tab tab-locked" onclick="requireAdmin('klima',this)">Klima</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('cash',this)">Kasa</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('archive',this)">Archiwum</div>
   <div class="tab" onclick="showTab('pricing',this)">Cennik</div>
@@ -430,13 +430,7 @@ body.light .wm-logo img{filter:none;}
 <div id="ordersBox"></div>
 </div>
 
-<div class="section" id="stats">
-<h3>Statystyki</h3>
-<div id="statsBox"></div>
-</div>
-
 <div class="section" id="cash">
-<h3>Kasa</h3>
 <div id="cashBox"></div>
 <button onclick="calculateCash()" style="margin-top:8px">↻ Odśwież</button>
 <div class="section-label" style="margin-top:16px">Raporty</div>
@@ -452,10 +446,10 @@ body.light .wm-logo img{filter:none;}
 <div class="section" id="archive">
 <h3>Archiwum</h3>
 
-<!-- Wewnętrzne zakładki -->
 <div style="display:flex;gap:0;margin-bottom:12px;border-bottom:2px solid var(--border)">
   <button id="arch-tab-visits" onclick="switchArchiveTab('visits')" style="flex:1;background:var(--accent);color:#000;border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">WIZYTY</button>
   <button id="arch-tab-orders" onclick="switchArchiveTab('orders')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">ZLECENIA</button>
+  <button id="arch-tab-klima" onclick="switchArchiveTab('klima')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">KLIMA</button>
 </div>
 
 <!-- Panel wizyt -->
@@ -480,9 +474,59 @@ body.light .wm-logo img{filter:none;}
   <div id="archiveOrdersBox"></div>
 </div>
 
+<!-- Panel klima -->
+<div id="arch-panel-klima" style="display:none">
+  <input id="archiveKlimaSearchBox" placeholder="🔍 Szukaj..." oninput="renderArchiveKlima()"/>
+  <div style="display:flex;gap:6px;margin:6px 0;align-items:center">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
+    <input type="date" id="archiveKlimaDateFilter" onchange="renderArchiveKlima()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
+    <button onclick="document.getElementById('archiveKlimaDateFilter').value='';renderArchiveKlima()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+  </div>
+  <div id="archiveKlimaBox"></div>
 </div>
 
-<div class="section" id="pricing">
+</div>
+
+<div class="section" id="klima">
+  <div class="section-label">Klima serwis — nowe zlecenie</div>
+  <input id="k_name" placeholder="Imię (opcjonalne)"/>
+  <input id="k_phone" inputmode="numeric" placeholder="Telefon (opcjonalne)" type="tel"/>
+  <input id="k_car" placeholder="Marka / model samochodu"/>
+  <input id="k_year" inputmode="numeric" placeholder="Rok produkcji" maxlength="4"/>
+  <div class="section-label">Dzień przyjęcia</div>
+  <input id="k_start" type="date"/>
+  <div class="section-label">Dzień zakończenia</div>
+  <input id="k_end" type="date"/>
+  <div id="klimaValidation" style="display:none;margin:8px 0;padding:10px;background:rgba(248,113,113,0.1);border:1px solid var(--red);border-radius:4px;font-size:13px;color:var(--red)"></div>
+  <button onclick="addKlima()" id="klimaBtn" style="margin-top:10px">▶ Dodaj zlecenie klima</button>
+  <button id="cancelKlimaBtn" onclick="cancelKlimaEdit()" style="display:none;margin-top:6px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj edycję</button>
+  <div class="section-label" style="margin-top:18px">Zlecenia klima</div>
+  <input id="k_search" placeholder="🔍 Szukaj..." oninput="renderKlima()"/>
+  <div id="klimaBox" style="margin-top:8px"></div>
+</div>
+
+<div id="klimaPriceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--accent);width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">❄️ Oblicz cenę</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">POJEMNOŚĆ UKŁADU (g)</div>
+    <input id="k_capacity" type="number" placeholder="np. 500" oninput="calcKlimaPrice()"/>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:10px 0 4px">POBRANO CZYNNIKA (g)</div>
+    <input id="k_recovered" type="number" placeholder="np. 300" oninput="calcKlimaPrice()"/>
+    <div style="margin:12px 0;display:flex;flex-direction:column;gap:8px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+        <input type="checkbox" id="k_filter" onchange="calcKlimaPrice()" style="width:18px;height:18px;accent-color:var(--accent)"/>
+        Wymiana filtra kabinowego <span style="color:var(--accent);font-family:var(--mono)">+50 zł</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+        <input type="checkbox" id="k_ozone" onchange="calcKlimaPrice()" style="width:18px;height:18px;accent-color:var(--accent)"/>
+        Odgrzybienie kabiny <span style="color:var(--accent);font-family:var(--mono)">+30 zł</span>
+      </label>
+    </div>
+    <div id="klimaPriceResult" style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent);text-align:center;padding:12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.3);border-radius:4px;margin-bottom:14px">— zł</div>
+    <button onclick="saveKlimaPrice()" style="background:var(--accent)">✔ Zapisz cenę</button>
+    <button onclick="closeKlimaPriceModal()" style="margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
+  </div>
+</div>
 <h3>Cennik</h3>
 <div id="pricingView"></div>
 <div id="pricingEdit" style="display:none">
@@ -523,7 +567,6 @@ body.light .wm-logo img{filter:none;}
   </div>
   <button onclick="savePrices()" style="margin-top:12px">▶ Zapisz ceny</button>
   <button onclick="cancelPriceEdit()" style="background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
-</div>
 </div>
 
 </div><!-- /container -->
@@ -632,6 +675,7 @@ let orders = {};
 let blockedDays = {}; // { dateStr: { reason } }
 let slotBlocks = {}; // { "YYYY-MM-DD|HH:MM": true }
 let dayNotes = {};   // { "YYYY-MM-DD": "treść notatki" }
+let klimas = {};     // klima service orders
 let selectedDate = new Date();
 let selectedTime = null;
 let weekOffset = 0;
@@ -864,6 +908,10 @@ function initApp() {
     if (input && document.activeElement !== input) {
       input.value = dayNotes[key] || '';
     }
+  });
+  onValue(ref(db, 'klima'), snap => {
+    klimas = snap.val() || {};
+    renderKlima();
   });
   document.getElementById('o_time').onchange = function() {
     document.getElementById('o_custom_date').style.display = this.value==='własny' ? 'block' : 'none';
@@ -1545,13 +1593,53 @@ window.switchArchiveTab = function(tab) {
   archiveTab = tab;
   document.getElementById('arch-panel-visits').style.display = tab==='visits' ? 'block' : 'none';
   document.getElementById('arch-panel-orders').style.display = tab==='orders' ? 'block' : 'none';
-  const vBtn = document.getElementById('arch-tab-visits');
-  const oBtn = document.getElementById('arch-tab-orders');
-  vBtn.style.background = tab==='visits' ? 'var(--accent)' : 'transparent';
-  vBtn.style.color = tab==='visits' ? '#000' : 'var(--muted)';
-  oBtn.style.background = tab==='orders' ? 'var(--accent)' : 'transparent';
-  oBtn.style.color = tab==='orders' ? '#000' : 'var(--muted)';
-  renderArchive();
+  document.getElementById('arch-panel-klima').style.display = tab==='klima' ? 'block' : 'none';
+  ['visits','orders','klima'].forEach(t => {
+    const btn = document.getElementById('arch-tab-'+t);
+    if (!btn) return;
+    btn.style.background = tab===t ? 'var(--accent)' : 'transparent';
+    btn.style.color = tab===t ? '#000' : 'var(--muted)';
+  });
+  if (tab==='klima') renderArchiveKlima();
+  else renderArchive();
+};
+
+window.renderArchiveKlima = function() {
+  const box = document.getElementById('archiveKlimaBox');
+  if (!box) return;
+  const search = (document.getElementById('archiveKlimaSearchBox')?.value||'').toLowerCase();
+  const dateFilter = document.getElementById('archiveKlimaDateFilter')?.value||'';
+  const today = getToday();
+  const entries = Object.entries(klimas).filter(([k,o]) => {
+    if (!o) return false;
+    const d = o.start||o.end||'';
+    if (d >= today) return false;
+    if (dateFilter && d !== dateFilter) return false;
+    if (search) return [o.name,o.phone,o.car].some(v=>(v||'').toLowerCase().includes(search));
+    return true;
+  }).sort((a,b)=>(b[1].start||'').localeCompare(a[1].start||''));
+
+  if (!entries.length) { box.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:12px 0">Brak archiwalnych zleceń klima</div>'; return; }
+
+  box.innerHTML = entries.map(([k,o]) => {
+    const statusColor = o.status ? 'var(--green)' : 'var(--red)';
+    const priceHtml = o.price!=null ? `<span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${o.price} zł</span>` : '<span style="color:var(--muted);font-size:11px">—</span>';
+    const extras = [o.filter?'filtr':'',o.ozone?'odgrzybienie':''].filter(Boolean).join(', ');
+    return `<div class="card" style="margin-bottom:8px;opacity:0.85">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;color:var(--accent);font-family:var(--mono)">${o.car||'—'}${o.year?' ('+o.year+')':''}</div>
+          <div style="font-size:12px;color:var(--text);margin-top:2px">${o.name||'—'}${o.phone?' · '+o.phone:''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)">📥 ${o.start||'—'}${o.end?' → 📅 '+o.end:''}</div>
+          ${extras?`<div style="font-size:11px;color:var(--muted);margin-top:2px">+ ${extras}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span style="font-size:11px;color:${statusColor};font-family:var(--mono)">${o.status?'✔ zrobione':'○ niezrobione'}</span>
+          ${priceHtml}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 };
 
 window.clearArchiveDateFilter = function() {
@@ -2125,56 +2213,80 @@ window.deleteOrder = async function(k) { if(!confirm('Usunąć zlecenie?'))retur
 window.cancelOrderEdit = function() { editOrderKey=null; document.getElementById('orderBtn').innerText='▶ Dodaj zlecenie'; document.getElementById('cancelOrderBtn').style.display='none'; resetOrderForm(); };
 
 // ── STATYSTYKI ──
-window.renderStats = function renderStats() {
-  const box = document.getElementById('statsBox');
-  const now = new Date(); let thisWeek=0,thisMonth=0;
-  const vArr = Object.values(visits); const oArr = Object.values(orders);
-  const total = vArr.length;
-  const services={}, wheels={};
-  vArr.forEach(v=>{
-    const d=parseDate(v.date);
-    if((now-d)/(1000*60*60*24)<=7) thisWeek++;
-    if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()) thisMonth++;
-    services[v.service]=(services[v.service]||0)+1;
-    wheels[v.wheel]=(wheels[v.wheel]||0)+1;
-  });
-  const topService=Object.entries(services).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}: ${v}`).join('<br>')||'—';
-  const topWheel=Object.entries(wheels).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}: ${v}`).join('<br>')||'—';
-  const done=vArr.filter(v=>v.status).length;
-  const oCount=oArr.length, oDone=oArr.filter(o=>o.status).length;
-  box.innerHTML=`
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">WIZYTY OGÓŁEM</span><br><span style="font-size:22px;font-weight:700;color:var(--accent)">${total}</span></div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">TEN TYDZIEŃ</span><br><span style="font-size:22px;font-weight:700">${thisWeek}</span></div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">TEN MIESIĄC</span><br><span style="font-size:22px;font-weight:700">${thisMonth}</span></div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">ZROBIONE WIZYTY</span><br><span style="font-size:22px;font-weight:700;color:var(--green)">${done}</span><span style="color:var(--muted)"> / ${total}</span></div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">USŁUGI</span><br>${topService}</div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">TYP FELG</span><br>${topWheel}</div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">ZLECENIA OGÓŁEM</span><br><span style="font-size:22px;font-weight:700;color:var(--accent)">${oCount}</span></div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">ZLECENIA ZROBIONE</span><br><span style="font-size:22px;font-weight:700;color:var(--green)">${oDone}</span><span style="color:var(--muted)"> / ${oCount}</span></div>`;
-}
-
-// ── KASA ──
+// ── KASA + STATYSTYKI ──
 window.calculateCash = function calculateCash() {
-  const vArr=Object.values(visits), oArr=Object.values(orders);
+  const vArr=Object.values(visits), oArr=Object.values(orders), kArr=Object.values(klimas);
   const today=getToday(), now=new Date();
-  let dayTotal=0,weekTotal=0,monthTotal=0,visitsTotal=0,ordersTotal=0;
+  let dayV=0,dayO=0,dayK=0,weekV=0,weekO=0,weekK=0,monthV=0,monthO=0,monthK=0,visitsTotal=0,ordersTotal=0,klimaTotal=0;
   const day=now.getDay()||7;
   const startWeek=new Date(now); startWeek.setDate(now.getDate()-day+1); startWeek.setHours(0,0,0,0);
-  vArr.forEach(v=>{ if(!v.status)return; const p=v.price||calcVisitPrice(v); const d=parseDate(v.date); visitsTotal+=p; if(v.date===today)dayTotal+=p; if(d>=startWeek)weekTotal+=p; if(d.getMonth()===now.getMonth())monthTotal+=p; });
-  oArr.forEach(o=>{ if(!o.status)return; const p=o.price||0; const ds=o.dateStamp||today; const d=parseDate(ds); ordersTotal+=p; if(ds===today)dayTotal+=p; if(d>=startWeek)weekTotal+=p; if(d.getMonth()===now.getMonth())monthTotal+=p; });
-  const total=visitsTotal+ordersTotal;
+  vArr.forEach(v=>{ if(!v.status)return; const p=v.price||calcVisitPrice(v); const d=parseDate(v.date); visitsTotal+=p; if(v.date===today)dayV+=p; if(d>=startWeek)weekV+=p; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())monthV+=p; });
+  oArr.forEach(o=>{ if(!o.status)return; const p=o.price||0; const ds=(o.startDate||o.dateStamp)||today; const d=parseDate(ds); ordersTotal+=p; if(ds===today)dayO+=p; if(d>=startWeek)weekO+=p; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())monthO+=p; });
+  kArr.forEach(k=>{ if(!k||!k.status||k.price==null)return; const p=k.price; const ds=k.start||today; const d=parseDate(ds); klimaTotal+=p; if(ds===today)dayK+=p; if(d>=startWeek)weekK+=p; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())monthK+=p; });
+  const total=visitsTotal+ordersTotal+klimaTotal;
+
+  // Statystyki
+  let vWeek=0,vMonth=0; const services={},wheels={};
+  vArr.forEach(v=>{ const d=parseDate(v.date); if((now-d)/(864e5)<=7)vWeek++; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())vMonth++; services[v.service]=(services[v.service]||0)+1; wheels[v.wheel]=(wheels[v.wheel]||0)+1; });
+  const topService=Object.entries(services).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ')||'—';
+  const topWheel=Object.entries(wheels).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ')||'—';
+  const vDone=vArr.filter(v=>v.status).length;
+  const oDone=oArr.filter(o=>o.status).length;
+  const kDone=kArr.filter(k=>k&&k.status).length;
+
+  const breakdown = (v,o,k) => `
+    <div style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">wizyty</span>
+      <span style="font-size:12px;font-family:var(--mono);color:var(--text)">${v} zł</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:3px">
+      <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">zlecenia</span>
+      <span style="font-size:12px;font-family:var(--mono);color:var(--text)">${o} zł</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:3px">
+      <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">klima</span>
+      <span style="font-size:12px;font-family:var(--mono);color:var(--text)">${k} zł</span>
+    </div>`;
+
   document.getElementById('cashBox').innerHTML=`
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">DZIŚ</span><br><span style="font-size:24px;font-weight:700;color:var(--accent);font-family:var(--mono)">${dayTotal} zł</span></div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">TYDZIEŃ</span><br><span style="font-size:22px;font-weight:700;font-family:var(--mono)">${weekTotal} zł</span></div>
-    <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">MIESIĄC</span><br><span style="font-size:22px;font-weight:700;font-family:var(--mono)">${monthTotal} zł</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="section-label">PRZYCHODY</div>
+    <div class="card">
+      <span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">DZIŚ</span>
+      <br><span style="font-size:24px;font-weight:700;color:var(--accent);font-family:var(--mono)">${dayV+dayO+dayK} zł</span>
+      ${breakdown(dayV,dayO,dayK)}
+    </div>
+    <div class="card">
+      <span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">TYDZIEŃ</span>
+      <br><span style="font-size:22px;font-weight:700;font-family:var(--mono)">${weekV+weekO+weekK} zł</span>
+      ${breakdown(weekV,weekO,weekK)}
+    </div>
+    <div class="card">
+      <span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">MIESIĄC</span>
+      <br><span style="font-size:22px;font-weight:700;font-family:var(--mono)">${monthV+monthO+monthK} zł</span>
+      ${breakdown(monthV,monthO,monthK)}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
       <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">WIZYTY</span><br><span style="font-size:18px;font-weight:700;font-family:var(--mono)">${visitsTotal} zł</span></div>
       <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">ZLECENIA</span><br><span style="font-size:18px;font-weight:700;font-family:var(--mono)">${ordersTotal} zł</span></div>
+      <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">KLIMA</span><br><span style="font-size:18px;font-weight:700;font-family:var(--mono)">${klimaTotal} zł</span></div>
     </div>
     <div class="card" style="border-left-color:var(--accent);background:rgba(249,115,22,0.08)">
       <span style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:1px">SUMA CAŁKOWITA</span><br>
       <span style="font-size:28px;font-weight:700;color:var(--accent);font-family:var(--mono);text-shadow:0 0 12px rgba(249,115,22,0.4)">${total} zł</span>
-    </div>`;
+    </div>
+    <div class="section-label" style="margin-top:18px">STATYSTYKI</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">WIZYTY OGÓŁEM</span><br><span style="font-size:20px;font-weight:700;color:var(--accent)">${vArr.length}</span><br><span style="font-size:10px;color:var(--green)">✔ ${vDone}</span></div>
+      <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">ZLECENIA</span><br><span style="font-size:20px;font-weight:700;color:var(--accent)">${oArr.length}</span><br><span style="font-size:10px;color:var(--green)">✔ ${oDone}</span></div>
+      <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">KLIMA</span><br><span style="font-size:20px;font-weight:700;color:var(--accent)">${kArr.length}</span><br><span style="font-size:10px;color:var(--green)">✔ ${kDone}</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">W TYM TYGODNIU</span><br><span style="font-size:20px;font-weight:700">${vWeek}</span></div>
+      <div class="card"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">W TYM MIESIĄCU</span><br><span style="font-size:20px;font-weight:700">${vMonth}</span></div>
+    </div>
+    <div class="card" style="margin-top:8px"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">TOP USŁUGI</span><br><span style="font-size:12px;color:var(--text)">${topService}</span></div>
+    <div class="card" style="margin-top:8px"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">TYP FELG</span><br><span style="font-size:12px;color:var(--text)">${topWheel}</span></div>`;
+}
 }
 
 // ── RAPORTY ──
@@ -2399,6 +2511,185 @@ window.printDay = function() {
 };
 
 // ── NAWIGACJA ──
+// ── KLIMA ──
+let editKlimaKey = null;
+let klimaPriceKey = null;
+
+window.applyKlimaDiscount = async function(k, delta) {
+  const o = klimas[k];
+  if (!o || o.price == null) { showToast('⚠️ Najpierw ustal cenę', 'var(--muted)'); return; }
+  const catalog = Math.round(((parseFloat(o.capacity||0) - parseFloat(o.recovered||0)) / 100 * 39 + 50) + (o.filter?50:0) + (o.ozone?30:0));
+  const newPrice = delta > 0 ? Math.min(catalog, o.price + delta) : Math.max(0, o.price + delta);
+  if (delta > 0 && o.price >= catalog) { showToast('Cena już jest pełną ceną', 'var(--muted)'); return; }
+  await update(ref(db, 'klima/' + k), {price: newPrice});
+  showToast((delta > 0 ? '+' : '') + delta + ' zł → ' + newPrice + ' zł');
+};
+
+window.addKlima = async function() {
+  const errors = [];
+  const car = document.getElementById('k_car').value.trim();
+  const start = document.getElementById('k_start').value;
+  if (!car) errors.push('🚗 Podaj markę/model samochodu');
+  if (!start) errors.push('📅 Wybierz dzień przyjęcia');
+  if (errors.length) {
+    const v = document.getElementById('klimaValidation');
+    v.innerHTML = errors.join('<br>'); v.style.display = 'block'; return;
+  }
+  document.getElementById('klimaValidation').style.display = 'none';
+  const k = {
+    name: document.getElementById('k_name').value.trim(),
+    phone: document.getElementById('k_phone').value.trim(),
+    car, year: document.getElementById('k_year').value.trim(),
+    start, end: document.getElementById('k_end').value,
+    status: false, price: null,
+    filter: false, ozone: false,
+    capacity: null, recovered: null,
+    createdAt: Date.now()
+  };
+  try {
+    if (editKlimaKey) {
+      await update(ref(db, 'klima/' + editKlimaKey), k);
+      editKlimaKey = null;
+      document.getElementById('klimaBtn').innerText = '▶ Dodaj zlecenie klima';
+      document.getElementById('cancelKlimaBtn').style.display = 'none';
+      showToast('✔ Zaktualizowano', 'var(--green)');
+    } else {
+      await push(ref(db, 'klima'), k);
+      showToast('✔ Zlecenie klima dodane', 'var(--green)');
+    }
+    ['k_name','k_phone','k_car','k_year'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('k_start').value = '';
+    document.getElementById('k_end').value = '';
+  } catch(e) { showToast('❌ ' + e.message, 'var(--red)'); }
+};
+
+window.editKlima = function(k) {
+  const o = klimas[k]; if (!o) return;
+  editKlimaKey = k;
+  document.getElementById('k_name').value = o.name || '';
+  document.getElementById('k_phone').value = o.phone || '';
+  document.getElementById('k_car').value = o.car || '';
+  document.getElementById('k_year').value = o.year || '';
+  document.getElementById('k_start').value = o.start || '';
+  document.getElementById('k_end').value = o.end || '';
+  document.getElementById('klimaBtn').innerText = '✔ Zapisz zmiany';
+  document.getElementById('cancelKlimaBtn').style.display = 'block';
+  showTab('klima', document.querySelector('.tab[onclick*="klima"]'));
+  window.scrollTo({top:0, behavior:'smooth'});
+};
+
+window.cancelKlimaEdit = function() {
+  editKlimaKey = null;
+  document.getElementById('klimaBtn').innerText = '▶ Dodaj zlecenie klima';
+  document.getElementById('cancelKlimaBtn').style.display = 'none';
+  ['k_name','k_phone','k_car','k_year'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('k_start').value = '';
+  document.getElementById('k_end').value = '';
+};
+
+window.deleteKlima = async function(k) {
+  if (!confirm('Usunąć to zlecenie klima?')) return;
+  await remove(ref(db, 'klima/' + k));
+  showToast('Usunięto', 'var(--muted)');
+};
+
+window.toggleKlima = async function(k) {
+  const o = klimas[k]; if (!o) return;
+  await update(ref(db, 'klima/' + k), {status: !o.status});
+};
+
+window.openKlimaPriceModal = function(k) {
+  const o = klimas[k]; if (!o) return;
+  klimaPriceKey = k;
+  document.getElementById('k_capacity').value = o.capacity || '';
+  document.getElementById('k_recovered').value = o.recovered || '';
+  document.getElementById('k_filter').checked = o.filter || false;
+  document.getElementById('k_ozone').checked = o.ozone || false;
+  calcKlimaPrice();
+  document.getElementById('klimaPriceModal').style.display = 'flex';
+};
+
+window.closeKlimaPriceModal = function() {
+  document.getElementById('klimaPriceModal').style.display = 'none';
+  klimaPriceKey = null;
+};
+
+window.calcKlimaPrice = function() {
+  const x = parseFloat(document.getElementById('k_capacity').value) || 0;
+  const y = parseFloat(document.getElementById('k_recovered').value) || 0;
+  const filter = document.getElementById('k_filter').checked ? 50 : 0;
+  const ozone = document.getElementById('k_ozone').checked ? 30 : 0;
+  const z = x - y;
+  const base = z > 0 ? ((z / 100) * 39) + 50 : 50;
+  const total = Math.round(base + filter + ozone);
+  const el = document.getElementById('klimaPriceResult');
+  const breakdown = [];
+  if (z > 0) breakdown.push(`uzupełniono ${z}g × 0,39 zł + 50 zł`);
+  else breakdown.push('brak uzupełnienia + 50 zł');
+  if (filter) breakdown.push('filtr +50 zł');
+  if (ozone) breakdown.push('odgrzybienie +30 zł');
+  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px">${breakdown.join(' | ')}</div><b>${total} zł</b>`;
+  el.dataset.total = total;
+};
+
+window.saveKlimaPrice = async function() {
+  if (!klimaPriceKey) return;
+  const total = parseFloat(document.getElementById('klimaPriceResult').dataset.total) || 0;
+  const capacity = document.getElementById('k_capacity').value;
+  const recovered = document.getElementById('k_recovered').value;
+  const filter = document.getElementById('k_filter').checked;
+  const ozone = document.getElementById('k_ozone').checked;
+  await update(ref(db, 'klima/' + klimaPriceKey), {price: total, capacity, recovered, filter, ozone, status: true});
+  showToast('✔ Cena zapisana: ' + total + ' zł', 'var(--green)');
+  closeKlimaPriceModal();
+};
+
+window.renderKlima = function() {
+  const box = document.getElementById('klimaBox');
+  if (!box) return;
+  const search = (document.getElementById('k_search')?.value || '').toLowerCase();
+  const entries = Object.entries(klimas).filter(([k,o]) => {
+    if (!o) return false;
+    if (search) return [o.name,o.phone,o.car].some(v=>(v||'').toLowerCase().includes(search));
+    return true;
+  }).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+  if (!entries.length) { box.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:12px 0">Brak zleceń klima</div>'; return; }
+
+  box.innerHTML = entries.map(([k,o]) => {
+    const statusColor = o.status ? 'var(--green)' : 'var(--red)';
+    const statusIcon = o.status ? '✔' : '○';
+    const priceHtml = o.price != null
+      ? `<span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${o.price} zł</span>`
+      : `<span style="font-size:11px;color:var(--muted)">cena nieustalona</span>`;
+    const extras = [o.filter?'filtr':'', o.ozone?'odgrzybienie':''].filter(Boolean).join(', ');
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;color:var(--accent);font-family:var(--mono)">${o.car||'—'}${o.year?' ('+o.year+')':''}</div>
+          <div style="font-size:12px;color:var(--text);margin-top:2px">${o.name||'—'}${o.phone?' · '+o.phone:''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)">📥 ${o.start||'—'}${o.end?' → 📅 '+o.end:''}</div>
+          ${extras?`<div style="font-size:11px;color:var(--muted);margin-top:2px">+ ${extras}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end">
+          <div style="display:flex;gap:4px">
+            <button onclick="toggleKlima('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
+            <button onclick="openKlimaPriceModal('${k}')" title="Ustal cenę" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(249,115,22,0.12);color:var(--accent);border:1px solid rgba(249,115,22,0.4)">❄️</button>
+            <button onclick="applyKlimaDiscount('${k}',-10)" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
+            <button onclick="applyKlimaDiscount('${k}',+10)" title="Dodaj +10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(74,222,128,0.1);color:var(--green);border:1px solid rgba(74,222,128,0.3)">+10</button>
+            <button onclick="editKlima('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
+            <button onclick="deleteKlima('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+            ${o.price!=null&&o.price<(((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))/100*39+50)+(o.filter?50:0)+(o.ozone?30:0))?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${Math.round((1-o.price/((((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))/100*39+50)+(o.filter?50:0)+(o.ozone?30:0))))*100)}%</span>`:''}
+            ${priceHtml}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+};
+
 window.showTab = function(id, el) {
   const btn = document.getElementById('printBtn');
   if (btn) btn.style.display = (id==='main' && currentUser) ? 'block' : 'none';
@@ -2406,8 +2697,7 @@ window.showTab = function(id, el) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (el) el.classList.add('active');
-  if (id==='stats') window.renderStats();
-  if (id==='cash') window.calculateCash();
+  if (id==='cash') { window.calculateCash(); }
   if (id==='archive') window.renderArchive();
 };
 
