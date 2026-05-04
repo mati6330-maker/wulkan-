@@ -706,6 +706,7 @@ let editOrderKey = null;
 let editKey = null;
 let visitFilter = 'all';
 let orderFilter = 'all';
+let highlightVisitKey = null;
 
 // ── HELPERS ──
 function formatDate(d) {
@@ -1338,29 +1339,9 @@ function renderGrid() {
             if (firstEntry) {
               const key = firstEntry[0];
               const visitDate = firstEntry[1].date;
+              highlightVisitKey = key;
               const listTab = document.querySelector('.tab[onclick*="list"]');
               window.showTab('list', listTab);
-              setTimeout(() => {
-                renderList();
-                // Poczekaj aż renderList skończy, potem otwórz grupę i scrolluj
-                setTimeout(() => {
-                  const groupId = 'vg-' + visitDate;
-                  const group = document.getElementById(groupId);
-                  const arrow = document.getElementById(groupId + '-arrow');
-                  if (group) {
-                    group.style.display = 'block';
-                    if (arrow) arrow.textContent = '▼';
-                  }
-                  setTimeout(() => {
-                    const el = document.getElementById('card-'+key);
-                    if (el) {
-                      el.scrollIntoView({behavior:'smooth',block:'center'});
-                      el.style.outline='2px solid var(--accent)';
-                      setTimeout(()=>el.style.outline='',2000);
-                    }
-                  }, 80);
-                }, 150);
-              }, 50);
             }
           } else {
             alert('⛔ Ten termin jest zajęty');
@@ -1747,6 +1728,27 @@ function renderArchiveVisits() {
       if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
     });
   }
+
+  // Podświetl konkretną kartę jeśli ustawiono
+  if (highlightVisitKey) {
+    const hKey = highlightVisitKey;
+    highlightVisitKey = null;
+    const hVisit = visits[hKey];
+    if (hVisit) {
+      const groupId = 'vg-' + hVisit.date;
+      const group = document.getElementById(groupId);
+      const arrow = document.getElementById(groupId + '-arrow');
+      if (group) { group.style.display = 'block'; if (arrow) arrow.textContent = '▼'; }
+    }
+    setTimeout(() => {
+      const el = document.getElementById('card-' + hKey);
+      if (el) {
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+        el.style.outline = '2px solid var(--accent)';
+        setTimeout(() => el.style.outline = '', 2000);
+      }
+    }, 50);
+  }
 }
 
 function renderArchiveOrders() {
@@ -1933,6 +1935,37 @@ window.renderList = function renderList() {
   });
 
   box.innerHTML = html.join('');
+
+  // Przywróć stan otwartych grup
+  if (openGroups.size > 0) {
+    document.querySelectorAll('[id^="vg-"]').forEach(el => {
+      const isOpen = openGroups.has(el.id);
+      el.style.display = isOpen ? 'block' : 'none';
+      const arrow = document.getElementById(el.id + '-arrow');
+      if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+    });
+  }
+
+  // Podświetl konkretną kartę jeśli ustawiono
+  if (highlightVisitKey) {
+    const hKey = highlightVisitKey;
+    highlightVisitKey = null;
+    const hVisit = visits[hKey];
+    if (hVisit) {
+      const groupId = 'vg-' + hVisit.date;
+      const group = document.getElementById(groupId);
+      const arrow = document.getElementById(groupId + '-arrow');
+      if (group) { group.style.display = 'block'; if (arrow) arrow.textContent = '▼'; }
+    }
+    setTimeout(() => {
+      const el = document.getElementById('card-' + hKey);
+      if (el) {
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+        el.style.outline = '2px solid var(--accent)';
+        setTimeout(() => el.style.outline = '', 2000);
+      }
+    }, 50);
+  }
 }
 
 window.toggleDayGroup = function(id) {
