@@ -1339,12 +1339,20 @@ function renderGrid() {
             if (firstEntry) {
               const key = firstEntry[0];
               const visitDate = firstEntry[1].date;
-              highlightVisitKey = key;
-              // Ustaw filtr daty na dzień wizyty
-              const dateFilterEl = document.getElementById('dateFilter');
-              if (dateFilterEl) dateFilterEl.value = visitDate;
               const listTab = document.querySelector('.tab[onclick*="list"]');
+              // Ustaw filtr przed przejściem
+              const df = document.getElementById('dateFilter');
+              if (df) df.value = visitDate;
               window.showTab('list', listTab);
+              // Scroll po wyrenderowaniu
+              setTimeout(() => {
+                const card = document.getElementById('card-' + key);
+                if (card) {
+                  card.scrollIntoView({behavior:'smooth', block:'center'});
+                  card.style.outline = '2px solid var(--accent)';
+                  setTimeout(() => card.style.outline = '', 2000);
+                }
+              }, 300);
             }
           } else {
             alert('⛔ Ten termin jest zajęty');
