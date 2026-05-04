@@ -16,14 +16,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 @media(min-width:900px){
   body{font-size:15px;}
-  #appScreen{display:grid;grid-template-columns:200px 1fr;grid-template-rows:auto auto 1fr;gap:0;min-height:100vh;}
+  #appScreen{display:grid;grid-template-columns:160px 1fr;grid-template-rows:auto auto 1fr;gap:0;min-height:100vh;}
   #editBanner{grid-column:1/-1;grid-row:1;}
   #adminBar,#guestBar{grid-column:1/-1;grid-row:2;}
   #syncStatus{display:none;}
   .tabs{
     grid-column:1;grid-row:3;
-    display:flex;flex-direction:column;gap:2px;
-    padding:16px 8px;
+    display:flex;flex-direction:column;gap:1px;
+    padding:8px 6px;
     background:var(--surface);
     border-right:1px solid var(--border);
     position:sticky;top:52px;
@@ -32,34 +32,27 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     align-self:start;
   }
   .tab{
-    text-align:left;padding:10px 14px;
-    border-radius:4px;font-size:12px;
-    letter-spacing:1px;border-bottom:none;
-    white-space:normal;
+    text-align:left;padding:8px 10px;
+    border-radius:3px;font-size:11px;
+    letter-spacing:1.5px;border-bottom:none;
+    white-space:nowrap;
   }
   .tab.active{
     color:var(--accent);
     background:rgba(249,115,22,0.1);
     border-bottom:none;
-    border-left:3px solid var(--accent);
-  }
-  #printBtn{
-    grid-column:2;grid-row:3;
-    align-self:start;
-    margin:16px 0 0 16px;
-    width:auto;
-    max-width:860px;
+    border-left:2px solid var(--accent);
   }
   .container{
     grid-column:2;grid-row:3;
-    padding:20px 24px;
-    max-width:860px;
+    padding:16px 20px;
+    max-width:880px;
     width:100%;
     align-self:start;
   }
   .grid{grid-template-columns:repeat(5,1fr);}
   .calendar{grid-template-columns:repeat(6,1fr);}
-  .card{padding:14px 16px;}
+  .card{padding:12px 14px;}
 }
 #clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 14px rgba(249,115,22,0.4);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
 .tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;}
@@ -152,7 +145,7 @@ button{width:100%;padding:14px;margin:5px 0;background:var(--accent);color:#000;
 button::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,0.1) 0%,transparent 60%);pointer-events:none;}
 button:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:0 4px 18px rgba(249,115,22,0.35)}
 button:active{transform:translateY(0);box-shadow:none}
-#printBtn{margin:10px;width:calc(100% - 20px);background:transparent;color:var(--accent);border:1px solid var(--accent);}
+#printBtn{margin:0 0 12px 0;width:100%;background:transparent;color:var(--accent);border:1px solid var(--accent);}
 #printBtn:hover{background:rgba(249,115,22,0.08)}
 .section-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:18px 0 7px;display:flex;align-items:center;gap:10px;}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -304,8 +297,8 @@ body.light .wm-logo img{filter:none;}
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('archive',this)">Archiwum</div>
   <div class="tab" onclick="showTab('pricing',this)">Cennik</div>
 </div>
-<button id="printBtn" onclick="printDay()" style="display:none;margin:8px 10px;width:calc(100% - 20px);background:transparent;color:var(--accent);border:1px solid var(--accent);letter-spacing:2px">⎙ DRUKUJ DZIEŃ</button>
 <div class="container">
+<button id="printBtn" onclick="printDay()" style="display:none;margin:0 0 12px 0;width:100%;background:transparent;color:var(--accent);border:1px solid var(--accent);letter-spacing:2px">⎙ DRUKUJ DZIEŃ</button>
 
 <div class="section active" id="main">
 <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:5px;padding:16px;margin-bottom:14px;line-height:1.8">
@@ -320,7 +313,7 @@ body.light .wm-logo img{filter:none;}
 </div>
 <div class="calendar" id="calendar"></div>
 <div class="section-label">Godzina wizyty</div>
-<div class="grid" id="grid"></div>
+<div class="grid" id="grid" onclick="if(event.target===this){selectedTime=null;renderGrid()}"></div>
 <div id="visitFormAdmin">
 <h3>Szczegóły wizyty</h3>
 <div class="section-label">Dane klienta</div>
@@ -1781,7 +1774,7 @@ function renderArchiveOrders() {
   entries.sort((a,b)=>(b[1].startDate||b[1].dateStamp||'').localeCompare(a[1].startDate||a[1].dateStamp||''));
 
   const grouped = {};
-  entries.forEach(([k,o]) => { const d=o.dateStamp||'brak'; if(!grouped[d])grouped[d]=[]; grouped[d].push([k,o]); });
+  entries.forEach(([k,o]) => { const d=(o.startDate||o.dateStamp)||'brak'; if(!grouped[d])grouped[d]=[]; grouped[d].push([k,o]); });
 
   const html = [];
   Object.keys(grouped).sort().reverse().forEach(date => {
@@ -2424,7 +2417,7 @@ function renderReport(title, list, sum) {
 window.printDailyFullReport = function() {
   const today=getToday(); let list=[],sum=0;
   Object.values(visits).forEach(v=>{if(v.status&&v.date===today){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{if(o.status&&o.dateStamp===today){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;if(o.status&&ds===today){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
   renderReport('Raport dzienny — '+today,list,sum);
 };
 window.printWeekFullReport = function() {
@@ -2433,14 +2426,14 @@ window.printWeekFullReport = function() {
   start.setDate(base.getDate()-day+1); start.setHours(0,0,0,0);
   const end=new Date(start.getTime()+7*86400000); let list=[],sum=0;
   Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d>=start&&d<end){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{const d=parseDate(o.dateStamp);if(o.status&&d>=start&&d<end){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d>=start&&d<end){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
   renderReport('Raport tygodniowy',list,sum);
 };
 window.printMonthFullReport = function() {
   const val=document.getElementById('cashMonth').value; if(!val){alert('Wybierz miesiąc');return;}
   const[y,m]=val.split('-').map(Number); let list=[],sum=0;
   Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{const d=parseDate(o.dateStamp);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:o.dateStamp,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
   renderReport('Raport miesięczny',list,sum);
 };
 
