@@ -2324,8 +2324,9 @@ function renderReport(title, list, sum) {
     grouped[item.date].push(item);
   });
 
-  const visitSum = list.filter(i=>i.type!=='zlecenie').reduce((a,i)=>a+i.price,0);
+  const visitSum = list.filter(i=>i.type==='wizyta').reduce((a,i)=>a+i.price,0);
   const orderSum = list.filter(i=>i.type==='zlecenie').reduce((a,i)=>a+i.price,0);
+  const klimaSum = list.filter(i=>i.type==='klima').reduce((a,i)=>a+i.price,0);
 
   let tableRows = '';
   Object.keys(grouped).sort().forEach(date => {
@@ -2335,7 +2336,7 @@ function renderReport(title, list, sum) {
     const daySum = dayItems.reduce((a,i)=>a+i.price,0);
 
     tableRows += `<tr class="day-header">
-      <td colspan="4" style="background:#f1f5f9;font-weight:700;font-size:12px;color:#475569;letter-spacing:0.5px;text-transform:uppercase;padding:10px 12px">
+      <td colspan="5" style="background:#f1f5f9;font-weight:700;font-size:9px;color:#475569;letter-spacing:0.5px;text-transform:uppercase;padding:4px 7px">
         ${dayName} <span style="float:right;color:#64748b">${daySum} zł</span>
       </td>
     </tr>`;
@@ -2344,7 +2345,7 @@ function renderReport(title, list, sum) {
       tableRows += `<tr style="background:${i%2===0?'#fff':'#f8fafc'}">
         <td style="font-family:monospace;font-weight:700;color:#f97316">${item.time||'—'}</td>
         <td>${item.name||'—'}</td>
-        <td style="color:#64748b;font-size:11px">${item.service||'—'}</td>
+        <td style="color:#64748b;font-size:11px">${item.service||'—'}${item.type==='klima'?' <span style="color:#06b6d4;font-size:10px">❄</span>':item.type==='zlecenie'?' <span style="color:#a78bfa;font-size:10px">⚙</span>':''}</td>
         <td style="text-align:center;font-size:11px;color:${item.disc>0?'#f59e0b':'#94a3b8'}">${item.disc>0?'−'+item.disc+'%':'—'}</td>
         <td style="font-weight:700;text-align:right">${item.price} zł</td>
       </tr>`;
@@ -2354,20 +2355,20 @@ function renderReport(title, list, sum) {
   const content = `<!DOCTYPE html><html><head><meta charset="utf-8">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;padding:28px;font-size:13px;color:#1e293b;background:#fff}
-    .header{border-bottom:3px solid #111;padding-bottom:16px;margin-bottom:20px}
-    .logo{font-size:22px;font-weight:900;letter-spacing:1px;color:#111}
-    .report-title{font-size:15px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:2px;margin-top:6px}
-    .report-period{font-size:12px;color:#64748b;margin-top:3px}
+    body{font-family:Arial,sans-serif;padding:12px 16px;font-size:11px;color:#1e293b;background:#fff}
+    .header{border-bottom:3px solid #111;padding-bottom:8px;margin-bottom:10px}
+    .logo{font-size:16px;font-weight:900;letter-spacing:1px;color:#111}
+    .report-title{font-size:12px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+    .report-period{font-size:10px;color:#64748b;margin-top:1px}
     table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
-    th{background:#111;color:#fff;padding:9px 12px;text-align:left;font-size:11px;letter-spacing:0.5px;text-transform:uppercase}
+    th{background:#111;color:#fff;padding:5px 7px;text-align:left;font-size:9px;letter-spacing:0.5px;text-transform:uppercase}
     th:last-child{text-align:right}
-    td{padding:9px 12px;border-bottom:1px solid #e2e8f0;vertical-align:middle}
-    .summary{margin-top:20px;border:2px solid #111;border-radius:6px;overflow:hidden}
-    .summary-row{display:flex;justify-content:space-between;padding:10px 16px;font-size:13px;border-bottom:1px solid #e2e8f0}
-    .summary-row:last-child{border-bottom:none;background:#111;color:#fff;font-size:16px;font-weight:900}
-    .footer{margin-top:16px;font-size:11px;color:#94a3b8;text-align:right}
-    @media print{body{padding:12px}}
+    td{padding:3px 7px;border-bottom:1px solid #e2e8f0;vertical-align:middle;line-height:1.2}
+    .summary{margin-top:8px;border:1px solid #111;border-radius:4px;overflow:hidden}
+    .summary-row{display:flex;justify-content:space-between;padding:4px 10px;font-size:11px;border-bottom:1px solid #e2e8f0}
+    .summary-row:last-child{border-bottom:none;background:#111;color:#fff;font-size:13px;font-weight:900}
+    .footer{margin-top:6px;font-size:9px;color:#94a3b8;text-align:right}
+    @media print{body{padding:8px 10px}@page{margin:6mm}}
   </style>
   </head><body>
   <div class="header">
@@ -2386,6 +2387,7 @@ function renderReport(title, list, sum) {
   <div class="summary">
     ${visitSum > 0 ? `<div class="summary-row"><span>Wizyty</span><span>${visitSum} zł</span></div>` : ''}
     ${orderSum > 0 ? `<div class="summary-row"><span>Zlecenia</span><span>${orderSum} zł</span></div>` : ''}
+    ${klimaSum > 0 ? `<div class="summary-row"><span>Klima</span><span>${klimaSum} zł</span></div>` : ''}
     <div class="summary-row"><span>SUMA CAŁKOWITA</span><span>${sum} zł</span></div>
   </div>
 
@@ -2400,6 +2402,7 @@ window.printDailyFullReport = function() {
   const today=getToday(); let list=[],sum=0;
   Object.values(visits).forEach(v=>{if(v.status&&v.date===today){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
   Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;if(o.status&&ds===today){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(klimas).forEach(k=>{if(k&&k.status&&k.start===today&&k.price!=null){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}});
   renderReport('Raport dzienny — '+today,list,sum);
 };
 window.printWeekFullReport = function() {
@@ -2409,6 +2412,7 @@ window.printWeekFullReport = function() {
   const end=new Date(start.getTime()+7*86400000); let list=[],sum=0;
   Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d>=start&&d<end){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
   Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d>=start&&d<end){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(klimas).forEach(k=>{if(k&&k.status&&k.price!=null){const d=parseDate(k.start);if(d>=start&&d<end){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}}});
   renderReport('Raport tygodniowy',list,sum);
 };
 window.printMonthFullReport = function() {
@@ -2416,6 +2420,7 @@ window.printMonthFullReport = function() {
   const[y,m]=val.split('-').map(Number); let list=[],sum=0;
   Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
   Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(klimas).forEach(k=>{if(k&&k.status&&k.price!=null){const d=parseDate(k.start);if(d.getFullYear()===y&&(d.getMonth()+1)===m){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}}});
   renderReport('Raport miesięczny',list,sum);
 };
 
@@ -2494,7 +2499,7 @@ window.printDay = function() {
     th{background:#111;color:#fff;padding:7px 8px;text-align:left;font-size:10px;letter-spacing:0.5px;text-transform:uppercase}
     td{padding:8px;border-bottom:1px solid #e5e5e5;vertical-align:middle}
     tr:nth-child(even) td{background:#f9f9f9}
-    .summary{margin-top:16px;font-size:11px;color:#999}
+    .summary{margin-top:6px;font-size:9px;color:#999}
     .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:bold;letter-spacing:1px}
     @media print{body{padding:10px}}
   </style>
