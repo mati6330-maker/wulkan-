@@ -395,6 +395,7 @@ body.light .wm-logo img{filter:none;}
   <option disabled hidden selected value="">— Typ felg —</option>
   <option>Aluminiowe</option><option>Stalowe</option>
 </select>
+<input id="o_note" placeholder="Notatka (opcjonalne)"/>
 <div class="section-label">Data przyjęcia</div>
 <input id="o_start_date" type="date"/>
 <div class="section-label">Termin realizacji</div>
@@ -1924,6 +1925,7 @@ window.addOrder = async function() {
   const o = {
     status:false, name:document.getElementById('o_name').value, phone:document.getElementById('o_phone').value,
     car:document.getElementById('o_car').value, diameter, wheels:document.getElementById('o_wheels').value,
+    note:document.getElementById('o_note').value,
     service, type, time, custom,
     price:calcVisitPrice({service,wheel:type,tireSize:diameter}, true),
     dateStamp: time==='dziś'?formatDate(today):time==='jutro'?formatDate(tomorrow):custom,
@@ -1944,7 +1946,7 @@ window.addOrder = async function() {
 };
 
 function resetOrderForm() {
-  ['o_name','o_phone','o_car','o_wheels'].forEach(id=>document.getElementById(id).value='');
+  ['o_name','o_phone','o_car','o_wheels','o_note'].forEach(id=>document.getElementById(id).value='');
   ['o_service','o_type','o_time'].forEach(id=>document.getElementById(id).selectedIndex=0);
   document.getElementById('o_custom_date').value=''; document.getElementById('o_custom_date').style.display='none';
   document.getElementById('o_start_date').value='';
@@ -2045,6 +2047,7 @@ window.renderOrders = function renderOrders() {
             <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)">
               ${o.startDate?'📥 '+o.startDate+' → ':''}📅 ${o.dateStamp||'—'}
             </div>
+            ${o.note?`<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic">📝 ${o.note}</div>`:''}
           </div>
           <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
             <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
@@ -2107,6 +2110,7 @@ window.editOrder = function(k) {
   editOrderKey=k;
   document.getElementById('o_name').value=o.name||''; document.getElementById('o_phone').value=o.phone||'';
   document.getElementById('o_car').value=o.car||''; document.getElementById('o_wheels').value=o.wheels||'';
+  document.getElementById('o_note').value=o.note||'';
   document.getElementById('o_service').value=o.service||''; document.getElementById('o_type').value=o.type||'';
   document.getElementById('o_time').value=o.time||''; document.getElementById('o_custom_date').value=o.custom||'';
   document.getElementById('o_custom_date').style.display=o.time==='własny'?'block':'none';
@@ -2291,19 +2295,43 @@ window.printDay = function() {
 
   const checkbox = '<span style="display:inline-block;width:16px;height:16px;border:1.5px solid #333;vertical-align:middle"></span>';
 
-  const visitRows = dv.map(v => {
-    const extras = [v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':''].filter(Boolean).join(', ');
-    return `<tr>
-      <td style="text-align:center">${checkbox}</td>
-      <td><b>${v.time}</b></td>
-      <td>${v.name||'—'}</td>
-      <td>${v.phone||'—'}</td>
-      <td>${v.car||'—'}</td>
-      <td>${v.tireSize||'—'}"</td>
-      <td>${v.service||'—'}</td>
-      <td>${v.wheel||'—'}</td>
-      <td>${extras||'—'}</td>
-      <td>${v.note||'—'}</td>
+  const visitsByTime = {};
+  dv.forEach(v => { visitsByTime[v.time] = v; });
+
+  // Generuj wszystkie sloty (9:00-17:30, bez 14:xx) + admin (8:xx, 18:xx)
+  const allSlots = [];
+  const hourRanges = [[8,8],[9,13],[15,17],[18,18]];
+  for (const [hFrom, hTo] of hourRanges) {
+    for (let h = hFrom; h <= hTo; h++) {
+      for (const half of [0, 30]) {
+        const t = String(h).padStart(2,'0') + ':' + String(half).padStart(2,'0');
+        allSlots.push(t);
+      }
+    }
+  }
+
+  const visitRows = allSlots.map(slotTime => {
+    const v = visitsByTime[slotTime] ||
+              Object.values(visitsByTime).find(v => v.time === slotTime);
+    const isBlocked = isSlotBlockedForDate(d, slotTime);
+    const isFree = !v && !isBlocked;
+    const rowStyle = isFree
+      ? 'color:#bbb;background:#f9f9f9'
+      : isBlocked
+        ? 'color:#999;background:#f0f0f0'
+        : '';
+    const extras = v ? [v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':''].filter(Boolean).join(', ') : '';
+    return `<tr style="${rowStyle}">
+      <td style="text-align:center">${isFree ? '' : isBlocked ? '🔒' : checkbox}</td>
+      <td><b>${slotTime}</b></td>
+      <td>${v ? (v.name||'—') : isBlocked ? '<i>zablokowany</i>' : ''}</td>
+      <td>${v ? (v.phone||'—') : ''}</td>
+      <td>${v ? (v.car||'—') : ''}</td>
+      <td>${v ? ((v.tireSize||'—')+'"') : ''}</td>
+      <td>${v ? (v.service||'—') : ''}</td>
+      <td>${v ? (v.wheel||'—') : ''}</td>
+      <td>${v ? (extras||'—') : ''}</td>
+      <td>${v ? (v.note||'—') : ''}</td>
     </tr>`;
   }).join('');
 
@@ -2342,14 +2370,14 @@ window.printDay = function() {
   ${dayNote ? `<div class="daynote">📝 ${dayNote}</div>` : ''}
 
   <h2>Wizyty (${dv.length})</h2>
-  ${dv.length ? `<table>
+  <table>
     <thead><tr>
       <th style="width:24px"></th>
       <th>Godz.</th><th>Klient</th><th>Telefon</th><th>Auto</th>
       <th>Rozmiar</th><th>Usługa</th><th>Felgi</th><th>Opcje</th><th>Notatka</th>
     </tr></thead>
     <tbody>${visitRows}</tbody>
-  </table>` : '<p style="color:#999">Brak wizyt</p>'}
+  </table>
 
   <h2>Zlecenia (${do_.length})</h2>
   ${do_.length ? `<table>
