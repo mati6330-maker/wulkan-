@@ -904,14 +904,33 @@ window.setOrderSize = function(val, btn) {
 
 // ── KALENDARZ ──
 const MAX_SLOTS = 16;
+function isSlotBlockedForDate(dateStr, time) {
+  return Object.entries(slotBlocks).some(([k, v]) => {
+    if (!v) return false;
+    // Format obiektowy z date+time
+    if (typeof v === 'object' && v.date === dateStr && v.time === time) return true;
+    // Format true — klucz to YYYY_MM_DD--HH_MM
+    if (v === true) {
+      const expected = dateStr.replace(/-/g,'_') + '--' + time.replace(':','_');
+      const expectedOld = dateStr.replace(/-/g,'_') + '|' + time.replace(':','_');
+      return k === expected || k === expectedOld;
+    }
+    return false;
+  });
+}
+
 function countFreeSlots(dateStr) {
   const taken = Object.values(visits).filter(v =>
     v.date === dateStr &&
     (v.time.endsWith(':00') || v.time.endsWith(':30'))
   ).length;
-  const blocked = Object.values(slotBlocks).filter(v =>
-    v && v.date === dateStr
-  ).length;
+  // Zlicz zablokowane sloty dla tego dnia
+  const blocked = Object.entries(slotBlocks).filter(([k, v]) => {
+    if (!v) return false;
+    if (typeof v === 'object' && v.date) return v.date === dateStr;
+    if (v === true) return k.startsWith(dateStr.replace(/-/g,'_') + '--') || k.startsWith(dateStr.replace(/-/g,'_') + '|');
+    return false;
+  }).length;
   return Math.max(0, MAX_SLOTS - taken - blocked);
 }
 
@@ -1178,8 +1197,7 @@ function renderGrid() {
       const baseMinute = half * 30;
       const baseTime = String(h).padStart(2,'0')+':'+String(baseMinute).padStart(2,'0');
       const slotKey = d.replace(/-/g,'_') + '--' + baseTime.replace(':','_');
-      const isSlotBlocked = !!(slotBlocks[slotKey] || slotBlocks[slotKey.replace('--','|')] ||
-        Object.values(slotBlocks).some(v => v && v.date === d && v.time === baseTime));
+      const isSlotBlocked = isSlotBlockedForDate(d, baseTime);
 
       const timesInSlot = [0,15].map(offset => {
         const m = baseMinute + offset;
@@ -1365,10 +1383,7 @@ window.save = async function() {
   if (!selectedTime) errors.push('📅 Wybierz dzień i godzinę wizyty');
   if (selectedDate && parseDate(formatDate(selectedDate)).getDay() === 0) errors.push('🚫 W niedzielę warsztat jest nieczynny');
   if (selectedTime && selectedDate) {
-    const sk = formatDate(selectedDate).replace(/-/g,'_') + '--' + selectedTime.replace(':','_');
-    const skOld = formatDate(selectedDate).replace(/-/g,'_') + '|' + selectedTime.replace(':','_');
-    const slotBlockedByValue = Object.values(slotBlocks).some(v => v && v.date === formatDate(selectedDate) && v.time === selectedTime);
-    if (slotBlocks[sk] || slotBlocks[skOld] || slotBlockedByValue) errors.push('🔒 Ten slot jest zablokowany');
+    if (selectedTime && isSlotBlockedForDate(formatDate(selectedDate), selectedTime)) errors.push('🔒 Ten slot jest zablokowany');
   }
   if (selectedDate && isDateBlocked(formatDate(selectedDate))) errors.push('🔒 Ten dzień jest zablokowany');
   const tireSize = document.getElementById('tireSize').value;
@@ -2347,7 +2362,7 @@ window.showTab = function(id, el) {
 // ── BLOKOWANIE DNI ──
 window.blockSlot = async function(dateStr, time) {
   const key = dateStr.replace(/-/g,'_') + '--' + time.replace(':','_');
-  await set(ref(db, 'slotBlocks/' + key), true);
+  await set(ref(db, 'slotBlocks/' + key), { date: dateStr, time, reason: '' });
   showToast('🔒 Slot ' + time + ' zablokowany');
 };
 
@@ -2389,7 +2404,13 @@ window.blockDay = async function() {
 
   try {
     if (checkedSlots.length === 0) {
-      // Blokada całego dnia
+      // Blokada całego dnia — sprawdź czy są wizyty
+      const dayVisits = Object.values(visits).filter(v => v.date === date);
+      if (dayVisits.length > 0) {
+        const times = dayVisits.map(v => v.time).join(', ');
+        showToast(`⛔ Dzień ma ${dayVisits.length} wizyt(y): ${times}`, 'var(--red)');
+        return;
+      }
       const key = date.replace(/-/g, '_');
       await set(ref(db, 'blokady/' + key), { date, reason: reason || '' });
       showToast('🔒 Zablokowano cały dzień');
@@ -2397,15 +2418,14 @@ window.blockDay = async function() {
       // Blokada wybranych slotów - update pod gałęzią slotBlocks
       const dayVisits = Object.values(visits).filter(v => v.date === date);
       const reservedTimes = new Set(dayVisits.map(v => v.time));
-      // Każdy slot to 30 min z dwoma kwadransami (:00/:15 lub :30/:45)
       const alreadyReserved = checkedSlots.filter(t => {
         const [h, m] = t.split(':').map(Number);
         const t1 = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-        const t2 = `${String(h).padStart(2,'0')}:${String(m+15).padStart(2,'0')}`;
+        const t2 = `${String(h).padStart(2,'0')}:${String(m + 15).padStart(2,'0')}`;
         return reservedTimes.has(t1) || reservedTimes.has(t2);
       });
       if (alreadyReserved.length > 0) {
-        showToast(`⛔ Już zarezerwowane: ${alreadyReserved.join(', ')}`, 'var(--red)');
+        showToast(`⛔ Zajęte: ${alreadyReserved.join(', ')}`, 'var(--red)');
         return;
       }
       const updates = {};
