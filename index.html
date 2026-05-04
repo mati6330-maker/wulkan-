@@ -910,7 +910,9 @@ function countFreeSlots(dateStr) {
     (v.time.endsWith(':00') || v.time.endsWith(':30'))
   ).length;
   const dateKey = dateStr.replace(/-/g,'_');
-  const blocked = Object.keys(slotBlocks).filter(k => k.startsWith(dateKey + '--')).length;
+  const blocked = Object.keys(slotBlocks).filter(k =>
+    k.startsWith(dateKey + '--') || k.startsWith(dateKey + '|')
+  ).length;
   return Math.max(0, MAX_SLOTS - taken - blocked);
 }
 
@@ -1177,7 +1179,8 @@ function renderGrid() {
       const baseMinute = half * 30;
       const baseTime = String(h).padStart(2,'0')+':'+String(baseMinute).padStart(2,'0');
       const slotKey = d.replace(/-/g,'_') + '--' + baseTime.replace(':','_');
-      const isSlotBlocked = !!slotBlocks[slotKey];
+      const slotKeyOld = d.replace(/-/g,'_') + '|' + baseTime.replace(':','_');
+      const isSlotBlocked = !!(slotBlocks[slotKey] || slotBlocks[slotKeyOld]);
 
       const timesInSlot = [0,15].map(offset => {
         const m = baseMinute + offset;
@@ -1368,7 +1371,8 @@ window.save = async function() {
   if (selectedDate && parseDate(formatDate(selectedDate)).getDay() === 0) errors.push('🚫 W niedzielę warsztat jest nieczynny');
   if (selectedTime && selectedDate) {
     const sk = formatDate(selectedDate).replace(/-/g,'_') + '--' + selectedTime.replace(':','_');
-    if (slotBlocks[sk]) errors.push('🔒 Ten slot jest zablokowany');
+    const skOld = formatDate(selectedDate).replace(/-/g,'_') + '|' + selectedTime.replace(':','_');
+    if (slotBlocks[sk] || slotBlocks[skOld]) errors.push('🔒 Ten slot jest zablokowany');
   }
   if (selectedDate && isDateBlocked(formatDate(selectedDate))) errors.push('🔒 Ten dzień jest zablokowany');
   const tireSize = document.getElementById('tireSize').value;
