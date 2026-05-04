@@ -2373,6 +2373,9 @@ window.openBlockModal = function() {
   try {
     document.getElementById('blockModal').style.display = 'flex';
     renderBlockedList();
+    const keys = Object.keys(slotBlocks);
+    if (keys.length) showToast('SB: ' + keys[0], 'var(--accent)');
+    else showToast('slotBlocks pusty', 'var(--red)');
   } catch(e) {
     alert('Błąd: ' + e.message);
   }
