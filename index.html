@@ -1851,6 +1851,8 @@ window.renderList = function renderList() {
     const doneCount = dayEntries.filter(([k,v])=>v.status).length;
     const total = dayEntries.length;
     const isToday = date === getToday();
+    const targetDate = highlightVisitKey && visits[highlightVisitKey] ? visits[highlightVisitKey].date : null;
+    const shouldOpen = targetDate ? date === targetDate : isToday;
 
     html.push(`<div style="margin-top:10px">
       <div onclick="toggleDayGroup('vg-${date}')" style="
@@ -1866,10 +1868,10 @@ window.renderList = function renderList() {
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-family:var(--mono);font-size:11px;color:${doneCount===total?'var(--green)':'var(--muted)'}">✔ ${doneCount}/${total}</span>
-          <span id="vg-${date}-arrow" style="color:var(--accent);font-size:14px;transition:transform 0.2s">${isToday?'▼':'▶'}</span>
+          <span id="vg-${date}-arrow" style="color:var(--accent);font-size:14px;transition:transform 0.2s">${shouldOpen?'▼':'▶'}</span>
         </div>
       </div>
-      <div id="vg-${date}" style="display:${isToday?'block':'none'};padding-top:4px">`);
+      <div id="vg-${date}" style="display:${shouldOpen?'block':'none'};padding-top:4px">`);
 
     dayEntries.forEach(([k,v]) => {
       const extras = [v.runflat?'RF':'', v.low?'NP':'', v.valve?'W':''].filter(Boolean).join(' ');
@@ -2774,6 +2776,8 @@ window.showTab = function(id, el) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (el) el.classList.add('active');
+  if (id==='list') window.renderList();
+  if (id==='orders') window.renderOrders();
   if (id==='cash') { window.calculateCash(); }
   if (id==='archive') window.renderArchive();
   if (id==='pricing') window.renderPricing();
