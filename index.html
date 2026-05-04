@@ -26,30 +26,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     padding:8px 6px;
     background:var(--surface);
     border-right:1px solid var(--border);
-    position:sticky;top:52px;
-    height:calc(100vh - 52px);
-    overflow-y:auto;
     align-self:start;
+    position:sticky;top:52px;
   }
   .tab{
     flex:0 0 auto !important;
     text-align:left !important;
-    padding:10px 12px !important;
+    padding:12px 14px !important;
     border-radius:3px;
-    font-size:11px;
+    font-size:12px !important;
     letter-spacing:1.5px;
     border-bottom:none !important;
-    border-bottom-width:0 !important;
     white-space:nowrap;
     line-height:1.2;
     height:auto !important;
-    min-height:0 !important;
   }
   .tab.active{
     color:var(--accent) !important;
     background:rgba(249,115,22,0.1) !important;
     border-bottom:none !important;
-    border-bottom-width:0 !important;
     box-shadow:inset 2px 0 0 var(--accent);
   }
   .container{
