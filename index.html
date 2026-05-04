@@ -1337,17 +1337,28 @@ function renderGrid() {
             const firstEntry = dayVisits.find(([k,v]) => timesInSlot.includes(v.time));
             if (firstEntry) {
               const key = firstEntry[0];
+              const visitDate = firstEntry[1].date;
               const listTab = document.querySelector('.tab[onclick*="list"]');
               window.showTab('list', listTab);
               setTimeout(() => {
                 renderList();
                 setTimeout(() => {
-                  const el = document.getElementById('card-'+key);
-                  if (el) {
-                    el.scrollIntoView({behavior:'smooth',block:'center'});
-                    el.style.outline='2px solid var(--accent)';
-                    setTimeout(()=>el.style.outline='',2000);
+                  // Otwórz grupę dnia jeśli zwinięta
+                  const groupId = 'vg-' + visitDate;
+                  const group = document.getElementById(groupId);
+                  const arrow = document.getElementById(groupId + '-arrow');
+                  if (group && group.style.display === 'none') {
+                    group.style.display = 'block';
+                    if (arrow) arrow.textContent = '▼';
                   }
+                  setTimeout(() => {
+                    const el = document.getElementById('card-'+key);
+                    if (el) {
+                      el.scrollIntoView({behavior:'smooth',block:'center'});
+                      el.style.outline='2px solid var(--accent)';
+                      setTimeout(()=>el.style.outline='',2000);
+                    }
+                  }, 50);
                 }, 100);
               }, 50);
             }
