@@ -1342,12 +1342,12 @@ function renderGrid() {
               window.showTab('list', listTab);
               setTimeout(() => {
                 renderList();
+                // Poczekaj aż renderList skończy, potem otwórz grupę i scrolluj
                 setTimeout(() => {
-                  // Otwórz grupę dnia jeśli zwinięta
                   const groupId = 'vg-' + visitDate;
                   const group = document.getElementById(groupId);
                   const arrow = document.getElementById(groupId + '-arrow');
-                  if (group && group.style.display === 'none') {
+                  if (group) {
                     group.style.display = 'block';
                     if (arrow) arrow.textContent = '▼';
                   }
@@ -1358,8 +1358,8 @@ function renderGrid() {
                       el.style.outline='2px solid var(--accent)';
                       setTimeout(()=>el.style.outline='',2000);
                     }
-                  }, 50);
-                }, 100);
+                  }, 80);
+                }, 150);
               }, 50);
             }
           } else {
