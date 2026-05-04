@@ -909,9 +909,8 @@ function countFreeSlots(dateStr) {
     v.date === dateStr &&
     (v.time.endsWith(':00') || v.time.endsWith(':30'))
   ).length;
-  const dateKey = dateStr.replace(/-/g,'_');
-  const blocked = Object.keys(slotBlocks).filter(k =>
-    k.startsWith(dateKey + '--') || k.startsWith(dateKey + '|')
+  const blocked = Object.values(slotBlocks).filter(v =>
+    v && v.date === dateStr
   ).length;
   return Math.max(0, MAX_SLOTS - taken - blocked);
 }
@@ -1179,8 +1178,8 @@ function renderGrid() {
       const baseMinute = half * 30;
       const baseTime = String(h).padStart(2,'0')+':'+String(baseMinute).padStart(2,'0');
       const slotKey = d.replace(/-/g,'_') + '--' + baseTime.replace(':','_');
-      const slotKeyOld = d.replace(/-/g,'_') + '|' + baseTime.replace(':','_');
-      const isSlotBlocked = !!(slotBlocks[slotKey] || slotBlocks[slotKeyOld]);
+      const isSlotBlocked = !!(slotBlocks[slotKey] || slotBlocks[slotKey.replace('--','|')] ||
+        Object.values(slotBlocks).some(v => v && v.date === d && v.time === baseTime));
 
       const timesInSlot = [0,15].map(offset => {
         const m = baseMinute + offset;
@@ -1199,12 +1198,8 @@ function renderGrid() {
         div.style.background = 'rgba(100,100,100,0.15)';
         div.style.color = 'var(--muted)';
         div.style.borderColor = 'rgba(100,100,100,0.3)';
-        div.style.cursor = currentUser ? 'pointer' : 'not-allowed';
+        div.style.cursor = 'not-allowed';
         div.innerHTML = `<span style="font-size:10px">${baseTime}</span><span style="font-size:9px;display:block;margin-top:2px">🔒</span>`;
-        if (currentUser) {
-          div.title = 'Kliknij aby odblokować';
-          div.onclick = (e) => { e.stopPropagation(); unblockSlot(slotKey); };
-        }
         grid.appendChild(div);
         continue;
       }
@@ -1372,7 +1367,8 @@ window.save = async function() {
   if (selectedTime && selectedDate) {
     const sk = formatDate(selectedDate).replace(/-/g,'_') + '--' + selectedTime.replace(':','_');
     const skOld = formatDate(selectedDate).replace(/-/g,'_') + '|' + selectedTime.replace(':','_');
-    if (slotBlocks[sk] || slotBlocks[skOld]) errors.push('🔒 Ten slot jest zablokowany');
+    const slotBlockedByValue = Object.values(slotBlocks).some(v => v && v.date === formatDate(selectedDate) && v.time === selectedTime);
+    if (slotBlocks[sk] || slotBlocks[skOld] || slotBlockedByValue) errors.push('🔒 Ten slot jest zablokowany');
   }
   if (selectedDate && isDateBlocked(formatDate(selectedDate))) errors.push('🔒 Ten dzień jest zablokowany');
   const tireSize = document.getElementById('tireSize').value;
@@ -2378,7 +2374,7 @@ window.openBlockModal = function() {
     document.getElementById('blockModal').style.display = 'flex';
     renderBlockedList();
   } catch(e) {
-    alert('openBlockModal błąd: ' + e.message);
+    alert('Błąd: ' + e.message);
   }
 };
 window.closeBlockModal = function() {
