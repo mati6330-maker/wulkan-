@@ -1340,6 +1340,9 @@ function renderGrid() {
               const key = firstEntry[0];
               const visitDate = firstEntry[1].date;
               highlightVisitKey = key;
+              // Ustaw filtr daty na dzień wizyty
+              const dateFilterEl = document.getElementById('dateFilter');
+              if (dateFilterEl) dateFilterEl.value = visitDate;
               const listTab = document.querySelector('.tab[onclick*="list"]');
               window.showTab('list', listTab);
             }
@@ -1851,8 +1854,7 @@ window.renderList = function renderList() {
     const doneCount = dayEntries.filter(([k,v])=>v.status).length;
     const total = dayEntries.length;
     const isToday = date === getToday();
-    const targetDate = highlightVisitKey && visits[highlightVisitKey] ? visits[highlightVisitKey].date : null;
-    const shouldOpen = targetDate ? date === targetDate : isToday;
+    const shouldOpen = dateFilter ? true : isToday;
 
     html.push(`<div style="margin-top:10px">
       <div onclick="toggleDayGroup('vg-${date}')" style="
