@@ -2373,9 +2373,6 @@ window.openBlockModal = function() {
   try {
     document.getElementById('blockModal').style.display = 'flex';
     renderBlockedList();
-    const keys = Object.keys(slotBlocks);
-    if (keys.length) showToast('SB: ' + keys[0], 'var(--accent)');
-    else showToast('slotBlocks pusty', 'var(--red)');
   } catch(e) {
     alert('Błąd: ' + e.message);
   }
@@ -2398,6 +2395,19 @@ window.blockDay = async function() {
       showToast('🔒 Zablokowano cały dzień');
     } else {
       // Blokada wybranych slotów - update pod gałęzią slotBlocks
+      const dayVisits = Object.values(visits).filter(v => v.date === date);
+      const reservedTimes = new Set(dayVisits.map(v => v.time));
+      // Każdy slot to 30 min z dwoma kwadransami (:00/:15 lub :30/:45)
+      const alreadyReserved = checkedSlots.filter(t => {
+        const [h, m] = t.split(':').map(Number);
+        const t1 = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        const t2 = `${String(h).padStart(2,'0')}:${String(m+15).padStart(2,'0')}`;
+        return reservedTimes.has(t1) || reservedTimes.has(t2);
+      });
+      if (alreadyReserved.length > 0) {
+        showToast(`⛔ Już zarezerwowane: ${alreadyReserved.join(', ')}`, 'var(--red)');
+        return;
+      }
       const updates = {};
       checkedSlots.forEach(t => {
         const key = date.replace(/-/g,'_') + '--' + t.replace(':','_');
