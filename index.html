@@ -909,7 +909,9 @@ function countFreeSlots(dateStr) {
     v.date === dateStr &&
     (v.time.endsWith(':00') || v.time.endsWith(':30'))
   ).length;
-  return Math.max(0, MAX_SLOTS - taken);
+  const dateKey = dateStr.replace(/-/g,'_');
+  const blocked = Object.keys(slotBlocks).filter(k => k.startsWith(dateKey + '--')).length;
+  return Math.max(0, MAX_SLOTS - taken - blocked);
 }
 
 // ── POPUP SZCZEGÓŁÓW ──
