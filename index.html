@@ -532,7 +532,7 @@ body.light .wm-logo img{filter:none;}
   <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--red);width:90%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto">
     <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">🔒 Blokuj dni / godziny</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">WYBIERZ DZIEŃ</div>
-    <input type="date" id="blockDateInput" placeholder="RRRR-MM-DD"/>
+    <input type="date" id="blockDateInput" placeholder="RRRR-MM-DD" onchange="refreshBlockModalSlots(this.value)"/>
     <input id="blockReasonInput" placeholder="Powód (opcjonalnie, np. Urlop)" style="margin-top:8px"/>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:12px 0 6px">GODZINY DO ZABLOKOWANIA <span style="color:var(--accent)">(opcjonalnie — brak wyboru = cały dzień)</span></div>
     <div style="display:flex;gap:6px;margin-bottom:6px">
@@ -540,26 +540,26 @@ body.light .wm-logo img{filter:none;}
       <button onclick="selectAllSlots(false)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Odznacz</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;margin-bottom:10px">
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="08:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>08:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="08:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>08:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="09:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>09:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="09:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>09:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="10:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>10:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="10:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>10:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="11:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>11:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="11:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>11:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="12:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>12:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="12:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>12:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="13:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>13:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="13:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>13:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="15:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>15:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="15:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>15:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="16:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>16:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="16:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>16:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="17:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>17:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="17:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>17:30</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="18:00" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>18:00</label>
-<label class="slot-cb-label"><input type="checkbox" class="slot-cb" data-time="18:30" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>18:30</label>
+<label class="slot-cb-label" id="slot-label-08_00"><input type="checkbox" class="slot-cb" data-time="08:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>08:00</label>
+<label class="slot-cb-label" id="slot-label-08_30"><input type="checkbox" class="slot-cb" data-time="08:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>08:30</label>
+<label class="slot-cb-label" id="slot-label-09_00"><input type="checkbox" class="slot-cb" data-time="09:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>09:00</label>
+<label class="slot-cb-label" id="slot-label-09_30"><input type="checkbox" class="slot-cb" data-time="09:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>09:30</label>
+<label class="slot-cb-label" id="slot-label-10_00"><input type="checkbox" class="slot-cb" data-time="10:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>10:00</label>
+<label class="slot-cb-label" id="slot-label-10_30"><input type="checkbox" class="slot-cb" data-time="10:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>10:30</label>
+<label class="slot-cb-label" id="slot-label-11_00"><input type="checkbox" class="slot-cb" data-time="11:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>11:00</label>
+<label class="slot-cb-label" id="slot-label-11_30"><input type="checkbox" class="slot-cb" data-time="11:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>11:30</label>
+<label class="slot-cb-label" id="slot-label-12_00"><input type="checkbox" class="slot-cb" data-time="12:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>12:00</label>
+<label class="slot-cb-label" id="slot-label-12_30"><input type="checkbox" class="slot-cb" data-time="12:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>12:30</label>
+<label class="slot-cb-label" id="slot-label-13_00"><input type="checkbox" class="slot-cb" data-time="13:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>13:00</label>
+<label class="slot-cb-label" id="slot-label-13_30"><input type="checkbox" class="slot-cb" data-time="13:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>13:30</label>
+<label class="slot-cb-label" id="slot-label-15_00"><input type="checkbox" class="slot-cb" data-time="15:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>15:00</label>
+<label class="slot-cb-label" id="slot-label-15_30"><input type="checkbox" class="slot-cb" data-time="15:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>15:30</label>
+<label class="slot-cb-label" id="slot-label-16_00"><input type="checkbox" class="slot-cb" data-time="16:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>16:00</label>
+<label class="slot-cb-label" id="slot-label-16_30"><input type="checkbox" class="slot-cb" data-time="16:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>16:30</label>
+<label class="slot-cb-label" id="slot-label-17_00"><input type="checkbox" class="slot-cb" data-time="17:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>17:00</label>
+<label class="slot-cb-label" id="slot-label-17_30"><input type="checkbox" class="slot-cb" data-time="17:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>17:30</label>
+<label class="slot-cb-label" id="slot-label-18_00"><input type="checkbox" class="slot-cb" data-time="18:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>18:00</label>
+<label class="slot-cb-label" id="slot-label-18_30"><input type="checkbox" class="slot-cb" data-time="18:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>18:30</label>
 </div>
     <button onclick="blockDay()" style="margin-top:2px;background:var(--red)">🔒 Zablokuj</button>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:14px 0 6px">ZABLOKOWANE DNI</div>
@@ -2395,8 +2395,18 @@ window.saveDayNote = async function(dateStr, val) {
   }
 };
 
+window.toggleSlotLabel = function(cb) {
+  const label = cb.closest('label');
+  if (!label) return;
+  label.style.background = cb.checked ? 'rgba(248,113,113,0.2)' : '';
+  label.style.borderColor = cb.checked ? 'var(--red)' : '';
+  label.style.color = cb.checked ? 'var(--red)' : '';
+};
 window.selectAllSlots = function(val) {
-  document.querySelectorAll('.slot-cb').forEach(cb => { cb.checked = val; });
+  document.querySelectorAll('.slot-cb').forEach(cb => {
+    cb.checked = val;
+    toggleSlotLabel(cb);
+  });
 };
 window.openBlockModal = function() {
   try {
@@ -2405,6 +2415,21 @@ window.openBlockModal = function() {
   } catch(e) {
     alert('Błąd: ' + e.message);
   }
+};
+
+window.refreshBlockModalSlots = function(date) {
+  if (!date) return;
+  document.querySelectorAll('.slot-cb').forEach(cb => {
+    const t = cb.dataset.time;
+    const blocked = isSlotBlockedForDate(date, t);
+    cb.checked = blocked;
+    const label = cb.closest('label');
+    if (label) {
+      label.style.background = blocked ? 'rgba(248,113,113,0.2)' : '';
+      label.style.borderColor = blocked ? 'var(--red)' : '';
+      label.style.color = blocked ? 'var(--red)' : '';
+    }
+  });
 };
 window.closeBlockModal = function() {
   document.getElementById('blockModal').style.display = 'none';
