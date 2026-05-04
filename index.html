@@ -1634,15 +1634,15 @@ function renderArchiveOrders() {
   const dateFilter = (document.getElementById('archiveOrderDateFilter')||{value:''}).value;
 
   const entries = Object.entries(orders).filter(([k,o]) => {
-    if ((o.dateStamp||'') >= getToday()) return false;
-    if (dateFilter && o.dateStamp !== dateFilter) return false;
+    if ((o.startDate||o.dateStamp||'') >= getToday()) return false;
+    if (dateFilter && (o.startDate||o.dateStamp||'') !== dateFilter) return false;
     if (search && !(o.name||'').toLowerCase().includes(search) && !(o.phone||'').includes(search) && !(o.car||'').toLowerCase().includes(search)) return false;
     return true;
   });
 
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak archiwalnych zleceń</div>'; return; }
 
-  entries.sort((a,b)=>(b[1].dateStamp||'').localeCompare(a[1].dateStamp||''));
+  entries.sort((a,b)=>(b[1].startDate||b[1].dateStamp||'').localeCompare(a[1].startDate||a[1].dateStamp||''));
 
   const grouped = {};
   entries.forEach(([k,o]) => { const d=o.dateStamp||'brak'; if(!grouped[d])grouped[d]=[]; grouped[d].push([k,o]); });
@@ -1972,18 +1972,18 @@ window.renderOrders = function renderOrders() {
     if (orderFilter==='done'&&!o.status) return false;
     if (orderFilter==='notdone'&&o.status) return false;
     if (search && !(o.name||'').toLowerCase().includes(search) && !(o.phone||'').includes(search) && !(o.car||'').toLowerCase().includes(search)) return false;
-    if (dateFilter2 && o.dateStamp !== dateFilter2) return false;
-    if (!dateFilter2 && (o.dateStamp||'') < getToday()) return false;
+    if (dateFilter2 && (o.startDate||o.dateStamp) !== dateFilter2) return false;
+    if (!dateFilter2 && (o.startDate||o.dateStamp||'') < getToday()) return false;
     return true;
   });
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak zleceń</div>'; return; }
 
-  entries.sort((a,b)=>(a[1].dateStamp||'').localeCompare(b[1].dateStamp||''));
+  entries.sort((a,b)=>(a[1].startDate||a[1].dateStamp||'').localeCompare(b[1].startDate||b[1].dateStamp||''));
 
   // Grupuj po dacie
   const grouped = {};
   entries.forEach(([k,o]) => {
-    const dateKey = o.dateStamp || 'brak-daty';
+    const dateKey = (o.startDate||o.dateStamp) || 'brak-daty';
     if (!grouped[dateKey]) grouped[dateKey] = [];
     grouped[dateKey].push([k,o]);
   });
@@ -2020,7 +2020,7 @@ window.renderOrders = function renderOrders() {
       <div id="og-${date}" style="display:${isToday?'block':'none'};padding-top:4px">`);
 
     dayEntries.forEach(([k,o]) => {
-      const isPast = (o.dateStamp||'') < getToday();
+      const isPast = (o.startDate||o.dateStamp||'') < getToday();
       const isOverdue = isPast && !o.status;
       const statusColor = o.status ? 'var(--green)' : isOverdue ? '#666' : 'var(--red)';
       const statusIcon = o.status ? '✔' : '○';
@@ -2046,7 +2046,7 @@ window.renderOrders = function renderOrders() {
               ${o.service||'—'} · ${o.diameter ? o.diameter+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)">
-              ${o.startDate?'📥 '+o.startDate+' → ':''}📅 ${o.dateStamp||'—'}
+              📥 ${o.startDate||o.dateStamp||'—'}${o.dateStamp?' → 📅 '+o.dateStamp:''}
             </div>
             ${o.note?`<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic">📝 ${o.note}</div>`:''}
           </div>
@@ -2290,7 +2290,7 @@ window.printDay = function() {
   const d = formatDate(selectedDate);
   const dayName = selectedDate.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const dv = Object.values(visits).filter(v=>v.date===d).sort((a,b)=>a.time.localeCompare(b.time));
-  const do_ = Object.values(orders).filter(o=>o.dateStamp===d);
+  const do_ = Object.values(orders).filter(o=>(o.startDate||o.dateStamp)===d);
   const win = window.open('','_blank');
   if (!win) { alert('⚠ Zezwól na wyskakujące okna aby drukować'); return; }
 
