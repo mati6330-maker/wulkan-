@@ -543,6 +543,7 @@ body.light .wm-logo img{filter:none;}
     <button onclick="closeKlimaPriceModal()" style="margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
   </div>
 </div>
+<div class="section" id="pricing">
 <h3>Cennik</h3>
 <div id="pricingView"></div>
 <div id="pricingEdit" style="display:none">
@@ -584,6 +585,7 @@ body.light .wm-logo img{filter:none;}
   <button onclick="savePrices()" style="margin-top:12px">▶ Zapisz ceny</button>
   <button onclick="cancelPriceEdit()" style="background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
 </div>
+</div><!-- /pricing section -->
 
 </div><!-- /container -->
 </div><!-- /appScreen -->
@@ -2714,6 +2716,8 @@ window.showTab = function(id, el) {
   if (el) el.classList.add('active');
   if (id==='cash') { window.calculateCash(); }
   if (id==='archive') window.renderArchive();
+  if (id==='pricing') window.renderPricing();
+  if (id==='klima') window.renderKlima();
 };
 
 // ── BLOKOWANIE DNI ──
