@@ -1915,6 +1915,7 @@ window.addOrder = async function() {
   const type = document.getElementById('o_type').value;
   if (!type) { errors.push('⚙️ Wybierz typ felg'); document.getElementById('o_type').classList.add('field-error'); }
   const startDate = document.getElementById('o_start_date').value || formatDate(new Date());
+  const time = document.getElementById('o_time').value;
   if (!time) { errors.push('📅 Wybierz czas realizacji'); document.getElementById('o_time').classList.add('field-error'); }
   const custom = document.getElementById('o_custom_date').value;
   if (time==='własny'&&!custom) { errors.push('📆 Podaj własny termin'); document.getElementById('o_custom_date').classList.add('field-error'); }
