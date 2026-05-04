@@ -1938,8 +1938,8 @@ window.renderList = function renderList() {
 
   box.innerHTML = html.join('');
 
-  // Przywróć stan otwartych grup
-  if (openGroups.size > 0) {
+  // Przywróć stan otwartych grup (tylko gdy nie nawigujemy do konkretnej karty)
+  if (!highlightVisitKey && openGroups.size > 0) {
     document.querySelectorAll('[id^="vg-"]').forEach(el => {
       const isOpen = openGroups.has(el.id);
       el.style.display = isOpen ? 'block' : 'none';
@@ -1952,13 +1952,6 @@ window.renderList = function renderList() {
   if (highlightVisitKey) {
     const hKey = highlightVisitKey;
     highlightVisitKey = null;
-    const hVisit = visits[hKey];
-    if (hVisit) {
-      const groupId = 'vg-' + hVisit.date;
-      const group = document.getElementById(groupId);
-      const arrow = document.getElementById(groupId + '-arrow');
-      if (group) { group.style.display = 'block'; if (arrow) arrow.textContent = '▼'; }
-    }
     setTimeout(() => {
       const el = document.getElementById('card-' + hKey);
       if (el) {
