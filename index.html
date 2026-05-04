@@ -1948,8 +1948,8 @@ window.renderList = function renderList() {
 
   box.innerHTML = html.join('');
 
-  // Przywróć stan otwartych grup (tylko gdy nie nawigujemy do konkretnej karty)
-  if (!highlightVisitKey && openGroups.size > 0) {
+  // Przywróć stan otwartych grup (tylko gdy nie ma filtra daty)
+  if (!dateFilter && openGroups.size > 0) {
     document.querySelectorAll('[id^="vg-"]').forEach(el => {
       const isOpen = openGroups.has(el.id);
       el.style.display = isOpen ? 'block' : 'none';
