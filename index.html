@@ -2327,6 +2327,7 @@ function renderReport(title, list, sum) {
   const visitSum = list.filter(i=>i.type==='wizyta').reduce((a,i)=>a+i.price,0);
   const orderSum = list.filter(i=>i.type==='zlecenie').reduce((a,i)=>a+i.price,0);
   const klimaSum = list.filter(i=>i.type==='klima').reduce((a,i)=>a+i.price,0);
+  const discountSum = list.reduce((a,i)=>a+(i.catalog!=null ? i.catalog-i.price : 0), 0);
 
   let tableRows = '';
   Object.keys(grouped).sort().forEach(date => {
@@ -2388,6 +2389,7 @@ function renderReport(title, list, sum) {
     ${visitSum > 0 ? `<div class="summary-row"><span>Wizyty</span><span>${visitSum} zł</span></div>` : ''}
     ${orderSum > 0 ? `<div class="summary-row"><span>Zlecenia</span><span>${orderSum} zł</span></div>` : ''}
     ${klimaSum > 0 ? `<div class="summary-row"><span>Klima</span><span>${klimaSum} zł</span></div>` : ''}
+    ${discountSum > 0 ? `<div class="summary-row" style="color:#f59e0b"><span>Udzielone rabaty</span><span>−${discountSum} zł</span></div>` : ''}
     <div class="summary-row"><span>SUMA CAŁKOWITA</span><span>${sum} zł</span></div>
   </div>
 
@@ -2400,8 +2402,8 @@ function renderReport(title, list, sum) {
 }
 window.printDailyFullReport = function() {
   const today=getToday(); let list=[],sum=0;
-  Object.values(visits).forEach(v=>{if(v.status&&v.date===today){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;if(o.status&&ds===today){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(visits).forEach(v=>{if(v.status&&v.date===today){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,catalog:bp,disc,type:'wizyta'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;if(o.status&&ds===today){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
   Object.values(klimas).forEach(k=>{if(k&&k.status&&k.start===today&&k.price!=null){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}});
   renderReport('Raport dzienny — '+today,list,sum);
 };
@@ -2410,16 +2412,16 @@ window.printWeekFullReport = function() {
   const base=parseDate(val),day=base.getDay()||7,start=new Date(base);
   start.setDate(base.getDate()-day+1); start.setHours(0,0,0,0);
   const end=new Date(start.getTime()+7*86400000); let list=[],sum=0;
-  Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d>=start&&d<end){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d>=start&&d<end){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d>=start&&d<end){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,catalog:bp,disc,type:'wizyta'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d>=start&&d<end){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
   Object.values(klimas).forEach(k=>{if(k&&k.status&&k.price!=null){const d=parseDate(k.start);if(d>=start&&d<end){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}}});
   renderReport('Raport tygodniowy',list,sum);
 };
 window.printMonthFullReport = function() {
   const val=document.getElementById('cashMonth').value; if(!val){alert('Wybierz miesiąc');return;}
   const[y,m]=val.split('-').map(Number); let list=[],sum=0;
-  Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,disc:disco,type:'zlecenie'});}});
+  Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,catalog:bp,disc,type:'wizyta'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
   Object.values(klimas).forEach(k=>{if(k&&k.status&&k.price!=null){const d=parseDate(k.start);if(d.getFullYear()===y&&(d.getMonth()+1)===m){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}}});
   renderReport('Raport miesięczny',list,sum);
 };
