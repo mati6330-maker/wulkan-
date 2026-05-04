@@ -395,6 +395,8 @@ body.light .wm-logo img{filter:none;}
   <option disabled hidden selected value="">— Typ felg —</option>
   <option>Aluminiowe</option><option>Stalowe</option>
 </select>
+<div class="section-label">Data przyjęcia</div>
+<input id="o_start_date" type="date"/>
 <div class="section-label">Termin realizacji</div>
 <select id="o_time">
   <option disabled hidden selected value="">— Wybierz termin —</option>
@@ -990,6 +992,7 @@ window.showOrderDetail = function(k) {
 
   const rows = [
     ['Status', `<span style="color:${statusColor}">${o.status?'✔ Zrobione':'○ Oczekuje'}</span>`],
+    ['Przyjęto', o.startDate||'—'],
     ['Termin', o.dateStamp||'—'],
     ['Klient', o.name||'—'],
     ['Telefon', o.phone||'—'],
@@ -1910,7 +1913,7 @@ window.addOrder = async function() {
   if (!service) { errors.push('🔧 Wybierz rodzaj usługi'); document.getElementById('o_service').classList.add('field-error'); }
   const type = document.getElementById('o_type').value;
   if (!type) { errors.push('⚙️ Wybierz typ felg'); document.getElementById('o_type').classList.add('field-error'); }
-  const time = document.getElementById('o_time').value;
+  const startDate = document.getElementById('o_start_date').value || formatDate(new Date());
   if (!time) { errors.push('📅 Wybierz czas realizacji'); document.getElementById('o_time').classList.add('field-error'); }
   const custom = document.getElementById('o_custom_date').value;
   if (time==='własny'&&!custom) { errors.push('📆 Podaj własny termin'); document.getElementById('o_custom_date').classList.add('field-error'); }
@@ -1923,7 +1926,8 @@ window.addOrder = async function() {
     car:document.getElementById('o_car').value, diameter, wheels:document.getElementById('o_wheels').value,
     service, type, time, custom,
     price:calcVisitPrice({service,wheel:type,tireSize:diameter}, true),
-    dateStamp: time==='dziś'?formatDate(today):time==='jutro'?formatDate(tomorrow):custom
+    dateStamp: time==='dziś'?formatDate(today):time==='jutro'?formatDate(tomorrow):custom,
+    startDate
   };
 
   setSyncStatus('syncing','⟳ Zapisywanie...');
@@ -1943,6 +1947,7 @@ function resetOrderForm() {
   ['o_name','o_phone','o_car','o_wheels'].forEach(id=>document.getElementById(id).value='');
   ['o_service','o_type','o_time'].forEach(id=>document.getElementById(id).selectedIndex=0);
   document.getElementById('o_custom_date').value=''; document.getElementById('o_custom_date').style.display='none';
+  document.getElementById('o_start_date').value='';
   document.getElementById('o_diameter').value='';
   document.querySelectorAll('#o_diameterButtons button').forEach(b=>b.classList.remove('selected'));
 
@@ -2037,6 +2042,9 @@ window.renderOrders = function renderOrders() {
             <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
               ${o.service||'—'} · ${o.diameter ? o.diameter+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
             </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)">
+              ${o.startDate?'📥 '+o.startDate+' → ':''}📅 ${o.dateStamp||'—'}
+            </div>
           </div>
           <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
             <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
@@ -2102,6 +2110,7 @@ window.editOrder = function(k) {
   document.getElementById('o_service').value=o.service||''; document.getElementById('o_type').value=o.type||'';
   document.getElementById('o_time').value=o.time||''; document.getElementById('o_custom_date').value=o.custom||'';
   document.getElementById('o_custom_date').style.display=o.time==='własny'?'block':'none';
+  document.getElementById('o_start_date').value=o.startDate||'';
   document.getElementById('o_diameter').value=o.diameter||'';
   document.querySelectorAll('#o_diameterButtons button').forEach(b=>{b.classList.toggle('selected',b.innerText.trim()===o.diameter+'"');});
   document.getElementById('orderBtn').innerText='▶ Zapisz zlecenie'; document.getElementById('cancelOrderBtn').style.display='block';
