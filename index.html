@@ -15,19 +15,51 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .container{padding:16px;max-width:600px;margin:auto;}
 
 @media(min-width:900px){
-  body{font-size:16px;}
-  #appScreen{display:grid;grid-template-columns:220px 1fr;grid-template-rows:auto auto auto 1fr;gap:0;min-height:100vh;}
-  #clock{grid-column:1/-1;grid-row:1;}
-  #editBanner{grid-column:1/-1;grid-row:2;}
-  #adminBar,#guestBar{grid-column:1/-1;grid-row:3;}
+  body{font-size:15px;}
+  #appScreen{display:grid;grid-template-columns:200px 1fr;grid-template-rows:auto auto 1fr;gap:0;min-height:100vh;}
+  #editBanner{grid-column:1/-1;grid-row:1;}
+  #adminBar,#guestBar{grid-column:1/-1;grid-row:2;}
   #syncStatus{display:none;}
-  .tabs{grid-column:1;grid-row:4;display:flex;flex-direction:column;gap:2px;padding:12px 8px;background:var(--surface);border-right:1px solid var(--border);align-self:start;position:sticky;top:0;}
-  .tab{text-align:left;padding:11px 14px;border-radius:4px;font-size:13px;letter-spacing:1px;}
-  .tab.active{background:rgba(249,115,22,0.15);}
-  #printBtn{grid-column:2;grid-row:4;align-self:start;margin:12px 16px 0;width:auto;}
-  .container{grid-column:2;grid-row:4;padding:16px 24px;max-width:100%;align-self:start;}
-  .grid{grid-template-columns:repeat(6,1fr);}
+  .tabs{
+    grid-column:1;grid-row:3;
+    display:flex;flex-direction:column;gap:2px;
+    padding:16px 8px;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    position:sticky;top:52px;
+    height:calc(100vh - 52px);
+    overflow-y:auto;
+    align-self:start;
+  }
+  .tab{
+    text-align:left;padding:10px 14px;
+    border-radius:4px;font-size:12px;
+    letter-spacing:1px;border-bottom:none;
+    white-space:normal;
+  }
+  .tab.active{
+    color:var(--accent);
+    background:rgba(249,115,22,0.1);
+    border-bottom:none;
+    border-left:3px solid var(--accent);
+  }
+  #printBtn{
+    grid-column:2;grid-row:3;
+    align-self:start;
+    margin:16px 0 0 16px;
+    width:auto;
+    max-width:860px;
+  }
+  .container{
+    grid-column:2;grid-row:3;
+    padding:20px 24px;
+    max-width:860px;
+    width:100%;
+    align-self:start;
+  }
+  .grid{grid-template-columns:repeat(5,1fr);}
   .calendar{grid-template-columns:repeat(6,1fr);}
+  .card{padding:14px 16px;}
 }
 #clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 14px rgba(249,115,22,0.4);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
 .tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;}
@@ -2302,7 +2334,6 @@ window.calculateCash = function calculateCash() {
     </div>
     <div class="card" style="margin-top:8px"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">TOP USŁUGI</span><br><span style="font-size:12px;color:var(--text)">${topService}</span></div>
     <div class="card" style="margin-top:8px"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">TYP FELG</span><br><span style="font-size:12px;color:var(--text)">${topWheel}</span></div>`;
-}
 }
 
 // ── RAPORTY ──
