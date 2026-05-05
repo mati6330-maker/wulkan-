@@ -344,6 +344,7 @@ body.light .wm-logo img{filter:none;}
   <div id="visitValidationList"></div>
 </div>
 <button onclick="save()">▶ Zapisz wizytę</button>
+<div id="livePriceDisplay" style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);margin:4px 0;min-height:24px"></div>
 <button id="cancelBtn" onclick="cancelEdit()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);display:none">✕ Anuluj edycję</button>
 </div><!-- /visitFormAdmin -->
 
@@ -433,6 +434,7 @@ body.light .wm-logo img{filter:none;}
   <div id="orderValidationList"></div>
 </div>
 <button id="orderBtn" onclick="addOrder()">▶ Dodaj zlecenie</button>
+<div id="liveOrderPriceDisplay" style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);margin:4px 0;min-height:24px"></div>
 <button id="cancelOrderBtn" onclick="cancelOrderEdit()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);display:none">✕ Anuluj edycję</button>
 
 <div style="margin-top:16px">
@@ -944,25 +946,34 @@ function initApp() {
 }
 
 // Listenery DOM — dodane raz przy starcie modułu
-['service','wheel','cb_runflat','cb_low','cb_valve'].forEach(id => {
+['service','wheel','cb_runflat','cb_low','cb_valve','tireSize'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('change', updateLivePrice);
 });
-['o_service','o_type'].forEach(id => {
+['o_service','o_type','o_diameter'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('change', updateOrderPrice);
 });
 
 // ── LIVE PRICE ──
 function updateLivePrice() {
-  const v = { service:document.getElementById('service').value, wheel:document.getElementById('wheel').value, tireSize:document.getElementById('tireSize').value, runflat:document.getElementById('cb_runflat').checked, low:document.getElementById('cb_low').checked, valve:document.getElementById('cb_valve').checked };
-  const price = calcVisitPrice(v);
-
+  const tireSize = document.getElementById('tireSize').value;
+  const service = document.getElementById('service').value;
+  const wheel = document.getElementById('wheel').value;
+  const runflat = document.getElementById('cb_runflat').checked;
+  const low = document.getElementById('cb_low').checked;
+  const valve = document.getElementById('cb_valve').checked;
+  const price = calcVisitPrice({tireSize, service, wheel, runflat, low, valve});
+  const el = document.getElementById('livePriceDisplay');
+  if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
 function updateOrderPrice() {
-  const v = { service:document.getElementById('o_service').value, wheel:document.getElementById('o_type').value, tireSize:document.getElementById('o_diameter').value };
-  const price = calcVisitPrice(v);
-
+  const service = document.getElementById('o_service').value;
+  const wheel = document.getElementById('o_type').value;
+  const tireSize = document.getElementById('o_diameter').value;
+  const price = calcVisitPrice({service, wheel, tireSize}, true);
+  const el = document.getElementById('liveOrderPriceDisplay');
+  if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
 
 // ── ROZMIARY ──
@@ -1209,25 +1220,8 @@ function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
         document.getElementById('visitFormAdmin').scrollIntoView({behavior:'smooth', block:'start'});
       };
     } else {
-      item.style.pointerEvents = 'auto';
-      item.style.cursor = 'pointer';
-      item.onclick = () => {
-        closeTimePicker();
-        const key = entry[0];
-        const listTab = document.querySelector('.tab[onclick*="list"]');
-        window.showTab('list', listTab);
-        setTimeout(() => {
-          renderList();
-          setTimeout(() => {
-            const el = document.getElementById('card-'+key);
-            if (el) {
-              el.scrollIntoView({behavior:'smooth', block:'center'});
-              el.style.outline = '2px solid var(--accent)';
-              setTimeout(() => el.style.outline = '', 2000);
-            }
-          }, 100);
-        }, 50);
-      };
+      item.style.cursor = 'default';
+      item.title = 'Ten kwadrans jest zajęty';
     }
     picker.appendChild(item);
   });
@@ -1333,36 +1327,10 @@ function renderGrid() {
 
       div.onclick = (e) => {
         e.stopPropagation();
-        if (allBusy) {
-          if (currentUser) {
-            const firstEntry = dayVisits.find(([k,v]) => timesInSlot.includes(v.time));
-            if (firstEntry) {
-              const key = firstEntry[0];
-              const visitDate = firstEntry[1].date;
-              const listTab = document.querySelector('.tab[onclick*="list"]');
-              // Ustaw filtr przed przejściem
-              const df = document.getElementById('dateFilter');
-              if (df) df.value = visitDate;
-              window.showTab('list', listTab);
-              // Scroll po wyrenderowaniu
-              setTimeout(() => {
-                const card = document.getElementById('card-' + key);
-                if (card) {
-                  card.scrollIntoView({behavior:'smooth', block:'center'});
-                  card.style.outline = '2px solid var(--accent)';
-                  setTimeout(() => card.style.outline = '', 2000);
-                }
-              }, 300);
-            }
-          } else {
-            alert('⛔ Ten termin jest zajęty');
-          }
-          return;
-        }
 
         if (currentUser) {
-          if (anyBusy) {
-            // Jeśli jest jakaś wizyta w tym slocie — przejdź do niej
+          if (allBusy) {
+            // Wszystkie kwadranse zajęte — przejdź do wpisu na liście
             const busyEntry = dayVisits.find(([k,v]) => timesInSlot.includes(v.time));
             if (busyEntry) {
               const key = busyEntry[0];
@@ -2044,12 +2012,20 @@ window.toggleSizePicker = function(k) {
 window.setVisitSize = async function(k, size) {
   if (!visits[k]) return;
   await update(ref(db,'wizyty/'+k), {tireSize: String(size)});
-  showToast('✔ Rozmiar '+size+'" zapisany');
+  // Przelicz cenę z nowym rozmiarem
+  const v = {...visits[k], tireSize: String(size)};
+  const newPrice = calcVisitPrice(v);
+  if (newPrice > 0) await update(ref(db,'wizyty/'+k), {price: newPrice});
+  showToast('✔ Rozmiar '+size+'" zapisany, cena: '+newPrice+' zł');
 };
 window.setVisitWheel = async function(k, wheel) {
   if (!visits[k]) return;
   await update(ref(db,'wizyty/'+k), {wheel});
-  showToast('✔ Typ felg "'+wheel+'" zapisany');
+  // Przelicz cenę z nowym typem felg
+  const v = {...visits[k], wheel};
+  const newPrice = calcVisitPrice(v);
+  if (newPrice > 0) await update(ref(db,'wizyty/'+k), {price: newPrice});
+  showToast('✔ Typ felg "'+wheel+'" zapisany, cena: '+newPrice+' zł');
 };
 window.toggleVisit = async function(k) {
   if (!visits[k]) return;
