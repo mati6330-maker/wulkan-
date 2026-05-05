@@ -2501,7 +2501,6 @@ window.printDay = function() {
   const dayName = selectedDate.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const dv = Object.values(visits).filter(v=>v.date===d).sort((a,b)=>a.time.localeCompare(b.time));
   const do_ = Object.values(orders).filter(o=>(o.startDate||o.dateStamp)===d);
-  const dk = Object.values(klimas).filter(k=>k&&k.start===d);
   const win = window.open('','_blank');
   if (!win) { alert('⚠ Zezwól na wyskakujące okna aby drukować'); return; }
 
@@ -2560,16 +2559,11 @@ window.printDay = function() {
   const noteKey = d.replace(/-/g,'_');
   const dayNote = dayNotes[noteKey] || '';
 
-  const noteKey = d.replace(/-/g,'_');
-  const dayNote = dayNotes[noteKey] || '';
-  const klimaRows = dk.map(k => `<tr><td style="text-align:center">${checkbox}</td><td>${k.name||'—'}</td><td>${k.phone||'—'}</td><td>${k.car||'—'}${k.year?' ('+k.year+')':''}</td><td>${k.price!=null?k.price+' zł':'—'}</td><td>${[k.filter?'Filtr':'',k.ozone?'Odgrzyb':''].filter(Boolean).join(', ')||'—'}</td></tr>`).join('');
-
   const content = `<!DOCTYPE html><html><head><meta charset="utf-8">
   <style>
     body{font-family:Arial,sans-serif;padding:24px;font-size:12px;color:#111}
     h1{font-size:18px;margin:0 0 4px}
     .subtitle{color:#666;font-size:12px;margin-bottom:${dayNote?'8px':'20px'}}
-    .daynote{background:#fffbeb;border-left:3px solid #f59e0b;padding:8px 12px;margin-bottom:16px;font-size:12px;color:#92400e;font-style:italic}
     .daynote{background:#fffbeb;border-left:3px solid #f59e0b;padding:8px 12px;margin-bottom:16px;font-size:12px;color:#92400e;font-style:italic}
     h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #111;padding-bottom:4px;margin:20px 0 10px}
     table{width:100%;border-collapse:collapse;font-size:11px}
@@ -2585,8 +2579,6 @@ window.printDay = function() {
   <h1>Plan dnia</h1>
   <div class="subtitle">${dayName}</div>
   ${dayNote ? `<div class="daynote">📝 ${dayNote}</div>` : ''}
-
-  ${dayNote ? `<div class="daynote">📝 ${dayNote}</div>` : ""}
 
   <h2>Wizyty (${dv.length})</h2>
   <table>
@@ -2607,8 +2599,6 @@ window.printDay = function() {
     </tr></thead>
     <tbody>${orderRows}</tbody>
   </table>` : '<p style="color:#999">Brak zleceń</p>'}
-
-  ${dk.length ? `<h2>Klima (${dk.length})</h2><table><thead><tr><th style="width:24px"></th><th>Klient</th><th>Telefon</th><th>Auto (rok)</th><th>Cena</th><th>Opcje</th></tr></thead><tbody>${klimaRows}</tbody></table>` : ""}
 
   <div class="summary">Wydrukowano: ${new Date().toLocaleString('pl-PL')}</div>
   </body></html>`;
