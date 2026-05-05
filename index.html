@@ -2554,10 +2554,8 @@ window.printDay = function() {
     <td>${o.car||'—'}</td>
     <td>${o.service||'—'}</td>
     <td>${o.type||'—'}</td>
-    <td>${o.note||'—'}</td>
+    <td>${o.note||''}</td>
   </tr>`).join('');
-
-  const noteKey = d.replace(/-/g,'_');
   const dayNote = dayNotes[noteKey] || '';
 
   const klimaRows = dk.map(k => `<tr>
