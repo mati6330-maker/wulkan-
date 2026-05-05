@@ -2552,15 +2552,23 @@ window.printDay = function() {
     <td>${o.name||'—'}</td>
     <td>${o.phone||'—'}</td>
     <td>${o.car||'—'}</td>
-    <td>${o.diameter||'—'}"</td>
     <td>${o.service||'—'}</td>
     <td>${o.type||'—'}</td>
+    <td>${o.note||'—'}</td>
   </tr>`).join('');
 
   const noteKey = d.replace(/-/g,'_');
   const dayNote = dayNotes[noteKey] || '';
 
-  const klimaRows = dk.map(k => `<tr><td style="text-align:center">${checkbox}</td><td>${k.name||'—'}</td><td>${k.phone||'—'}</td><td>${k.car||'—'}${k.year?' ('+k.year+')':''}</td><td>${k.price!=null?k.price+' zł':'—'}</td><td>${[k.filter?'Filtr kabinowy':'',k.ozone?'Odgrzybienie':''].filter(Boolean).join(', ')||'—'}</td></tr>`).join('');
+  const klimaRows = dk.map(k => `<tr>
+    <td style="text-align:center">${checkbox}</td>
+    <td>${k.name||'—'}</td>
+    <td>${k.phone||'—'}</td>
+    <td>${k.car||'—'}${k.year?' ('+k.year+')':''}</td>
+    <td>${k.price!=null?k.price+' zł':'—'}</td>
+    <td>${[k.filter?'Filtr':'',k.ozone?'Odgrzyb':''].filter(Boolean).join(', ')||'—'}</td>
+    <td>${k.note||'—'}</td>
+  </tr>`).join('');
 
   const content = `<!DOCTYPE html><html><head><meta charset="utf-8">
   <style>
@@ -2603,7 +2611,17 @@ window.printDay = function() {
     <tbody>${orderRows}</tbody>
   </table>` : '<p style="color:#999">Brak zleceń</p>'}
 
-  ${dk.length ? `<h2>Klima serwis (${dk.length})</h2><table><thead><tr><th style="width:24px"></th><th>Klient</th><th>Telefon</th><th>Auto (rok)</th><th>Cena</th><th>Opcje</th></tr></thead><tbody>${klimaRows}</tbody></table>` : ""}
+  ${dk.length ? `<h2>Klima serwis (${dk.length})</h2>
+  <table>
+    <thead><tr>
+      <th style="width:24px"></th>
+      <th>Klient</th>
+      <th>Telefon</th>
+      <th>Auto (rok)</th>
+      <th>Cena</th>
+      <th>Opcje</th>
+      <th>Notatka</th>
+    </tr></thead><tbody>${klimaRows}</tbody></table>` : ""}
 
   <div class="summary">Wydrukowano: ${new Date().toLocaleString('pl-PL')}</div>
   </body></html>`;
