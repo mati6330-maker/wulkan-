@@ -2835,20 +2835,23 @@ function renderQuickView() {
 
     if (allBusy) {
       const v = slotVisits[0][1];
-      const info = [v.service, v.car, v.name].filter(Boolean).join(' · ');
+      const main = [v.service, v.wheel, v.tireSize ? v.tireSize+'"' : ''].filter(Boolean).join(' · ');
+      const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
       return `<div class="qv-slot busy">
         <div class="qv-time">${baseTime}</div>
-        <div class="qv-info">${info || '—'}</div>
-        ${slotVisits.length > 1 ? `<div class="qv-info" style="font-size:11px;margin-top:2px">${slotVisits[1][1].service||''} ${slotVisits[1][1].car||''}</div>` : ''}
+        <div class="qv-info">${main||'—'}</div>
+        ${extra ? `<div class="qv-info" style="font-size:11px;margin-top:2px;opacity:0.75">${extra}</div>` : ''}
       </div>`;
     }
 
     if (anyBusy) {
       const v = slotVisits[0][1];
-      const info = [v.service, v.car, v.name].filter(Boolean).join(' · ');
+      const main = [v.service, v.wheel, v.tireSize ? v.tireSize+'"' : ''].filter(Boolean).join(' · ');
+      const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
       return `<div class="qv-slot partial" onclick="goToMainSlot('${d}','${baseTime}')">
         <div class="qv-time">${baseTime}</div>
-        <div class="qv-info">⚡ ${info} · wolny kwadrans</div>
+        <div class="qv-info">⚡ ${main||'—'}</div>
+        ${extra ? `<div class="qv-info" style="font-size:11px;margin-top:2px;opacity:0.75">${extra}</div>` : ''}
       </div>`;
     }
 
