@@ -2860,14 +2860,13 @@ function renderQuickView() {
       const v0 = slotVisits.find(([k,v]) => v.time === timesInSlot[0]);
       const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
       const renderHalf = (entry, t) => {
-        if (!entry) return `<div style="flex:1;padding:8px;color:var(--muted);font-size:11px">${t}<br><span style="opacity:0.5">—</span></div>`;
-        const v = entry[1];
-        const main = [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ');
-        const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
-        return `<div style="flex:1;padding:8px;overflow:hidden">
-          <div class="qv-time" style="font-size:15px">${t}</div>
-          <div class="qv-info">${main}</div>
-          ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px">${extra}</div>`:''}
+        const v = entry ? entry[1] : null;
+        const main = v ? [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ') : '';
+        const extra = v ? [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ') : '';
+        return `<div style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)">
+          <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
+          <div class="qv-info" style="color:var(--red)">${main||'—'}</div>
+          ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
         </div>`;
       };
       return `<div class="qv-slot busy" style="flex-direction:row;align-items:stretch;padding:0">
@@ -2882,23 +2881,23 @@ function renderQuickView() {
       const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
       const renderHalf = (entry, t) => {
         if (!entry) {
-          return `<div style="flex:1;padding:8px;cursor:pointer" onclick="goToMainSlot('${d}','${t}')">
-            <div class="qv-time" style="font-size:15px">${t}</div>
-            <div class="qv-info" style="font-size:11px">Wolny — zarezerwuj</div>
+          return `<div style="flex:1;padding:8px;cursor:pointer;background:rgba(234,179,8,0.1)" onclick="goToMainSlot('${d}','${t}')">
+            <div class="qv-time" style="font-size:15px;color:#eab308">${t}</div>
+            <div class="qv-info" style="font-size:11px;color:#eab308">Wolny — zarezerwuj</div>
           </div>`;
         }
         const v = entry[1];
         const main = [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ');
         const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
-        return `<div style="flex:1;padding:8px;overflow:hidden">
-          <div class="qv-time" style="font-size:15px">${t}</div>
-          <div class="qv-info">${main}</div>
-          ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px">${extra}</div>`:''}
+        return `<div style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)">
+          <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
+          <div class="qv-info" style="color:var(--red)">${main}</div>
+          ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
         </div>`;
       };
-      return `<div class="qv-slot partial" style="flex-direction:row;align-items:stretch;padding:0;cursor:default">
+      return `<div class="qv-slot partial" style="flex-direction:row;align-items:stretch;padding:0;cursor:default;background:transparent;border-color:rgba(248,113,113,0.4)">
         ${renderHalf(v0, timesInSlot[0])}
-        <div style="width:2px;background:rgba(234,179,8,0.5);flex-shrink:0"></div>
+        <div style="width:2px;background:rgba(248,113,113,0.4);flex-shrink:0"></div>
         ${renderHalf(v1, timesInSlot[1])}
       </div>`;
     }
