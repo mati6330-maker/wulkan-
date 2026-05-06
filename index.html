@@ -928,6 +928,7 @@ function initApp() {
     initCalendar();
     renderList();
     renderGrid();
+    renderQuickView();
     setSyncStatus('ok', '● Zsynchronizowano');
   }, () => { setSyncStatus('err', '✕ Błąd połączenia'); });
   unsubOrders = onValue(ref(db, 'zlecenia'), snap => {
@@ -2861,12 +2862,12 @@ function renderQuickView() {
 window.goToMainSlot = function(date, time) {
   selectedDate = parseDate(date);
   selectedTime = time;
-  // Oblicz weekOffset względem bieżącego tygodnia
   const today = new Date(); today.setHours(0,0,0,0);
-  const target = parseDate(date); target.setHours(0,0,0,0);
+  const target = new Date(selectedDate); target.setHours(0,0,0,0);
   const diffDays = Math.round((target - today) / 864e5);
   weekOffset = Math.floor(diffDays / 7);
-  const mainTab = document.querySelector('.tab[onclick*="\'main\'"]') || document.querySelector('.tab[onclick*="main"]');
+  const mainTab = document.querySelector('.tab[onclick*="\'main\'"]') ||
+                  document.querySelector('.tab[onclick*="main"]');
   window.showTab('main', mainTab);
   setTimeout(() => {
     renderGrid();
