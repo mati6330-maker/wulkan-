@@ -487,6 +487,7 @@ body.light .wm-logo img{filter:none;}
 <div class="section-label" style="margin-top:16px">Dane</div>
 <button onclick="exportAllData()" style="background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.4)">⬇ Eksportuj wszystkie dane (JSON)</button>
 <button onclick="exportAllDataCSV()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (CSV)</button>
+<button onclick="exportAllDataPDF()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (PDF)</button>
 <button onclick="cleanOldData()" style="margin-top:6px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń dane archiwalne (zostaw przyszłe wizyty)</button>
 </div>
 
@@ -2942,6 +2943,85 @@ window.goToMainSlot = function(date, time) {
       if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
     }, 100);
   }, 50);
+};
+
+window.exportAllDataPDF = function() {
+  const today = formatDate(new Date());
+  const win = window.open('', '_blank');
+  if (!win) { alert('⚠ Zezwól na wyskakujące okna'); return; }
+
+  const ths = (...cols) => cols.map(c => `<th>${c}</th>`).join('');
+  const tds = (...cols) => '<tr>' + cols.map(c => `<td>${c||'—'}</td>`).join('') + '</tr>';
+
+  // Wizyty
+  const vSorted = Object.values(visits).sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+  const vRows = vSorted.map(v => tds(
+    v.date, v.time, v.name, v.phone, v.car,
+    v.tireSize ? v.tireSize+'"' : '', v.service, v.wheel,
+    [v.runflat?'RF':'', v.low?'NP':'', v.valve?'W':''].filter(Boolean).join(' '),
+    v.price!=null ? v.price+' zł' : '',
+    v.note||'',
+    v.status ? '✔' : '○'
+  )).join('');
+
+  // Zlecenia
+  const oSorted = Object.values(orders).sort((a,b) => ((a.startDate||a.dateStamp)+(a.time||'')).localeCompare((b.startDate||b.dateStamp)+(b.time||'')));
+  const oRows = oSorted.map(o => tds(
+    o.startDate||o.dateStamp, o.time, o.name, o.phone, o.car,
+    o.diameter, o.service, o.type,
+    o.price!=null ? o.price+' zł' : '',
+    o.note||'',
+    o.status ? '✔' : '○'
+  )).join('');
+
+  // Klima
+  const kSorted = Object.values(klimas).filter(Boolean).sort((a,b) => (a.start||'').localeCompare(b.start||''));
+  const kRows = kSorted.map(k => tds(
+    k.start, k.name, k.phone, k.car, k.year,
+    k.capacity, k.recovered,
+    [k.filter?'Filtr':'', k.ozone?'Odgrzyb':''].filter(Boolean).join(', '),
+    k.price!=null ? k.price+' zł' : '',
+    k.note||'',
+    k.status ? '✔' : '○'
+  )).join('');
+
+  const content = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;padding:16px;font-size:9pt;color:#111}
+    h1{font-size:16pt;font-weight:900;margin-bottom:4px}
+    .subtitle{font-size:9pt;color:#666;margin-bottom:20px}
+    h2{font-size:11pt;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+       margin:20px 0 6px;padding-bottom:4px;border-bottom:2px solid #111}
+    table{width:100%;border-collapse:collapse;font-size:8pt;margin-bottom:8px}
+    th{background:#111;color:#fff;padding:4px 6px;text-align:left;font-size:7.5pt;white-space:nowrap}
+    td{padding:3px 6px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+    tr:nth-child(even) td{background:#f8fafc}
+    .summary{margin-top:20px;font-size:9pt;color:#666;border-top:1px solid #ddd;padding-top:8px}
+    @media print{@page{margin:10mm}body{padding:8px}}
+  </style>
+  </head><body>
+  <h1>Wulkanizacja Mielczarek — Eksport danych</h1>
+  <div class="subtitle">Wygenerowano: ${new Date().toLocaleString('pl-PL')} | Wizyty: ${vSorted.length} | Zlecenia: ${oSorted.length} | Klima: ${kSorted.length}</div>
+
+  <h2>Wizyty (${vSorted.length})</h2>
+  <table><thead><tr>${ths('Data','Godz.','Klient','Tel.','Auto','Rozm.','Usługa','Felgi','Opcje','Cena','Notatka','Status')}</tr></thead>
+  <tbody>${vRows||'<tr><td colspan="12" style="text-align:center;color:#999">Brak danych</td></tr>'}</tbody></table>
+
+  <h2>Zlecenia (${oSorted.length})</h2>
+  <table><thead><tr>${ths('Data','Godz.','Klient','Tel.','Auto','Śr.','Usługa','Felgi','Cena','Notatka','Status')}</tr></thead>
+  <tbody>${oRows||'<tr><td colspan="11" style="text-align:center;color:#999">Brak danych</td></tr>'}</tbody></table>
+
+  <h2>Klima serwis (${kSorted.length})</h2>
+  <table><thead><tr>${ths('Data','Klient','Tel.','Auto','Rok','Pojemn.','Pobrano','Opcje','Cena','Notatka','Status')}</tr></thead>
+  <tbody>${kRows||'<tr><td colspan="11" style="text-align:center;color:#999">Brak danych</td></tr>'}</tbody></table>
+
+  <div class="summary">Eksport obejmuje wszystkie dane z bazy — wizyty, zlecenia i serwisy klimy (archiwalne i przyszłe).</div>
+  </body></html>`;
+
+  win.document.write(content);
+  win.document.close();
+  win.print();
 };
 
 // ── EKSPORT I CZYSZCZENIE DANYCH ──
