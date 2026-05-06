@@ -483,6 +483,11 @@ body.light .wm-logo img{filter:none;}
 <label style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#888;letter-spacing:1px;display:block;margin-top:10px;margin-bottom:2px">MIESIĄC</label>
 <input type="month" id="cashMonth">
 <button onclick="printMonthFullReport()">▶ Raport miesięczny</button>
+
+<div class="section-label" style="margin-top:16px">Dane</div>
+<button onclick="exportAllData()" style="background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.4)">⬇ Eksportuj wszystkie dane (JSON)</button>
+<button onclick="exportAllDataCSV()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (CSV)</button>
+<button onclick="cleanOldData()" style="margin-top:6px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń dane archiwalne (zostaw przyszłe wizyty)</button>
 </div>
 
 <div class="section" id="archive">
@@ -2851,24 +2856,49 @@ function renderQuickView() {
     }
 
     if (allBusy) {
-      const v = slotVisits[0][1];
-      const main = [v.service, v.wheel, v.tireSize ? v.tireSize+'"' : ''].filter(Boolean).join(' · ');
-      const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
-      return `<div class="qv-slot busy">
-        <div class="qv-time">${baseTime}</div>
-        <div class="qv-info">${main||'—'}</div>
-        ${extra ? `<div class="qv-info" style="font-size:11px;margin-top:2px;opacity:0.75">${extra}</div>` : ''}
+      const v0 = slotVisits.find(([k,v]) => v.time === timesInSlot[0]);
+      const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
+      const renderHalf = (entry, t) => {
+        if (!entry) return `<div style="flex:1;padding:8px;color:var(--muted);font-size:11px">${t}<br><span style="opacity:0.5">—</span></div>`;
+        const v = entry[1];
+        const main = [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ');
+        const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
+        return `<div style="flex:1;padding:8px;overflow:hidden">
+          <div class="qv-time" style="font-size:15px">${t}</div>
+          <div class="qv-info">${main}</div>
+          ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px">${extra}</div>`:''}
+        </div>`;
+      };
+      return `<div class="qv-slot busy" style="flex-direction:row;align-items:stretch;padding:0">
+        ${renderHalf(v0, timesInSlot[0])}
+        <div style="width:2px;background:rgba(248,113,113,0.5);flex-shrink:0"></div>
+        ${renderHalf(v1, timesInSlot[1])}
       </div>`;
     }
 
     if (anyBusy) {
-      const v = slotVisits[0][1];
-      const main = [v.service, v.wheel, v.tireSize ? v.tireSize+'"' : ''].filter(Boolean).join(' · ');
-      const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
-      return `<div class="qv-slot partial" onclick="goToMainSlot('${d}','${baseTime}')">
-        <div class="qv-time">${baseTime}</div>
-        <div class="qv-info">⚡ ${main||'—'}</div>
-        ${extra ? `<div class="qv-info" style="font-size:11px;margin-top:2px;opacity:0.75">${extra}</div>` : ''}
+      const v0 = slotVisits.find(([k,v]) => v.time === timesInSlot[0]);
+      const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
+      const renderHalf = (entry, t) => {
+        if (!entry) {
+          return `<div style="flex:1;padding:8px;cursor:pointer" onclick="goToMainSlot('${d}','${t}')">
+            <div class="qv-time" style="font-size:15px">${t}</div>
+            <div class="qv-info" style="font-size:11px">Wolny — zarezerwuj</div>
+          </div>`;
+        }
+        const v = entry[1];
+        const main = [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ');
+        const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
+        return `<div style="flex:1;padding:8px;overflow:hidden">
+          <div class="qv-time" style="font-size:15px">${t}</div>
+          <div class="qv-info">${main}</div>
+          ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px">${extra}</div>`:''}
+        </div>`;
+      };
+      return `<div class="qv-slot partial" style="flex-direction:row;align-items:stretch;padding:0;cursor:default">
+        ${renderHalf(v0, timesInSlot[0])}
+        <div style="width:2px;background:rgba(234,179,8,0.5);flex-shrink:0"></div>
+        ${renderHalf(v1, timesInSlot[1])}
       </div>`;
     }
 
@@ -2912,6 +2942,103 @@ window.goToMainSlot = function(date, time) {
       if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
     }, 100);
   }, 50);
+};
+
+// ── EKSPORT I CZYSZCZENIE DANYCH ──
+window.exportAllData = function() {
+  const data = {
+    exportDate: new Date().toISOString(),
+    wizyty: visits,
+    zlecenia: orders,
+    klima: klimas,
+    blokady: blockedDays,
+    slotBlocks,
+    dayNotes,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'wulkanizacja_export_' + formatDate(new Date()) + '.json';
+  a.click();
+  showToast('✔ Wyeksportowano dane JSON');
+};
+
+window.exportAllDataCSV = function() {
+  const today = formatDate(new Date());
+  let csv = '';
+
+  // Wizyty
+  csv += 'WIZYTY\n';
+  csv += 'Data,Godzina,Imię,Telefon,Email,Auto,Rozmiar,Usługa,Felgi,Run-flat,Niski profil,Wentyl,Notatka,Cena,Status\n';
+  Object.values(visits).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).forEach(v => {
+    csv += [v.date,v.time,v.name,v.phone,v.email,v.car,v.tireSize,v.service,v.wheel,
+      v.runflat?'tak':'',v.low?'tak':'',v.valve?'tak':'',
+      (v.note||'').replace(/,/g,';'),(v.price||''),v.status?'zrealizowana':'oczekująca']
+      .map(x=>`"${x||''}"`).join(',') + '\n';
+  });
+
+  // Zlecenia
+  csv += '\nZLECENIA\n';
+  csv += 'Data przyjęcia,Godzina,Klient,Telefon,Auto,Średnica,Usługa,Typ felg,Notatka,Cena,Status\n';
+  Object.values(orders).sort((a,b)=>((a.startDate||a.dateStamp)+(a.time||'')).localeCompare((b.startDate||b.dateStamp)+(b.time||''))).forEach(o => {
+    csv += [(o.startDate||o.dateStamp),o.time,o.name,o.phone,o.car,o.diameter,o.service,o.type,
+      (o.note||'').replace(/,/g,';'),(o.price||''),o.status?'zrealizowane':'oczekujące']
+      .map(x=>`"${x||''}"`).join(',') + '\n';
+  });
+
+  // Klima
+  csv += '\nKLIMA SERWIS\n';
+  csv += 'Data,Klient,Telefon,Auto,Rok,Pojemność,Pobrano,Filtr,Odgrzyb,Cena,Notatka,Status\n';
+  Object.values(klimas).filter(Boolean).sort((a,b)=>(a.start||'').localeCompare(b.start||'')).forEach(k => {
+    csv += [k.start,k.name,k.phone,k.car,k.year,k.capacity,k.recovered,
+      k.filter?'tak':'',k.ozone?'tak':'',(k.price||''),
+      (k.note||'').replace(/,/g,';'),k.status?'zrealizowane':'oczekujące']
+      .map(x=>`"${x||''}"`).join(',') + '\n';
+  });
+
+  const blob = new Blob(['\uFEFF'+csv], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'wulkanizacja_export_' + today + '.csv';
+  a.click();
+  showToast('✔ Wyeksportowano dane CSV');
+};
+
+window.cleanOldData = async function() {
+  const today = formatDate(new Date());
+  const confirmed = confirm(
+    '⚠️ UWAGA!\n\nUsunięte zostaną:\n• Wszystkie wizyty z przeszłości (zrealizowane i niezrealizowane)\n• Wszystkie zlecenia z przeszłości\n• Wszystkie serwisy klimy z przeszłości\n\nZachowane zostaną:\n• Dzisiejsze i przyszłe wizyty\n\nTej operacji nie można cofnąć!\nCzy na pewno chcesz kontynuować?'
+  );
+  if (!confirmed) return;
+
+  let deleted = 0;
+
+  // Usuń archiwalne wizyty (wszystkie przeszłe - zrealizowane i niezrealizowane)
+  for (const [k, v] of Object.entries(visits)) {
+    if (v.date < today) {
+      await remove(ref(db, 'wizyty/' + k));
+      deleted++;
+    }
+  }
+
+  // Usuń archiwalne zlecenia
+  for (const [k, o] of Object.entries(orders)) {
+    const d = o.startDate || o.dateStamp || '';
+    if (d < today) {
+      await remove(ref(db, 'zlecenia/' + k));
+      deleted++;
+    }
+  }
+
+  // Usuń archiwalne klima
+  for (const [k, kl] of Object.entries(klimas)) {
+    if (kl && kl.start < today) {
+      await remove(ref(db, 'klima/' + k));
+      deleted++;
+    }
+  }
+
+  showToast(`✔ Usunięto ${deleted} archiwalnych wpisów`);
 };
 
 window.showTab = function(id, el) {
