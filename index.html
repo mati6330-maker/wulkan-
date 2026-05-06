@@ -2336,7 +2336,7 @@ window.calculateCash = function calculateCash() {
 
   // Statystyki
   let vWeek=0,vMonth=0; const services={},wheels={};
-  vArr.forEach(v=>{ const d=parseDate(v.date); if((now-d)/(864e5)<=7)vWeek++; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())vMonth++; services[v.service]=(services[v.service]||0)+1; wheels[v.wheel]=(wheels[v.wheel]||0)+1; });
+  vArr.forEach(v=>{ const d=parseDate(v.date); if(d>=startWeek)vWeek++; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())vMonth++; services[v.service]=(services[v.service]||0)+1; wheels[v.wheel]=(wheels[v.wheel]||0)+1; });
   const topService=Object.entries(services).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ')||'—';
   const topWheel=Object.entries(wheels).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ')||'—';
   const vDone=vArr.filter(v=>v.status).length;
