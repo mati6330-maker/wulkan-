@@ -165,6 +165,13 @@ button:active{transform:translateY(0);box-shadow:none}
 }
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px;}
+.qv-slot{border-radius:6px;padding:14px 16px;cursor:pointer;transition:all 0.12s;border:1px solid transparent;display:flex;flex-direction:column;justify-content:center;min-height:72px;margin-bottom:6px;}
+.qv-slot.free{background:rgba(74,222,128,0.12);border-color:rgba(74,222,128,0.4);color:var(--green);}
+.qv-slot.busy{background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);color:var(--red);cursor:default;}
+.qv-slot.partial{background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.4);color:#eab308;}
+.qv-slot.blocked{background:rgba(100,100,100,0.1);border-color:rgba(100,100,100,0.3);color:var(--muted);cursor:not-allowed;}
+.qv-time{font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:2px;}
+.qv-info{font-size:12px;margin-top:4px;opacity:0.85;}
 .slot{padding:13px 6px;border-radius:3px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;transition:all 0.12s;border:1px solid transparent;}
 .slot-cb-label{display:flex;align-items:center;gap:5px;font-size:12px;font-family:var(--mono);cursor:pointer;padding:8px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;transition:all 0.12s;}
 .slot-cb-label:has(input:checked){background:rgba(248,113,113,0.2);border-color:var(--red);color:var(--red);}
@@ -269,6 +276,7 @@ body.light .wm-logo img{filter:none;}
 </div>
 <div id="syncStatus">⟳ Łączenie...</div>
 <div class="tabs">
+  <div class="tab admin-tab tab-locked" onclick="requireAdmin('quickview',this)">Podgląd</div>
   <div class="tab active" onclick="showTab('main',this)">Grafik</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('list',this)">Lista</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('orders',this)">Zlecenia</div>
@@ -366,6 +374,17 @@ body.light .wm-logo img{filter:none;}
     </div>
   </div>
 </div>
+</div>
+
+<div class="section" id="quickview">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <button onclick="qvChangeDay(-1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">◀</button>
+    <div style="text-align:center">
+      <div id="qvDayLabel" style="font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:2px;text-transform:uppercase"></div>
+    </div>
+    <button onclick="qvChangeDay(1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">▶</button>
+  </div>
+  <div id="qvGrid"></div>
 </div>
 
 <div class="section" id="list">
@@ -898,8 +917,12 @@ function initPublic() {
 }
 function initApp() {
   unsubscribeAll();
+  // Otwórz Podgląd jako domyślną zakładkę dla admina
+  const qvTab = document.querySelector('.tab[onclick*="quickview"]');
+  window.showTab('quickview', qvTab);
+  qvDate = new Date();
   initCalendar();
-  renderGrid(); // pokaż pusty grid od razu
+  renderGrid();
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
     visits = snap.val() || {};
     initCalendar();
@@ -2763,6 +2786,97 @@ window.renderKlima = function() {
   }).join('');
 };
 
+// ── QUICKVIEW ──
+let qvDate = new Date();
+
+window.qvChangeDay = function(delta) {
+  qvDate = new Date(qvDate);
+  qvDate.setDate(qvDate.getDate() + delta);
+  renderQuickView();
+};
+
+function renderQuickView() {
+  const d = formatDate(qvDate);
+  const dayName = qvDate.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  const label = document.getElementById('qvDayLabel');
+  if (label) label.textContent = dayName;
+
+  const grid = document.getElementById('qvGrid');
+  if (!grid) return;
+
+  const dayVisits = Object.entries(visits).filter(([k,v]) => v.date === d);
+  const slots = [];
+  for (const [hFrom, hTo] of [[8,8],[9,13],[15,17],[18,18]]) {
+    for (let h = hFrom; h <= hTo; h++) {
+      for (const half of [0, 30]) {
+        slots.push(String(h).padStart(2,'0') + ':' + String(half).padStart(2,'0'));
+      }
+    }
+  }
+
+  grid.innerHTML = slots.map(baseTime => {
+    const [h, m] = baseTime.split(':').map(Number);
+    const timesInSlot = [
+      String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'),
+      String(h).padStart(2,'0') + ':' + String(m + 15).padStart(2,'0')
+    ];
+    const slotVisits = dayVisits.filter(([k,v]) => timesInSlot.includes(v.time));
+    const isBlocked = isSlotBlockedForDate(d, baseTime);
+    const allBusy = timesInSlot.every(t => dayVisits.find(([k,v]) => v.time === t));
+    const anyBusy = slotVisits.length > 0;
+
+    if (isBlocked) {
+      return `<div class="qv-slot blocked">
+        <div class="qv-time">🔒 ${baseTime}</div>
+        <div class="qv-info">Zablokowany</div>
+      </div>`;
+    }
+
+    if (allBusy) {
+      const v = slotVisits[0][1];
+      const info = [v.service, v.car, v.name].filter(Boolean).join(' · ');
+      return `<div class="qv-slot busy">
+        <div class="qv-time">${baseTime}</div>
+        <div class="qv-info">${info || '—'}</div>
+        ${slotVisits.length > 1 ? `<div class="qv-info" style="font-size:11px;margin-top:2px">${slotVisits[1][1].service||''} ${slotVisits[1][1].car||''}</div>` : ''}
+      </div>`;
+    }
+
+    if (anyBusy) {
+      const v = slotVisits[0][1];
+      const info = [v.service, v.car, v.name].filter(Boolean).join(' · ');
+      return `<div class="qv-slot partial" onclick="goToMainSlot('${d}','${baseTime}')">
+        <div class="qv-time">${baseTime}</div>
+        <div class="qv-info">⚡ ${info} · wolny kwadrans</div>
+      </div>`;
+    }
+
+    return `<div class="qv-slot free" onclick="goToMainSlot('${d}','${baseTime}')">
+      <div class="qv-time">${baseTime}</div>
+      <div class="qv-info">Wolny — kliknij aby zarezerwować</div>
+    </div>`;
+  }).join('');
+}
+
+window.goToMainSlot = function(date, time) {
+  selectedDate = parseDate(date);
+  selectedTime = time;
+  // Oblicz weekOffset względem bieżącego tygodnia
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = parseDate(date); target.setHours(0,0,0,0);
+  const diffDays = Math.round((target - today) / 864e5);
+  weekOffset = Math.floor(diffDays / 7);
+  const mainTab = document.querySelector('.tab[onclick*="\'main\'"]') || document.querySelector('.tab[onclick*="main"]');
+  window.showTab('main', mainTab);
+  setTimeout(() => {
+    renderGrid();
+    setTimeout(() => {
+      const el = document.getElementById('visitFormAdmin');
+      if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 100);
+  }, 50);
+};
+
 window.showTab = function(id, el) {
   const btn = document.getElementById('printBtn');
   if (btn) btn.style.display = (id==='main' && currentUser) ? 'block' : 'none';
@@ -2772,6 +2886,7 @@ window.showTab = function(id, el) {
   if (el) el.classList.add('active');
   if (id==='list') window.renderList();
   if (id==='orders') window.renderOrders();
+  if (id==='quickview') renderQuickView();
   if (id==='cash') { window.calculateCash(); }
   if (id==='archive') window.renderArchive();
   if (id==='pricing') window.renderPricing();
