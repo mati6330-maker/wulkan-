@@ -2881,11 +2881,27 @@ function renderQuickView() {
 
 window.goToMainSlot = function(date, time) {
   selectedDate = parseDate(date);
-  selectedTime = time;
   const today = new Date(); today.setHours(0,0,0,0);
   const target = new Date(selectedDate); target.setHours(0,0,0,0);
   const diffDays = Math.round((target - today) / 864e5);
   weekOffset = Math.floor(diffDays / 7);
+
+  // Znajdź wolny kwadrans w tym slocie
+  const [h, m] = time.split(':').map(Number);
+  const t1 = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  const t2 = String(h).padStart(2,'0') + ':' + String(m + 15).padStart(2,'0');
+  const dayVisits = Object.values(visits).filter(v => v.date === date);
+  const t1Taken = dayVisits.some(v => v.time === t1);
+  const t2Taken = dayVisits.some(v => v.time === t2);
+
+  if (!t1Taken) {
+    selectedTime = t1;
+  } else if (!t2Taken) {
+    selectedTime = t2;
+  } else {
+    selectedTime = null; // oba zajęte - nie powinno się zdarzyć
+  }
+
   const mainTab = document.querySelector('.tab[onclick*="\'main\'"]') ||
                   document.querySelector('.tab[onclick*="main"]');
   window.showTab('main', mainTab);
