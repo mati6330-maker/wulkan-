@@ -1244,8 +1244,25 @@ function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
         document.getElementById('visitFormAdmin').scrollIntoView({behavior:'smooth', block:'start'});
       };
     } else {
-      item.style.cursor = 'default';
-      item.title = 'Ten kwadrans jest zajęty';
+      item.style.cursor = 'pointer';
+      item.title = 'Kliknij aby przejść do tej wizyty';
+      item.onclick = () => {
+        closeTimePicker();
+        const key = entry[0];
+        const visitDate = entry[1].date;
+        const df = document.getElementById('dateFilter');
+        if (df) df.value = visitDate;
+        const listTab = document.querySelector('.tab[onclick*="list"]');
+        window.showTab('list', listTab);
+        setTimeout(() => {
+          const card = document.getElementById('card-' + key);
+          if (card) {
+            card.scrollIntoView({behavior:'smooth', block:'center'});
+            card.style.outline = '2px solid var(--accent)';
+            setTimeout(() => card.style.outline = '', 2000);
+          }
+        }, 300);
+      };
     }
     picker.appendChild(item);
   });
