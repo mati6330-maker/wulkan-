@@ -276,7 +276,7 @@ body.light .wm-logo img{filter:none;}
 </div>
 <div id="syncStatus">⟳ Łączenie...</div>
 <div class="tabs">
-  <div class="tab admin-tab tab-locked" onclick="requireAdmin('quickview',this)">Podgląd</div>
+  <div class="tab" onclick="showTab('quickview',this)">Podgląd</div>
   <div class="tab active" onclick="showTab('main',this)">Grafik</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('list',this)">Lista</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('orders',this)">Zlecenia</div>
@@ -536,7 +536,18 @@ body.light .wm-logo img{filter:none;}
 </div>
 
 <div class="section" id="klima">
-  <div class="section-label">Klima serwis — nowe zlecenie</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
+    <div class="section-label" style="margin:0">Klima serwis — nowe zlecenie</div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 8px">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap">zł/100g</span>
+        <input id="klimaRateInput" type="number" min="1" max="999" step="1"
+          style="width:52px;margin:0;padding:4px 6px;font-size:13px;font-family:var(--mono);text-align:center;background:transparent;border:none;color:var(--accent)"
+          oninput="saveKlimaRate(this.value)"/>
+      </div>
+      <button onclick="openKlimaCalc()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:1px;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">🧮 Kalkulator</button>
+    </div>
+  </div>
   <input id="k_name" placeholder="Imię (opcjonalne)"/>
   <input id="k_phone" inputmode="numeric" placeholder="Telefon (opcjonalne)" type="tel"/>
   <input id="k_car" placeholder="Marka / model samochodu"/>
@@ -571,7 +582,7 @@ body.light .wm-logo img{filter:none;}
       </label>
     </div>
     <div id="klimaPriceResult" style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent);text-align:center;padding:12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.3);border-radius:4px;margin-bottom:14px">— zł</div>
-    <button onclick="saveKlimaPrice()" style="background:var(--accent)">✔ Zapisz cenę</button>
+    <button id="klimaSaveBtn" onclick="saveKlimaPrice()" style="background:var(--accent)">✔ Zapisz cenę</button>
     <button onclick="closeKlimaPriceModal()" style="margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
   </div>
 </div>
@@ -763,7 +774,8 @@ let prices = {
   wws: 50, wwa: 60,                               // wyważenie
   no: 50,                                         // naprawa opony
   rf: 20, np: 20, nw: 20,                        // dodatki
-  zlecenie_discount: 20                           // rabat dla zleceń
+  zlecenie_discount: 20,                          // rabat dla zleceń
+  klima_rate: 39                                  // cena czynnika za 100g
 };
 
 // ── EMAILJS LAZY LOAD ──
@@ -894,12 +906,17 @@ function unsubscribeAll() {
 function initPublic() {
   unsubscribeAll();
   selectedDate = new Date(); selectedTime = null; weekOffset = 0;
+  qvDate = new Date();
+  // Otwórz Podgląd domyślnie
+  const qvTab = document.querySelector('.tab[onclick*="quickview"]');
+  window.showTab('quickview', qvTab);
   initCalendar();
-  renderGrid(); // pokaż pusty grid od razu
+  renderGrid();
   unsubVisits = onValue(ref(db, 'wizyty'), snap => {
     visits = snap.val() || {};
     initCalendar();
     renderGrid();
+    renderQuickView();
     setSyncStatus('ok', '● Na żywo');
   }, () => {
     setSyncStatus('err', '✕ Błąd połączenia');
@@ -911,6 +928,8 @@ function initPublic() {
   onValue(ref(db, 'ceny'), snap => {
     if (snap.val()) { prices = {...prices, ...snap.val()}; }
     renderPricing();
+    const ri = document.getElementById('klimaRateInput');
+    if (ri) ri.value = prices.klima_rate || 39;
   });
   onValue(ref(db, 'slotBlocks'), snap => {
     slotBlocks = snap.val() || {};
@@ -949,6 +968,8 @@ function initApp() {
   onValue(ref(db, 'ceny'), snap => {
     if (snap.val()) { prices = {...prices, ...snap.val()}; }
     renderPricing();
+    const ri = document.getElementById('klimaRateInput');
+    if (ri) ri.value = prices.klima_rate || 39;
   });
   onValue(ref(db, 'slotBlocks'), snap => {
     slotBlocks = snap.val() || {};
@@ -2634,7 +2655,7 @@ let klimaPriceKey = null;
 window.applyKlimaDiscount = async function(k, delta) {
   const o = klimas[k];
   if (!o || o.price == null) { showToast('⚠️ Najpierw ustal cenę', 'var(--muted)'); return; }
-  const catalog = Math.round(((parseFloat(o.capacity||0) - parseFloat(o.recovered||0)) / 100 * 39 + 50) + (o.filter?50:0) + (o.ozone?30:0));
+  const catalog = Math.round(((parseFloat(o.capacity||0) - parseFloat(o.recovered||0)) / 100 * (prices.klima_rate||39) + 50) + (o.filter?50:0) + (o.ozone?30:0));
   const newPrice = delta > 0 ? Math.min(catalog, o.price + delta) : Math.max(0, o.price + delta);
   if (delta > 0 && o.price >= catalog) { showToast('Cena już jest pełną ceną', 'var(--muted)'); return; }
   await update(ref(db, 'klima/' + k), {price: newPrice});
@@ -2714,6 +2735,30 @@ window.toggleKlima = async function(k) {
   await update(ref(db, 'klima/' + k), {status: !o.status});
 };
 
+window.saveKlimaRate = function(val) {
+  const rate = parseFloat(val);
+  if (!rate || rate <= 0) return;
+  prices.klima_rate = rate;
+  update(ref(db, 'ceny'), {klima_rate: rate});
+};
+
+window.openKlimaCalc = function() {
+  // Resetuj pola
+  document.getElementById('k_capacity').value = '';
+  document.getElementById('k_recovered').value = '';
+  document.getElementById('k_filter').checked = false;
+  document.getElementById('k_ozone').checked = false;
+  const fl = document.getElementById('k_filter_label');
+  const ol = document.getElementById('k_ozone_label');
+  if (fl) { fl.style.borderColor = 'var(--border)'; fl.style.background = 'var(--surface2)'; }
+  if (ol) { ol.style.borderColor = 'var(--border)'; ol.style.background = 'var(--surface2)'; }
+  document.getElementById('klimaPriceResult').textContent = '— zł';
+  // Ukryj przycisk zapisu — to tylko kalkulator
+  document.getElementById('klimaSaveBtn').style.display = 'none';
+  // Otwórz modal
+  document.getElementById('klimaPriceModal').style.display = 'flex';
+};
+
 window.openKlimaPriceModal = function(k) {
   const o = klimas[k]; if (!o) return;
   klimaPriceKey = k;
@@ -2725,6 +2770,8 @@ window.openKlimaPriceModal = function(k) {
   const ol = document.getElementById('k_ozone_label');
   if (fl) { fl.style.borderColor = o.filter ? 'var(--accent)' : 'var(--border)'; fl.style.background = o.filter ? 'rgba(249,115,22,0.1)' : 'var(--surface2)'; }
   if (ol) { ol.style.borderColor = o.ozone ? 'var(--accent)' : 'var(--border)'; ol.style.background = o.ozone ? 'rgba(249,115,22,0.1)' : 'var(--surface2)'; }
+  // Pokaż przycisk zapisu
+  document.getElementById('klimaSaveBtn').style.display = 'block';
   calcKlimaPrice();
   document.getElementById('klimaPriceModal').style.display = 'flex';
 };
@@ -2740,11 +2787,12 @@ window.calcKlimaPrice = function() {
   const filter = document.getElementById('k_filter').checked ? 50 : 0;
   const ozone = document.getElementById('k_ozone').checked ? 30 : 0;
   const z = x - y;
-  const base = z > 0 ? ((z / 100) * 39) + 50 : 50;
+  const rate = prices.klima_rate || 39;
+  const base = z > 0 ? ((z / 100) * rate) + 50 : 50;
   const total = Math.round(base + filter + ozone);
   const el = document.getElementById('klimaPriceResult');
   const breakdown = [];
-  if (z > 0) breakdown.push(`uzupełniono ${z}g × 0,39 zł + 50 zł`);
+  if (z > 0) breakdown.push(`uzupełniono ${z}g × ${((prices.klima_rate||39)/100).toFixed(2).replace('.',',')} zł + 50 zł`);
   else breakdown.push('brak uzupełnienia + 50 zł');
   if (filter) breakdown.push('filtr +50 zł');
   if (ozone) breakdown.push('odgrzybienie +30 zł');
@@ -2856,56 +2904,71 @@ function renderQuickView() {
       </div>`;
     }
 
-    if (allBusy) {
-      const v0 = slotVisits.find(([k,v]) => v.time === timesInSlot[0]);
-      const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
-      const renderHalf = (entry, t) => {
-        const v = entry ? entry[1] : null;
-        const main = v ? [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ') : '';
-        const extra = v ? [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ') : '';
-        return `<div style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)">
-          <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
-          <div class="qv-info" style="color:var(--red)">${main||'—'}</div>
-          ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
-        </div>`;
-      };
-      return `<div class="qv-slot busy" style="flex-direction:row;align-items:stretch;padding:0">
-        ${renderHalf(v0, timesInSlot[0])}
-        <div style="width:2px;background:rgba(248,113,113,0.5);flex-shrink:0"></div>
-        ${renderHalf(v1, timesInSlot[1])}
+    // Dla gości — prosty widok: zajęty = czerwony
+    if (!currentUser && anyBusy) {
+      return `<div class="qv-slot busy">
+        <div class="qv-time">${baseTime}</div>
+        <div class="qv-info">Zajęty</div>
       </div>`;
     }
 
-    if (anyBusy) {
-      const v0 = slotVisits.find(([k,v]) => v.time === timesInSlot[0]);
-      const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
-      const renderHalf = (entry, t) => {
-        if (!entry) {
-          return `<div style="flex:1;padding:8px;cursor:pointer;background:rgba(234,179,8,0.1)" onclick="goToMainSlot('${d}','${t}')">
-            <div class="qv-time" style="font-size:15px;color:#eab308">${t}</div>
-            <div class="qv-info" style="font-size:11px;color:#eab308">Wolny — zarezerwuj</div>
+    if (currentUser) {
+      if (allBusy) {
+        const v0 = slotVisits.find(([k,v]) => v.time === timesInSlot[0]);
+        const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
+        const renderHalfBusy = (entry, t) => {
+          const v = entry ? entry[1] : null;
+          const main = v ? [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ') : '—';
+          const extra = v ? [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ') : '';
+          return `<div style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)">
+            <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
+            <div class="qv-info" style="color:var(--red)">${main}</div>
+            ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
           </div>`;
-        }
-        const v = entry[1];
-        const main = [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ');
-        const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
-        return `<div style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)">
-          <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
-          <div class="qv-info" style="color:var(--red)">${main}</div>
-          ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
+        };
+        return `<div class="qv-slot busy" style="flex-direction:row;align-items:stretch;padding:0">
+          ${renderHalfBusy(v0, timesInSlot[0])}
+          <div style="width:2px;background:rgba(248,113,113,0.5);flex-shrink:0"></div>
+          ${renderHalfBusy(v1, timesInSlot[1])}
         </div>`;
-      };
-      return `<div class="qv-slot partial" style="flex-direction:row;align-items:stretch;padding:0;cursor:default;background:transparent;border-color:rgba(248,113,113,0.4)">
-        ${renderHalf(v0, timesInSlot[0])}
-        <div style="width:2px;background:rgba(248,113,113,0.4);flex-shrink:0"></div>
-        ${renderHalf(v1, timesInSlot[1])}
-      </div>`;
+      }
+
+      if (anyBusy) {
+        const v0 = slotVisits.find(([k,v]) => v.time === timesInSlot[0]);
+        const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
+        const renderHalfPartial = (entry, t) => {
+          if (!entry) {
+            return `<div style="flex:1;padding:8px;cursor:pointer;background:rgba(234,179,8,0.1)" onclick="goToMainSlot('${d}','${t}')">
+              <div class="qv-time" style="font-size:15px;color:#eab308">${t}</div>
+              <div class="qv-info" style="font-size:11px;color:#eab308">Wolny — zarezerwuj</div>
+            </div>`;
+          }
+          const v = entry[1];
+          const main = [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ');
+          const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
+          return `<div style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)">
+            <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
+            <div class="qv-info" style="color:var(--red)">${main}</div>
+            ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
+          </div>`;
+        };
+        return `<div class="qv-slot partial" style="flex-direction:row;align-items:stretch;padding:0;cursor:default;background:transparent;border-color:rgba(248,113,113,0.4)">
+          ${renderHalfPartial(v0, timesInSlot[0])}
+          <div style="width:2px;background:rgba(248,113,113,0.4);flex-shrink:0"></div>
+          ${renderHalfPartial(v1, timesInSlot[1])}
+        </div>`;
+      }
     }
 
-    return `<div class="qv-slot free" onclick="goToMainSlot('${d}','${baseTime}')">
-      <div class="qv-time">${baseTime}</div>
-      <div class="qv-info">Wolny — kliknij aby zarezerwować</div>
-    </div>`;
+    return currentUser
+      ? `<div class="qv-slot free" onclick="goToMainSlot('${d}','${baseTime}')">
+          <div class="qv-time">${baseTime}</div>
+          <div class="qv-info">Wolny — kliknij aby zarezerwować</div>
+        </div>`
+      : `<div class="qv-slot free" onclick="showTab('main',document.querySelector('.tab[onclick*=\'main\']'))">
+          <div class="qv-time">${baseTime}</div>
+          <div class="qv-info">Wolny — zapisz się online</div>
+        </div>`;
   }).join('');
 }
 
