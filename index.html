@@ -1281,14 +1281,22 @@ function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
       item.onclick = (e) => {
         e.stopPropagation();
         closeTimePicker();
-        const key = entry[0];
+        // Ustaw filtr daty i przejdź na listę
         const visitDate = entry[1].date;
+        const key = entry[0];
         const df = document.getElementById('dateFilter');
         if (df) df.value = visitDate;
-        highlightVisitKey = key;
-        const listTab = document.querySelector('.tab[onclick*="\'list\'"]') ||
-                        document.querySelector('.tab[onclick*="list"]');
+        const listTab = document.querySelector('.tab[onclick*="list"]');
         window.showTab('list', listTab);
+        // Scroll do karty po wyrenderowaniu listy
+        setTimeout(() => {
+          const card = document.getElementById('card-' + key);
+          if (card) {
+            card.scrollIntoView({behavior:'smooth', block:'center'});
+            card.style.outline = '2px solid var(--accent)';
+            setTimeout(() => card.style.outline = '', 2000);
+          }
+        }, 500);
       };
     }
     picker.appendChild(item);
