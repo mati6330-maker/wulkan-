@@ -2565,8 +2565,8 @@ window.printDay = function() {
   const d = formatDate(selectedDate);
   const dayName = selectedDate.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const dv = Object.values(visits).filter(v=>v.date===d).sort((a,b)=>a.time.localeCompare(b.time));
-  const do_ = Object.values(orders).filter(o=>(o.startDate||o.dateStamp)===d);
-  const dk = Object.values(klimas).filter(k=>k&&k.start===d);
+  const do_ = Object.values(orders).filter(o=>(o.dateStamp||o.startDate||'')>=d);
+  const dk = Object.values(klimas).filter(k=>k&&(k.end||k.start||'')>=d);
   const win = window.open('','_blank');
   if (!win) { alert('\u26a0 Zezw\u00f3l na wyskakuj\u0105ce okna aby drukowa\u0107'); return; }
 
