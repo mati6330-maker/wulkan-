@@ -2378,8 +2378,8 @@ window.calculateCash = function calculateCash() {
   const day=now.getDay()||7;
   const startWeek=new Date(now); startWeek.setDate(now.getDate()-day+1); startWeek.setHours(0,0,0,0);
   vArr.forEach(v=>{ if(!v.status)return; const p=v.price||calcVisitPrice(v); const d=parseDate(v.date); visitsTotal+=p; if(v.date===today)dayV+=p; if(d>=startWeek)weekV+=p; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())monthV+=p; });
-  oArr.forEach(o=>{ if(!o.status)return; const p=o.price||0; const ds=(o.startDate||o.dateStamp)||today; const d=parseDate(ds); ordersTotal+=p; if(ds===today)dayO+=p; if(d>=startWeek)weekO+=p; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())monthO+=p; });
-  kArr.forEach(k=>{ if(!k||!k.status||k.price==null)return; const p=k.price; const ds=k.start||today; const d=parseDate(ds); klimaTotal+=p; if(ds===today)dayK+=p; if(d>=startWeek)weekK+=p; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())monthK+=p; });
+  oArr.forEach(o=>{ if(!o.status)return; const p=o.price||0; const ds=(o.dateStamp||o.startDate)||today; const d=parseDate(ds); ordersTotal+=p; if(ds===today)dayO+=p; if(d>=startWeek)weekO+=p; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())monthO+=p; });
+  kArr.forEach(k=>{ if(!k||!k.status||k.price==null)return; const p=k.price; const ds=(k.end||k.start)||today; const d=parseDate(ds); klimaTotal+=p; if(ds===today)dayK+=p; if(d>=startWeek)weekK+=p; if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear())monthK+=p; });
   const total=visitsTotal+ordersTotal+klimaTotal;
 
   // Statystyki
@@ -2565,8 +2565,8 @@ window.printDay = function() {
   const d = formatDate(selectedDate);
   const dayName = selectedDate.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const dv = Object.values(visits).filter(v=>v.date===d).sort((a,b)=>a.time.localeCompare(b.time));
-  const do_ = Object.values(orders).filter(o=>(o.dateStamp||o.startDate||'')>=d);
-  const dk = Object.values(klimas).filter(k=>k&&(k.end||k.start||'')>=d);
+  const do_ = Object.values(orders).filter(o=>(o.dateStamp||o.startDate||'')>=d && !o.status);
+  const dk = Object.values(klimas).filter(k=>k&&(k.end||k.start||'')>=d && !k.status);
   const win = window.open('','_blank');
   if (!win) { alert('\u26a0 Zezw\u00f3l na wyskakuj\u0105ce okna aby drukowa\u0107'); return; }
 
