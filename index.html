@@ -2018,6 +2018,13 @@ window.renderList = function renderList() {
   if (highlightVisitKey) {
     const hKey = highlightVisitKey;
     highlightVisitKey = null;
+    const hVisit = visits[hKey];
+    if (hVisit) {
+      const groupId = 'vg-' + hVisit.date;
+      const group = document.getElementById(groupId);
+      const arrow = document.getElementById(groupId + '-arrow');
+      if (group) { group.style.display = 'block'; if (arrow) arrow.textContent = '▼'; }
+    }
     setTimeout(() => {
       const el = document.getElementById('card-' + hKey);
       if (el) {
@@ -3290,6 +3297,7 @@ window.showTab = function(id, el) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (el) el.classList.add('active');
+  if (id==='list') window.renderList();
   if (id==='list') window.renderList();
   if (id==='orders') window.renderOrders();
   if (id==='quickview') renderQuickView();
