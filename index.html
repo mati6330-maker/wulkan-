@@ -1242,6 +1242,8 @@ function isDateBlocked(dateStr) {
 function closeTimePicker() {
   const existing = document.getElementById('timePicker');
   if (existing) existing.remove();
+  const overlay = document.getElementById('timePickerOverlay');
+  if (overlay) overlay.remove();
 }
 
 function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
@@ -1280,32 +1282,33 @@ function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
       item.title = 'Kliknij aby przejść do tej wizyty';
       item.onclick = (e) => {
         e.stopPropagation();
-        const visitDate = entry[1].date;
-        const key = entry[0];
         closeTimePicker();
+        const df = document.getElementById('dateFilter');
+        if (df) df.value = entry[1].date;
+        const listTab = document.querySelector('.tab[onclick*="list"]');
+        window.showTab('list', listTab);
         setTimeout(() => {
-          const df = document.getElementById('dateFilter');
-          if (df) df.value = visitDate;
-          const listTab = document.querySelector('.tab[onclick*="list"]');
-          window.showTab('list', listTab);
-          setTimeout(() => {
-            const card = document.getElementById('card-' + key);
-            if (card) {
-              card.scrollIntoView({behavior:'smooth', block:'center'});
-              card.style.outline = '2px solid var(--accent)';
-              setTimeout(() => card.style.outline = '', 2000);
-            }
-          }, 500);
-        }, 50);
+          const card = document.getElementById('card-' + entry[0]);
+          if (card) {
+            card.scrollIntoView({behavior:'smooth', block:'center'});
+            card.style.outline = '2px solid var(--accent)';
+            setTimeout(() => card.style.outline = '', 2000);
+          }
+        }, 400);
       };
     }
     picker.appendChild(item);
   });
 
   document.body.appendChild(picker);
-  setTimeout(() => {
-    document.addEventListener('click', closeTimePicker, { once: true });
-  }, 0);
+
+  // Overlay do zamknięcia pickera kliknięciem poza nim
+  const overlay = document.createElement('div');
+  overlay.id = 'timePickerOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:999';
+  overlay.onclick = () => { overlay.remove(); closeTimePicker(); };
+  document.body.insertBefore(overlay, picker);
+  picker.style.zIndex = '1000';
 }
 
 function renderGrid() {
@@ -1315,10 +1318,19 @@ function renderGrid() {
 
   const blocked = isDateBlocked(d);
   const isSunday = parseDate(d).getDay() === 0;
+  const isPastDay = d < getToday();
+
   if (blocked || isSunday) {
     const reason = isSunday ? 'Niedziela — nieczynne' : (blocked.reason || '');
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;font-family:var(--mono);font-size:13px;color:var(--red);letter-spacing:1px">
       🚫 DZIEŃ NIEDOSTĘPNY${reason ? '<br><span style="font-size:11px;color:var(--muted)">' + reason + '</span>' : ''}
+    </div>`;
+    return;
+  }
+
+  if (isPastDay) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:1px">
+      📅 Miniony dzień — rezerwacja niemożliwa
     </div>`;
     return;
   }
@@ -3053,9 +3065,9 @@ function renderQuickView() {
         const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
         const renderHalfPartial = (entry, t) => {
           if (!entry) {
-            return `<div style="flex:1;padding:8px;cursor:pointer;background:rgba(234,179,8,0.1)" onclick="goToMainSlot('${d}','${t}')">
+            return `<div style="flex:1;padding:8px;${!isPast?'cursor:pointer;':''}background:rgba(234,179,8,0.1)" ${!isPast ? `onclick="goToMainSlot('${d}','${t}')"` : ''}>
               <div class="qv-time" style="font-size:15px;color:#eab308">${t}</div>
-              <div class="qv-info" style="font-size:11px;color:#eab308">Wolny — zarezerwuj</div>
+              <div class="qv-info" style="font-size:11px;color:#eab308">${isPast ? 'Miniony termin' : 'Wolny — zarezerwuj'}</div>
             </div>`;
           }
           const v = entry[1];
@@ -3075,15 +3087,27 @@ function renderQuickView() {
       }
     }
 
+    const isPast = dateStr < getToday();
+
     return currentUser
-      ? `<div class="qv-slot free" onclick="goToMainSlot('${d}','${baseTime}')">
-          <div class="qv-time">${baseTime}</div>
-          <div class="qv-info">Wolny — kliknij aby zarezerwować</div>
-        </div>`
-      : `<div class="qv-slot free" onclick="showTab('main',document.querySelector('.tab[onclick*=\'main\']'))">
-          <div class="qv-time">${baseTime}</div>
-          <div class="qv-info">Wolny — zapisz się online</div>
-        </div>`;
+      ? isPast
+        ? `<div class="qv-slot blocked">
+            <div class="qv-time">${baseTime}</div>
+            <div class="qv-info">Miniony termin</div>
+          </div>`
+        : `<div class="qv-slot free" onclick="goToMainSlot('${d}','${baseTime}')">
+            <div class="qv-time">${baseTime}</div>
+            <div class="qv-info">Wolny — kliknij aby zarezerwować</div>
+          </div>`
+      : isPast
+        ? `<div class="qv-slot blocked">
+            <div class="qv-time">${baseTime}</div>
+            <div class="qv-info">Miniony termin</div>
+          </div>`
+        : `<div class="qv-slot free" onclick="showTab('main',document.querySelector('.tab[onclick*=\\'main\\']'))">
+            <div class="qv-time">${baseTime}</div>
+            <div class="qv-info">Wolny — zapisz się online</div>
+          </div>`;
   }).join('');
 }
 
