@@ -351,9 +351,7 @@ body.light .wm-logo img{filter:none;}
   <div class="v-title">⚠ Brakujące pola:</div>
   <div id="visitValidationList"></div>
 </div>
-<div id="rodoClause" style="font-size:10px;color:var(--muted);line-height:1.5;padding:8px 4px;border-top:1px solid var(--border);margin-bottom:8px">
-  🔒 Podane dane osobowe (imię, telefon, email) są przetwarzane przez Wulkanizację Mielczarek wyłącznie w celu realizacji rezerwacji wizyty, zgodnie z RODO. Dane nie są udostępniane osobom trzecim.
-</div>
+<div id="rodoClause" style="font-size:10px;color:var(--muted);line-height:1.5;padding:8px 4px;border-top:1px solid var(--border);margin-bottom:8px">🔒 Podane dane osobowe (imię, telefon, email) są przetwarzane przez Wulkanizację Mielczarek wyłącznie w celu realizacji rezerwacji wizyty, zgodnie z RODO. Dane nie są udostępniane osobom trzecim.</div>
 <button onclick="save()">▶ Zapisz wizytę</button>
 <div id="livePriceDisplay" style="display:none"></div>
 <button id="cancelBtn" onclick="cancelEdit()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);display:none">✕ Anuluj edycję</button>
@@ -637,11 +635,7 @@ body.light .wm-logo img{filter:none;}
 </div>
 </div><!-- /pricing section -->
 
-<div id="siteFooter" style="text-align:center;padding:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:8px">
-  <span onclick="showPrivacyPolicy()" style="cursor:pointer;text-decoration:underline;color:var(--muted)">Polityka prywatności</span>
-  &nbsp;·&nbsp; Wulkanizacja Mielczarek © 2026
-</div>
-
+<div id="siteFooter" style="text-align:center;padding:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:8px"><span onclick="showPrivacyPolicy()" style="cursor:pointer;text-decoration:underline;color:var(--muted)">Polityka prywatności</span> &nbsp;·&nbsp; Wulkanizacja Mielczarek © 2026</div>
 </div><!-- /container -->
 </div><!-- /appScreen -->
 
@@ -876,12 +870,8 @@ onAuthStateChanged(auth, user => {
     document.getElementById('adminEmail').textContent = user.email;
     document.getElementById('printBtn').style.display = 'block';
     document.getElementById('noteField').style.display = 'block';
-    const rodo = document.getElementById('rodoClause'); if (rodo) rodo.style.display = 'none';
-    const footer = document.getElementById('siteFooter'); if (footer) footer.style.display = 'none';
-    const rodo = document.getElementById('rodoClause');
-    if (rodo) rodo.style.display = 'none';
-    const footer = document.getElementById('siteFooter');
-    if (footer) footer.style.display = 'none';
+    const rodoEl = document.getElementById('rodoClause'); if (rodoEl) rodoEl.style.display = 'none';
+    const footerEl = document.getElementById('siteFooter'); if (footerEl) footerEl.style.display = 'none';
     // Odblokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.remove('tab-locked');
@@ -896,12 +886,8 @@ onAuthStateChanged(auth, user => {
     document.getElementById('guestBar').style.display = 'flex';
     document.getElementById('printBtn').style.display = 'none';
     document.getElementById('noteField').style.display = 'none';
-    const rodo2 = document.getElementById('rodoClause'); if (rodo2) rodo2.style.display = 'block';
-    const footer2 = document.getElementById('siteFooter'); if (footer2) footer2.style.display = 'block';
-    const rodo = document.getElementById('rodoClause');
-    if (rodo) rodo.style.display = 'block';
-    const footer = document.getElementById('siteFooter');
-    if (footer) footer.style.display = 'block';
+    const rodoEl2 = document.getElementById('rodoClause'); if (rodoEl2) rodoEl2.style.display = 'block';
+    const footerEl2 = document.getElementById('siteFooter'); if (footerEl2) footerEl2.style.display = 'block';
     // Zablokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.add('tab-locked');
@@ -2245,7 +2231,7 @@ window.renderOrders = function renderOrders() {
 
   entries.sort((a,b)=>(a[1].dateStamp||a[1].startDate||'').localeCompare(b[1].dateStamp||b[1].startDate||''));
 
-  // Grupuj po terminie realizacji
+  // Grupuj po dacie
   const grouped = {};
   entries.forEach(([k,o]) => {
     const dateKey = (o.dateStamp||o.startDate) || 'brak-daty';
@@ -2548,48 +2534,7 @@ function renderReport(title, list, sum) {
   </div>
 
   <div class="footer">Liczba pozycji: ${list.length}</div>
-  <div id="siteFooter" style="text-align:center;padding:20px 16px 32px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:24px">
-  <span onclick="showPrivacyPolicy()" style="cursor:pointer;text-decoration:underline;color:var(--muted)">Polityka prywatności</span>
-  &nbsp;·&nbsp; Wulkanizacja Mielczarek © 2026
-</div>
-
-<!-- Modal polityki prywatności -->
-<div id="privacyModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);overflow-y:auto">
-  <div style="max-width:600px;margin:40px auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;position:relative">
-    <button onclick="document.getElementById('privacyModal').style.display='none'" style="position:absolute;top:12px;right:12px;width:auto;padding:4px 12px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:14px">✕</button>
-    <h2 style="font-family:var(--mono);font-size:16px;color:var(--accent);letter-spacing:2px;margin-bottom:16px">POLITYKA PRYWATNOŚCI</h2>
-    <div style="font-size:13px;color:var(--text);line-height:1.8">
-      <p style="margin-bottom:12px"><b>Administrator danych:</b> Wulkanizacja Mielczarek, kontakt: mielczarek.serwis@gmail.com</p>
-      <p style="margin-bottom:8px"><b>Jakie dane zbieramy:</b> Imię, numer telefonu, adres email, marka i model pojazdu — podawane dobrowolnie podczas rezerwacji wizyty online.</p>
-      <p style="margin-bottom:8px"><b>Cel przetwarzania:</b> Wyłącznie w celu umówienia i realizacji wizyty serwisowej.</p>
-      <p style="margin-bottom:8px"><b>Podstawa prawna:</b> Art. 6 ust. 1 lit. b RODO — przetwarzanie jest niezbędne do wykonania umowy (rezerwacji usługi).</p>
-      <p style="margin-bottom:8px"><b>Przechowywanie:</b> Dane są przechowywane przez czas niezbędny do realizacji usługi, a następnie usuwane.</p>
-      <p style="margin-bottom:8px"><b>Udostępnianie:</b> Dane nie są udostępniane osobom trzecim ani wykorzystywane w celach marketingowych.</p>
-      <p style="margin-bottom:8px"><b>Twoje prawa:</b> Masz prawo dostępu do swoich danych, ich sprostowania, usunięcia oraz wniesienia skargi do Prezesa UODO (uodo.gov.pl).</p>
-      <p style="margin-bottom:0"><b>Infrastruktura:</b> Dane przechowywane są w usłudze Firebase (Google LLC) na serwerach w Europie, zgodnie z RODO.</p>
-    </div>
-  </div>
-</div>
-
-<!-- Modal polityki prywatności -->
-<div id="privacyModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);overflow-y:auto">
-  <div style="max-width:600px;margin:40px auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;position:relative">
-    <button onclick="document.getElementById('privacyModal').style.display='none'" style="position:absolute;top:12px;right:12px;width:auto;padding:4px 12px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:14px">✕</button>
-    <h2 style="font-family:var(--mono);font-size:16px;color:var(--accent);letter-spacing:2px;margin-bottom:16px">POLITYKA PRYWATNOŚCI</h2>
-    <div style="font-size:13px;color:var(--text);line-height:1.8">
-      <p style="margin-bottom:12px"><b>Administrator danych:</b> Wulkanizacja Mielczarek, kontakt: mielczarek.serwis@gmail.com</p>
-      <p style="margin-bottom:8px"><b>Jakie dane zbieramy:</b> Imię, numer telefonu, adres email, marka i model pojazdu — podawane dobrowolnie podczas rezerwacji wizyty online.</p>
-      <p style="margin-bottom:8px"><b>Cel przetwarzania:</b> Wyłącznie w celu umówienia i realizacji wizyty serwisowej.</p>
-      <p style="margin-bottom:8px"><b>Podstawa prawna:</b> Art. 6 ust. 1 lit. b RODO — przetwarzanie jest niezbędne do wykonania umowy (rezerwacji usługi).</p>
-      <p style="margin-bottom:8px"><b>Przechowywanie:</b> Dane są przechowywane przez czas niezbędny do realizacji usługi, a następnie usuwane.</p>
-      <p style="margin-bottom:8px"><b>Udostępnianie:</b> Dane nie są udostępniane osobom trzecim ani wykorzystywane w celach marketingowych.</p>
-      <p style="margin-bottom:8px"><b>Twoje prawa:</b> Masz prawo dostępu do swoich danych, ich sprostowania, usunięcia oraz wniesienia skargi do Prezesa UODO (uodo.gov.pl).</p>
-      <p style="margin-bottom:0"><b>Infrastruktura:</b> Dane przechowywane są w usłudze Firebase (Google LLC) na serwerach w Europie, zgodnie z RODO.</p>
-    </div>
-  </div>
-</div>
-
-</body></html>`;
+  </body></html>`;
 
   w.document.write(content);
   w.document.close();
@@ -3373,9 +3318,7 @@ window.cleanOldData = async function() {
   showToast(`✔ Usunięto ${deleted} archiwalnych wpisów`);
 };
 
-window.showPrivacyPolicy = function() {
-  document.getElementById('privacyModal').style.display = 'block';
-};
+window.showPrivacyPolicy = function() { document.getElementById('privacyModal').style.display = 'block'; };
 
 window.showTab = function(id, el) {
   const btn = document.getElementById('printBtn');
@@ -3663,5 +3606,22 @@ function updateClock() {
 setInterval(updateClock,1000); updateClock();
 
 </script>
+<!-- Modal polityki prywatności -->
+<div id="privacyModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);overflow-y:auto">
+  <div style="max-width:600px;margin:40px auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;position:relative">
+    <button onclick="document.getElementById('privacyModal').style.display='none'" style="position:absolute;top:12px;right:12px;width:auto;padding:4px 12px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:14px">✕</button>
+    <h2 style="font-family:var(--mono);font-size:16px;color:var(--accent);letter-spacing:2px;margin-bottom:16px">POLITYKA PRYWATNOŚCI</h2>
+    <div style="font-size:13px;color:var(--text);line-height:1.8">
+      <p style="margin-bottom:12px"><b>Administrator danych:</b> Wulkanizacja Mielczarek, kontakt: mielczarek.serwis@gmail.com</p>
+      <p style="margin-bottom:8px"><b>Jakie dane zbieramy:</b> Imię, numer telefonu, adres email, marka i model pojazdu — podawane dobrowolnie podczas rezerwacji wizyty online.</p>
+      <p style="margin-bottom:8px"><b>Cel przetwarzania:</b> Wyłącznie w celu umówienia i realizacji wizyty serwisowej.</p>
+      <p style="margin-bottom:8px"><b>Podstawa prawna:</b> Art. 6 ust. 1 lit. b RODO — przetwarzanie jest niezbędne do wykonania umowy (rezerwacji usługi).</p>
+      <p style="margin-bottom:8px"><b>Przechowywanie:</b> Dane są przechowywane przez czas niezbędny do realizacji usługi, a następnie usuwane.</p>
+      <p style="margin-bottom:8px"><b>Udostępnianie:</b> Dane nie są udostępniane osobom trzecim ani wykorzystywane w celach marketingowych.</p>
+      <p style="margin-bottom:8px"><b>Twoje prawa:</b> Masz prawo dostępu do swoich danych, ich sprostowania, usunięcia oraz wniesienia skargi do Prezesa UODO (uodo.gov.pl).</p>
+      <p style="margin-bottom:0"><b>Infrastruktura:</b> Dane przechowywane są w usłudze Firebase (Google LLC) na serwerach w Europie, zgodnie z RODO.</p>
+    </div>
+  </div>
+</div>
 </body>
 </html>
