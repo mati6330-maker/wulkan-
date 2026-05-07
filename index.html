@@ -1280,23 +1280,23 @@ function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
       item.title = 'Kliknij aby przejść do tej wizyty';
       item.onclick = (e) => {
         e.stopPropagation();
-        closeTimePicker();
-        // Ustaw filtr daty i przejdź na listę
         const visitDate = entry[1].date;
         const key = entry[0];
-        const df = document.getElementById('dateFilter');
-        if (df) df.value = visitDate;
-        const listTab = document.querySelector('.tab[onclick*="list"]');
-        window.showTab('list', listTab);
-        // Scroll do karty po wyrenderowaniu listy
+        closeTimePicker();
         setTimeout(() => {
-          const card = document.getElementById('card-' + key);
-          if (card) {
-            card.scrollIntoView({behavior:'smooth', block:'center'});
-            card.style.outline = '2px solid var(--accent)';
-            setTimeout(() => card.style.outline = '', 2000);
-          }
-        }, 500);
+          const df = document.getElementById('dateFilter');
+          if (df) df.value = visitDate;
+          const listTab = document.querySelector('.tab[onclick*="list"]');
+          window.showTab('list', listTab);
+          setTimeout(() => {
+            const card = document.getElementById('card-' + key);
+            if (card) {
+              card.scrollIntoView({behavior:'smooth', block:'center'});
+              card.style.outline = '2px solid var(--accent)';
+              setTimeout(() => card.style.outline = '', 2000);
+            }
+          }, 500);
+        }, 50);
       };
     }
     picker.appendChild(item);
