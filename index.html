@@ -2265,7 +2265,7 @@ window.renderOrders = function renderOrders() {
       <div id="og-${date}" style="display:${isToday?'block':'none'};padding-top:4px">`);
 
     dayEntries.forEach(([k,o]) => {
-      const isPast = (o.startDate||o.dateStamp||'') < getToday();
+      const isPast = (o.dateStamp||o.startDate||'') < getToday();
       const isOverdue = isPast && !o.status;
       const statusColor = o.status ? 'var(--green)' : isOverdue ? '#666' : 'var(--red)';
       const statusIcon = o.status ? '✔' : '○';
