@@ -2933,7 +2933,7 @@ function renderQuickView() {
     if (label) label.textContent = d0 + ' — ' + d5;
 
     const slots = [];
-    for (const [hFrom, hTo] of [[8,8],[9,13],[15,17],[18,18]]) {
+    for (const [hFrom, hTo] of (currentUser ? [[8,8],[9,13],[15,17],[18,18]] : [[9,13],[15,17]])) {
       for (let h = hFrom; h <= hTo; h++) {
         for (const half of [0, 30]) {
           slots.push(String(h).padStart(2,'0') + ':' + String(half).padStart(2,'0'));
@@ -2997,7 +2997,7 @@ function renderQuickView() {
 
   const dayVisits = Object.entries(visits).filter(([k,v]) => v.date === d);
   const slots = [];
-  for (const [hFrom, hTo] of [[8,8],[9,13],[15,17],[18,18]]) {
+  for (const [hFrom, hTo] of (currentUser ? [[8,8],[9,13],[15,17],[18,18]] : [[9,13],[15,17]])) {
     for (let h = hFrom; h <= hTo; h++) {
       for (const half of [0, 30]) {
         slots.push(String(h).padStart(2,'0') + ':' + String(half).padStart(2,'0'));
