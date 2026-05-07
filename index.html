@@ -1285,16 +1285,10 @@ function openTimePicker(anchorEl, hour, baseMinute, dayVisits) {
         const visitDate = entry[1].date;
         const df = document.getElementById('dateFilter');
         if (df) df.value = visitDate;
-        const listTab = document.querySelector('.tab[onclick*="list"]');
+        highlightVisitKey = key;
+        const listTab = document.querySelector('.tab[onclick*="\'list\'"]') ||
+                        document.querySelector('.tab[onclick*="list"]');
         window.showTab('list', listTab);
-        setTimeout(() => {
-          const card = document.getElementById('card-' + key);
-          if (card) {
-            card.scrollIntoView({behavior:'smooth', block:'center'});
-            card.style.outline = '2px solid var(--accent)';
-            setTimeout(() => card.style.outline = '', 2000);
-          }
-        }, 300);
       };
     }
     picker.appendChild(item);
