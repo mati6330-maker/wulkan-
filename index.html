@@ -2868,6 +2868,11 @@ window.renderKlima = function() {
 let qvDate = new Date();
 let qvMode = 'day'; // 'day' | 'week'
 
+window.qvGoToDay = function(yr, mo, dy) {
+  qvDate = new Date(yr, mo, dy);
+  setQvMode('day');
+};
+
 window.setQvMode = function(mode) {
   qvMode = mode;
   const btnDay = document.getElementById('qvModeDay');
@@ -2957,8 +2962,13 @@ function renderQuickView() {
         </div>`;
       }).join('');
 
-      return `<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;display:flex;flex-direction:column">
-        <div ${clickDay} style="padding:6px 8px;background:var(--surface);border-bottom:1px solid var(--border);${!isSunday&&!isBlocked?'cursor:pointer':''}">
+      const [yr, mo, dy] = dateStr.split('-').map(Number);
+      const clickDay = (!isSunday && !isBlocked)
+        ? `onclick="qvGoToDay(${yr},${mo-1},${dy})" style="cursor:pointer;border:1px solid var(--border);border-radius:6px;overflow:hidden;display:flex;flex-direction:column"`
+        : 'style="cursor:default;border:1px solid var(--border);border-radius:6px;overflow:hidden;display:flex;flex-direction:column"';
+
+      return `<div ${clickDay}>
+        <div style="padding:6px 8px;background:var(--surface);border-bottom:1px solid var(--border)">
           <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1px">${dayName}</span>
         </div>
         <div style="padding:4px;flex:1">${miniSlots}</div>
