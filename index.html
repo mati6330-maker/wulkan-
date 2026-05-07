@@ -377,12 +377,16 @@ body.light .wm-logo img{filter:none;}
 </div>
 
 <div class="section" id="quickview">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <button onclick="qvChangeDay(-1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">◀</button>
-    <div style="text-align:center">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px">
+    <button id="qvPrevBtn" onclick="qvChangePeriod(-1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">◀</button>
+    <div style="text-align:center;flex:1">
       <div id="qvDayLabel" style="font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:2px;text-transform:uppercase"></div>
     </div>
-    <button onclick="qvChangeDay(1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">▶</button>
+    <div style="display:flex;gap:4px">
+      <button id="qvModeDay" onclick="setQvMode('day')" style="width:auto;padding:6px 12px;font-size:11px;letter-spacing:1px;background:var(--accent);color:#000;border:1px solid var(--accent)">DZIEŃ</button>
+      <button id="qvModeWeek" onclick="setQvMode('week')" style="width:auto;padding:6px 12px;font-size:11px;letter-spacing:1px;background:transparent;color:var(--muted);border:1px solid var(--border)">TYDZIEŃ</button>
+    </div>
+    <button id="qvNextBtn" onclick="qvChangePeriod(1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">▶</button>
   </div>
   <div id="qvGrid"></div>
 </div>
@@ -2860,6 +2864,16 @@ window.renderKlima = function() {
 
 // ── QUICKVIEW ──
 let qvDate = new Date();
+let qvMode = 'day'; // 'day' | 'week'
+
+window.setQvMode = function(mode) {
+  qvMode = mode;
+  const btnDay = document.getElementById('qvModeDay');
+  const btnWeek = document.getElementById('qvModeWeek');
+  if (btnDay) { btnDay.style.background = mode==='day' ? 'var(--accent)' : 'transparent'; btnDay.style.color = mode==='day' ? '#000' : 'var(--muted)'; btnDay.style.borderColor = mode==='day' ? 'var(--accent)' : 'var(--border)'; }
+  if (btnWeek) { btnWeek.style.background = mode==='week' ? 'var(--accent)' : 'transparent'; btnWeek.style.color = mode==='week' ? '#000' : 'var(--muted)'; btnWeek.style.borderColor = mode==='week' ? 'var(--accent)' : 'var(--border)'; }
+  renderQuickView();
+};
 
 window.qvChangeDay = function(delta) {
   qvDate = new Date(qvDate);
@@ -2867,14 +2881,98 @@ window.qvChangeDay = function(delta) {
   renderQuickView();
 };
 
+window.qvChangePeriod = function(delta) {
+  qvDate = new Date(qvDate);
+  if (qvMode === 'week') {
+    qvDate.setDate(qvDate.getDate() + delta * 7);
+  } else {
+    qvDate.setDate(qvDate.getDate() + delta);
+  }
+  renderQuickView();
+};
+
 function renderQuickView() {
+  const grid = document.getElementById('qvGrid');
+  const label = document.getElementById('qvDayLabel');
+  if (!grid) return;
+
+  if (qvMode === 'week') {
+    // Znajdź poniedziałek tygodnia qvDate
+    const mon = new Date(qvDate);
+    const dow = mon.getDay() || 7;
+    mon.setDate(mon.getDate() - dow + 1);
+
+    // 6 dni: pon-sob
+    const days = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(mon);
+      d.setDate(mon.getDate() + i);
+      days.push(d);
+    }
+
+    const d0 = days[0].toLocaleDateString('pl-PL', {day:'2-digit',month:'2-digit'});
+    const d5 = days[5].toLocaleDateString('pl-PL', {day:'2-digit',month:'2-digit',year:'numeric'});
+    if (label) label.textContent = d0 + ' — ' + d5;
+
+    // Renderuj siatkę 3×2
+    grid.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+      days.map(day => {
+        const dateStr = formatDate(day);
+        const dayName = day.toLocaleDateString('pl-PL', {weekday:'short', day:'2-digit', month:'2-digit'});
+        const dayVisits = Object.entries(visits).filter(([k,v]) => v.date === dateStr);
+        const slots = [];
+        for (const [hFrom, hTo] of [[8,8],[9,13],[15,17],[18,18]]) {
+          for (let h = hFrom; h <= hTo; h++) {
+            for (const half of [0, 30]) {
+              slots.push(String(h).padStart(2,'0') + ':' + String(half).padStart(2,'0'));
+            }
+          }
+        }
+        const total = slots.length;
+        const busyCount = slots.filter(baseTime => {
+          const timesInSlot = [
+            baseTime,
+            String(+baseTime.split(':')[0]).padStart(2,'0') + ':' + String(+baseTime.split(':')[1] + 15).padStart(2,'0')
+          ];
+          return timesInSlot.some(t => dayVisits.find(([k,v]) => v.time === t));
+        }).length;
+        const isBlocked = blockedDays[dateStr];
+        const freeCount = total - busyCount;
+        const isSunday = day.getDay() === 0;
+
+        let bg, border, statusText, statusColor;
+        if (isSunday || isBlocked) {
+          bg = 'rgba(100,100,100,0.08)'; border = 'var(--border)';
+          statusText = isSunday ? 'Niedziela' : 'Zablokowany';
+          statusColor = 'var(--muted)';
+        } else if (busyCount === 0) {
+          bg = 'rgba(74,222,128,0.08)'; border = 'rgba(74,222,128,0.4)';
+          statusText = 'Wszystko wolne'; statusColor = 'var(--green)';
+        } else if (freeCount === 0) {
+          bg = 'rgba(248,113,113,0.1)'; border = 'rgba(248,113,113,0.4)';
+          statusText = 'Komplet'; statusColor = 'var(--red)';
+        } else {
+          bg = 'rgba(234,179,8,0.08)'; border = 'rgba(234,179,8,0.4)';
+          statusText = freeCount + ' wolnych'; statusColor = '#eab308';
+        }
+
+        const click = (!isSunday && !isBlocked) ? `onclick="qvDate=new Date('${dateStr}');setQvMode('day')"` : '';
+        const cursor = (!isSunday && !isBlocked) ? 'cursor:pointer' : 'cursor:default';
+
+        return `<div ${click} style="${cursor};background:${bg};border:1px solid ${border};border-radius:6px;padding:12px 10px;transition:all 0.12s">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:4px">${dayName}</div>
+          <div style="font-size:11px;color:${statusColor};font-family:var(--mono)">${statusText}</div>
+          ${!isSunday && !isBlocked ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${busyCount}/${total} slotów zajętych</div>` : ''}
+        </div>`;
+      }).join('') +
+    '</div>';
+    return;
+  }
+
+  // Widok dzienny
   const d = formatDate(qvDate);
   const dayName = qvDate.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
-  const label = document.getElementById('qvDayLabel');
   if (label) label.textContent = dayName;
-
-  const grid = document.getElementById('qvGrid');
-  if (!grid) return;
 
   const dayVisits = Object.entries(visits).filter(([k,v]) => v.date === d);
   const slots = [];
