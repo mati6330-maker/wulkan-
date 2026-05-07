@@ -2215,18 +2215,19 @@ window.renderOrders = function renderOrders() {
     if (orderFilter==='done'&&!o.status) return false;
     if (orderFilter==='notdone'&&o.status) return false;
     if (search && !(o.name||'').toLowerCase().includes(search) && !(o.phone||'').includes(search) && !(o.car||'').toLowerCase().includes(search)) return false;
-    if (dateFilter2 && (o.startDate||o.dateStamp) !== dateFilter2) return false;
-    if (!dateFilter2 && (o.startDate||o.dateStamp||'') < getToday()) return false;
+    const realizationDate = o.dateStamp || o.startDate || '';
+    if (dateFilter2 && realizationDate !== dateFilter2) return false;
+    if (!dateFilter2 && realizationDate < getToday()) return false;
     return true;
   });
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak zleceń</div>'; return; }
 
-  entries.sort((a,b)=>(a[1].startDate||a[1].dateStamp||'').localeCompare(b[1].startDate||b[1].dateStamp||''));
+  entries.sort((a,b)=>(a[1].dateStamp||a[1].startDate||'').localeCompare(b[1].dateStamp||b[1].startDate||''));
 
-  // Grupuj po dacie
+  // Grupuj po terminie realizacji
   const grouped = {};
   entries.forEach(([k,o]) => {
-    const dateKey = (o.startDate||o.dateStamp) || 'brak-daty';
+    const dateKey = (o.dateStamp||o.startDate) || 'brak-daty';
     if (!grouped[dateKey]) grouped[dateKey] = [];
     grouped[dateKey].push([k,o]);
   });
