@@ -1706,9 +1706,9 @@ window.renderArchiveKlima = function() {
   const today = getToday();
   const entries = Object.entries(klimas).filter(([k,o]) => {
     if (!o) return false;
-    const d = o.start||o.end||'';
-    if (d >= today) return false;
-    if (dateFilter && d !== dateFilter) return false;
+    const realizationDate = o.end || o.start || '';
+    if (realizationDate >= today) return false;
+    if (dateFilter && realizationDate !== dateFilter) return false;
     if (search) return [o.name,o.phone,o.car].some(v=>(v||'').toLowerCase().includes(search));
     return true;
   }).sort((a,b)=>(b[1].start||'').localeCompare(a[1].start||''));
@@ -1837,8 +1837,9 @@ function renderArchiveOrders() {
   const dateFilter = (document.getElementById('archiveOrderDateFilter')||{value:''}).value;
 
   const entries = Object.entries(orders).filter(([k,o]) => {
-    if ((o.startDate||o.dateStamp||'') >= getToday()) return false;
-    if (dateFilter && (o.startDate||o.dateStamp||'') !== dateFilter) return false;
+    const realizationDate = o.dateStamp || o.startDate || '';
+    if (realizationDate >= getToday()) return false;
+    if (dateFilter && realizationDate !== dateFilter) return false;
     if (search && !(o.name||'').toLowerCase().includes(search) && !(o.phone||'').includes(search) && !(o.car||'').toLowerCase().includes(search)) return false;
     return true;
   });
@@ -2838,6 +2839,8 @@ window.renderKlima = function() {
   const search = (document.getElementById('k_search')?.value || '').toLowerCase();
   const entries = Object.entries(klimas).filter(([k,o]) => {
     if (!o) return false;
+    const realizationDate = o.end || o.start || '';
+    if (realizationDate && realizationDate < getToday()) return false;
     if (search) return [o.name,o.phone,o.car].some(v=>(v||'').toLowerCase().includes(search));
     return true;
   }).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
