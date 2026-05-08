@@ -441,6 +441,21 @@ body.light .wm-logo img{filter:none;}
   <option disabled hidden selected value="">— Typ felg —</option>
   <option>Aluminiowe</option><option>Stalowe</option>
 </select>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0">
+  <label><input type="checkbox" id="o_runflat" class="custom-cb"> Run-flat</label>
+  <label><input type="checkbox" id="o_low" class="custom-cb"> Niski profil</label>
+  <label><input type="checkbox" id="o_valve" class="custom-cb" onchange="toggleOrderValveCount(this)"> Nowy wentyl</label>
+</div>
+<div id="o_valve_count_wrap" style="display:none;margin-bottom:6px">
+  <div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">ILOŚĆ WENTYLI</div>
+  <div style="display:flex;gap:6px">
+    <button type="button" onclick="setOrderValveCount(1,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">1</button>
+    <button type="button" onclick="setOrderValveCount(2,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">2</button>
+    <button type="button" onclick="setOrderValveCount(3,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">3</button>
+    <button type="button" onclick="setOrderValveCount(4,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">4</button>
+  </div>
+  <input id="o_valve_count" type="hidden" value="4"/>
+</div>
 <input id="o_note" placeholder="Notatka (opcjonalne)"/>
 <div class="section-label">Data przyjęcia</div>
 <input id="o_start_date" type="date"/>
@@ -823,7 +838,7 @@ function calcVisitPrice(v, isOrder = false) {
 
   if (v.runflat) price += p.rf;
   if (v.low) price += p.np;
-  if (v.valve) price += p.nw;
+  if (v.valve) price += p.nw * (parseInt(v.valveCount)||4);
 
   // Rabat dla zleceń przy wymianie opon
   if (isOrder && v.service === "Wymiana opon") price -= p.zlecenie_discount;
@@ -2177,6 +2192,11 @@ window.addOrder = async function() {
   if (time==='własny'&&!custom) { errors.push('📆 Podaj własny termin'); document.getElementById('o_custom_date').classList.add('field-error'); }
   if (errors.length) { showOrderError(errors); return; }
 
+  const runflat = document.getElementById('o_runflat').checked;
+  const low = document.getElementById('o_low').checked;
+  const valve = document.getElementById('o_valve').checked;
+  const valveCount = valve ? parseInt(document.getElementById('o_valve_count').value)||4 : 0;
+
   const today=new Date(), tomorrow=new Date();
   tomorrow.setDate(today.getDate()+1);
   const o = {
@@ -2184,7 +2204,8 @@ window.addOrder = async function() {
     car:document.getElementById('o_car').value, diameter, wheels:document.getElementById('o_wheels').value,
     note:document.getElementById('o_note').value,
     service, type, time, custom,
-    price:calcVisitPrice({service,wheel:type,tireSize:diameter}, true),
+    runflat, low, valve, valveCount,
+    price:calcVisitPrice({service,wheel:type,tireSize:diameter,runflat,low,valve,valveCount}, true),
     dateStamp: time==='dziś'?formatDate(today):time==='jutro'?formatDate(tomorrow):custom,
     startDate
   };
@@ -2208,6 +2229,11 @@ function resetOrderForm() {
   document.getElementById('o_custom_date').value=''; document.getElementById('o_custom_date').style.display='none';
   document.getElementById('o_start_date').value='';
   document.getElementById('o_diameter').value='';
+  document.getElementById('o_runflat').checked=false;
+  document.getElementById('o_low').checked=false;
+  document.getElementById('o_valve').checked=false;
+  document.getElementById('o_valve_count').value='4';
+  document.getElementById('o_valve_count_wrap').style.display='none';
   document.querySelectorAll('#o_diameterButtons button').forEach(b=>b.classList.remove('selected'));
 
 }
@@ -2311,6 +2337,7 @@ window.renderOrders = function renderOrders() {
             <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
             <button onclick="applyOrderDiscount('${k}',-10)" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
             <button onclick="applyOrderDiscount('${k}',+10)" title="Dodaj +10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(74,222,128,0.1);color:var(--green);border:1px solid rgba(74,222,128,0.3)">+10</button>
+            <button onclick="printOrder('${k}')" title="Drukuj zlecenie" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">🖨</button>
             <button onclick="editOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
@@ -2375,6 +2402,19 @@ window.editOrder = function(k) {
   document.getElementById('o_start_date').value=o.startDate||'';
   document.getElementById('o_diameter').value=o.diameter||'';
   document.querySelectorAll('#o_diameterButtons button').forEach(b=>{b.classList.toggle('selected',b.innerText.trim()===o.diameter+'"');});
+  document.getElementById('o_runflat').checked=o.runflat||false;
+  document.getElementById('o_low').checked=o.low||false;
+  document.getElementById('o_valve').checked=o.valve||false;
+  document.getElementById('o_valve_count_wrap').style.display=o.valve?'block':'none';
+  if (o.valve && o.valveCount) {
+    document.getElementById('o_valve_count').value=o.valveCount;
+    document.querySelectorAll('#o_valve_count_wrap button').forEach(b=>{
+      const active = parseInt(b.innerText)===o.valveCount;
+      b.style.background = active?'var(--accent)':'var(--surface2)';
+      b.style.borderColor = active?'var(--accent)':'var(--border)';
+      b.style.color = active?'#000':'var(--text)';
+    });
+  }
   document.getElementById('orderBtn').innerText='▶ Zapisz zlecenie'; document.getElementById('cancelOrderBtn').style.display='block';
   showTab('orders', document.querySelector('.tab[onclick*="orders"]'));
 };
@@ -3348,6 +3388,66 @@ window.showTab = function(id, el) {
 };
 
 // ── BLOKOWANIE DNI ──
+window.toggleOrderValveCount = function(cb) {
+  document.getElementById('o_valve_count_wrap').style.display = cb.checked ? 'block' : 'none';
+  if (cb.checked) {
+    // Domyślnie zaznacz 4
+    setOrderValveCount(4, document.querySelector('#o_valve_count_wrap button:last-child'));
+  }
+};
+window.setOrderValveCount = function(n, btn) {
+  document.getElementById('o_valve_count').value = n;
+  document.querySelectorAll('#o_valve_count_wrap button').forEach(b => {
+    b.style.background = 'var(--surface2)';
+    b.style.borderColor = 'var(--border)';
+    b.style.color = 'var(--text)';
+  });
+  btn.style.background = 'var(--accent)';
+  btn.style.borderColor = 'var(--accent)';
+  btn.style.color = '#000';
+};
+
+window.printOrder = function(k) {
+  const o = orders[k];
+  if (!o) return;
+  const win = window.open('', '_blank');
+  if (!win) { alert('⚠ Zezwól na wyskakujące okna'); return; }
+  const extras = [o.runflat?'Run-flat':'', o.low?'Niski profil':'', o.valve?`Nowy wentyl ×${o.valveCount||4}`:''].filter(Boolean).join(', ');
+  const realizationDate = o.dateStamp || o.startDate || '—';
+  const content = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+    'body{font-family:Arial,sans-serif;padding:24px;font-size:13px;color:#111;max-width:600px;margin:0 auto}' +
+    'h1{font-size:18px;font-weight:900;margin-bottom:4px}' +
+    '.subtitle{color:#666;font-size:11px;margin-bottom:20px}' +
+    'table{width:100%;border-collapse:collapse;margin-top:16px}' +
+    'td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px}' +
+    'td:first-child{color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;width:40%}' +
+    '.total{font-size:16px;font-weight:700;color:#111}' +
+    '.footer{margin-top:24px;font-size:10px;color:#999;text-align:center;border-top:1px solid #eee;padding-top:12px}' +
+    '@media print{@page{margin:10mm}}' +
+    '</style></head><body>' +
+    '<h1>Wulkanizacja Mielczarek</h1>' +
+    '<div class="subtitle">Zlecenie serwisowe · Wydrukowano: ' + new Date().toLocaleString('pl-PL') + '</div>' +
+    '<table>' +
+    '<tr><td>Klient</td><td>' + (o.name||'—') + '</td></tr>' +
+    '<tr><td>Telefon</td><td>' + (o.phone||'—') + '</td></tr>' +
+    '<tr><td>Auto</td><td>' + (o.car||'—') + '</td></tr>' +
+    '<tr><td>Usługa</td><td>' + (o.service||'—') + '</td></tr>' +
+    '<tr><td>Typ felg</td><td>' + (o.type||'—') + '</td></tr>' +
+    '<tr><td>Średnica</td><td>' + (o.diameter ? o.diameter+'"' : '—') + '</td></tr>' +
+    '<tr><td>Ilość kół</td><td>' + (o.wheels||'—') + '</td></tr>' +
+    (extras ? '<tr><td>Dodatki</td><td>' + extras + '</td></tr>' : '') +
+    '<tr><td>Data przyjęcia</td><td>' + (o.startDate||'—') + '</td></tr>' +
+    '<tr><td>Termin realizacji</td><td>' + realizationDate + '</td></tr>' +
+    (o.note ? '<tr><td>Notatka</td><td>' + o.note + '</td></tr>' : '') +
+    '<tr><td class="total">Cena</td><td class="total">' + (o.price!=null ? o.price+' zł' : '—') + '</td></tr>' +
+    '</table>' +
+    '<div class="footer">Wulkanizacja Mielczarek · Tel. 575 483 555</div>' +
+    '</body></html>';
+  win.document.write(content);
+  win.document.close();
+  win.print();
+};
+
 window.toggleSlotBlock = async function(dateStr, time) {
   const existing = Object.entries(slotBlocks).find(([k,v]) => v.date === dateStr && v.time === time);
   if (existing) {
