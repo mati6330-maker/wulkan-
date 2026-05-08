@@ -1592,9 +1592,10 @@ window.save = async function() {
     runflat: document.getElementById('cb_runflat').checked,
     low: document.getElementById('cb_low').checked,
     valve: document.getElementById('cb_valve').checked,
+    valveCount: document.getElementById('cb_valve').checked ? 4 : 0,
     date: formatDate(selectedDate),
     time: selectedTime,
-    price: calcVisitPrice({tireSize,service,wheel,runflat:document.getElementById('cb_runflat').checked,low:document.getElementById('cb_low').checked,valve:document.getElementById('cb_valve').checked})
+    price: calcVisitPrice({tireSize,service,wheel,runflat:document.getElementById('cb_runflat').checked,low:document.getElementById('cb_low').checked,valve:document.getElementById('cb_valve').checked,valveCount:4})
   };
 
   setSyncStatus('syncing','⟳ Zapisywanie...');
