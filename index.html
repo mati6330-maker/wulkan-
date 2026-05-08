@@ -1409,7 +1409,13 @@ function renderGrid() {
         div.classList.add('free');
       }
 
-      div.innerText = baseTime;
+      if (currentUser) {
+        div.innerHTML = `<span style="flex:1">${baseTime}</span><span onclick="event.stopPropagation();toggleSlotBlock('${d}','${baseTime}')" title="Zablokuj/odblokuj slot" style="font-size:11px;opacity:0.5;cursor:pointer;padding:0 2px;line-height:1" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">🔒</span>`;
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+      } else {
+        div.innerText = baseTime;
+      }
 
       div.onclick = (e) => {
         e.stopPropagation();
@@ -3100,9 +3106,9 @@ function renderQuickView() {
       return `<div class="qv-slot blocked"><div class="qv-time">${baseTime}</div><div class="qv-info">Miniony termin</div></div>`;
     }
     return currentUser
-      ? `<div class="qv-slot free" onclick="goToMainSlot('${d}','${baseTime}')">
-          <div class="qv-time">${baseTime}</div>
-          <div class="qv-info">Wolny — kliknij aby zarezerwować</div>
+      ? `<div class="qv-slot free" style="display:flex;align-items:center;gap:8px" onclick="goToMainSlot('${d}','${baseTime}')">
+          <span style="flex:1"><div class="qv-time">${baseTime}</div><div class="qv-info">Wolny — kliknij aby zarezerwować</div></span>
+          <span onclick="event.stopPropagation();toggleSlotBlock('${d}','${baseTime}')" title="Zablokuj slot" style="font-size:18px;opacity:0.35;cursor:pointer;padding:4px;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.35'">🔒</span>
         </div>`
       : `<div class="qv-slot free" onclick="showTab('main',document.querySelector('.tab[onclick*=\'main\']'))">
           <div class="qv-time">${baseTime}</div>
@@ -3342,6 +3348,18 @@ window.showTab = function(id, el) {
 };
 
 // ── BLOKOWANIE DNI ──
+window.toggleSlotBlock = async function(dateStr, time) {
+  const existing = Object.entries(slotBlocks).find(([k,v]) => v.date === dateStr && v.time === time);
+  if (existing) {
+    await remove(ref(db, 'slotBlocks/' + existing[0]));
+    showToast('🔓 Slot ' + time + ' odblokowany');
+  } else {
+    const key = dateStr.replace(/-/g,'_') + '--' + time.replace(':','_');
+    await set(ref(db, 'slotBlocks/' + key), { date: dateStr, time, reason: '' });
+    showToast('🔒 Slot ' + time + ' zablokowany');
+  }
+};
+
 window.blockSlot = async function(dateStr, time) {
   const key = dateStr.replace(/-/g,'_') + '--' + time.replace(':','_');
   await set(ref(db, 'slotBlocks/' + key), { date: dateStr, time, reason: '' });
