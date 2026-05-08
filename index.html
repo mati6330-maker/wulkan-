@@ -556,6 +556,20 @@ body.light .wm-logo img{filter:none;}
 </div>
 
 <div class="section" id="klima">
+  <!-- WYSZUKIWARKA POJEMNOŚCI R134a -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">❄ WYSZUKIWARKA POJEMNOŚCI R134a</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input id="r134a_make" placeholder="Marka (np. Volkswagen)" style="flex:1;margin:0"/>
+      <input id="r134a_model" placeholder="Model (np. Golf)" style="flex:1;margin:0"/>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input id="r134a_year" placeholder="Rok (np. 2008)" style="flex:1;margin:0" inputmode="numeric"/>
+      <input id="r134a_engine" placeholder="Silnik opcjonalnie (np. 1.9 TDI)" style="flex:1;margin:0"/>
+    </div>
+    <button onclick="searchR134a()" id="r134aBtn" style="background:rgba(6,182,212,0.15);color:#06b6d4;border:1px solid rgba(6,182,212,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
+    <div id="r134aResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
+  </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
     <div class="section-label" style="margin:0">Klima serwis — nowe zlecenie</div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -576,6 +590,18 @@ body.light .wm-logo img{filter:none;}
   <input id="k_start" type="date"/>
   <div class="section-label">Dzień zakończenia</div>
   <input id="k_end" type="date"/>
+  <input id="k_note" placeholder="Notatka (opcjonalne)"/>
+  <div class="section-label">Do wykonania</div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <label id="k_do_filter_label" style="flex:1;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;padding:10px 12px;background:var(--surface2);border:2px solid var(--border);border-radius:4px;transition:all 0.15s" onclick="var cb=document.getElementById('k_do_filter');cb.checked=!cb.checked;var l=document.getElementById('k_do_filter_label');l.style.borderColor=cb.checked?'var(--accent)':'var(--border)';l.style.background=cb.checked?'rgba(249,115,22,0.1)':'var(--surface2)'">
+      <input type="checkbox" id="k_do_filter" class="custom-cb" style="width:22px;height:22px;cursor:pointer;flex-shrink:0;pointer-events:none"/>
+      Wymiana filtra kabinowego
+    </label>
+    <label id="k_do_ozone_label" style="flex:1;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;padding:10px 12px;background:var(--surface2);border:2px solid var(--border);border-radius:4px;transition:all 0.15s" onclick="var cb=document.getElementById('k_do_ozone');cb.checked=!cb.checked;var l=document.getElementById('k_do_ozone_label');l.style.borderColor=cb.checked?'var(--accent)':'var(--border)';l.style.background=cb.checked?'rgba(249,115,22,0.1)':'var(--surface2)'">
+      <input type="checkbox" id="k_do_ozone" class="custom-cb" style="width:22px;height:22px;cursor:pointer;flex-shrink:0;pointer-events:none"/>
+      Odgrzybienie kabiny
+    </label>
+  </div>
   <div id="klimaValidation" style="display:none;margin:8px 0;padding:10px;background:rgba(248,113,113,0.1);border:1px solid var(--red);border-radius:4px;font-size:13px;color:var(--red)"></div>
   <button onclick="addKlima()" id="klimaBtn" style="margin-top:10px">▶ Dodaj zlecenie klima</button>
   <button id="cancelKlimaBtn" onclick="cancelKlimaEdit()" style="display:none;margin-top:6px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj edycję</button>
@@ -2758,6 +2784,9 @@ window.addKlima = async function() {
     phone: document.getElementById('k_phone').value.trim(),
     car, year: document.getElementById('k_year').value.trim(),
     start, end: document.getElementById('k_end').value,
+    note: document.getElementById('k_note').value.trim(),
+    do_filter: document.getElementById('k_do_filter').checked,
+    do_ozone: document.getElementById('k_do_ozone').checked,
     status: false, price: null,
     filter: false, ozone: false,
     capacity: null, recovered: null,
@@ -2774,9 +2803,15 @@ window.addKlima = async function() {
       await push(ref(db, 'klima'), k);
       showToast('✔ Zlecenie klima dodane', 'var(--green)');
     }
-    ['k_name','k_phone','k_car','k_year'].forEach(id => document.getElementById(id).value = '');
+    ['k_name','k_phone','k_car','k_year','k_note'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('k_start').value = '';
     document.getElementById('k_end').value = '';
+    document.getElementById('k_do_filter').checked = false;
+    document.getElementById('k_do_ozone').checked = false;
+    const dfl = document.getElementById('k_do_filter_label');
+    const dol = document.getElementById('k_do_ozone_label');
+    if (dfl) { dfl.style.borderColor='var(--border)'; dfl.style.background='var(--surface2)'; }
+    if (dol) { dol.style.borderColor='var(--border)'; dol.style.background='var(--surface2)'; }
   } catch(e) { showToast('❌ ' + e.message, 'var(--red)'); }
 };
 
@@ -2789,6 +2824,15 @@ window.editKlima = function(k) {
   document.getElementById('k_year').value = o.year || '';
   document.getElementById('k_start').value = o.start || '';
   document.getElementById('k_end').value = o.end || '';
+  document.getElementById('k_note').value = o.note || '';
+  const dof = document.getElementById('k_do_filter');
+  const doo = document.getElementById('k_do_ozone');
+  const dfl = document.getElementById('k_do_filter_label');
+  const dol = document.getElementById('k_do_ozone_label');
+  dof.checked = o.do_filter || false;
+  doo.checked = o.do_ozone || false;
+  if (dfl) { dfl.style.borderColor=o.do_filter?'var(--accent)':'var(--border)'; dfl.style.background=o.do_filter?'rgba(249,115,22,0.1)':'var(--surface2)'; }
+  if (dol) { dol.style.borderColor=o.do_ozone?'var(--accent)':'var(--border)'; dol.style.background=o.do_ozone?'rgba(249,115,22,0.1)':'var(--surface2)'; }
   document.getElementById('klimaBtn').innerText = '✔ Zapisz zmiany';
   document.getElementById('cancelKlimaBtn').style.display = 'block';
   showTab('klima', document.querySelector('.tab[onclick*="klima"]'));
@@ -2799,9 +2843,15 @@ window.cancelKlimaEdit = function() {
   editKlimaKey = null;
   document.getElementById('klimaBtn').innerText = '▶ Dodaj zlecenie klima';
   document.getElementById('cancelKlimaBtn').style.display = 'none';
-  ['k_name','k_phone','k_car','k_year'].forEach(id => document.getElementById(id).value = '');
+  ['k_name','k_phone','k_car','k_year','k_note'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('k_start').value = '';
   document.getElementById('k_end').value = '';
+  document.getElementById('k_do_filter').checked = false;
+  document.getElementById('k_do_ozone').checked = false;
+  const dfl = document.getElementById('k_do_filter_label');
+  const dol = document.getElementById('k_do_ozone_label');
+  if (dfl) { dfl.style.borderColor='var(--border)'; dfl.style.background='var(--surface2)'; }
+  if (dol) { dol.style.borderColor='var(--border)'; dol.style.background='var(--surface2)'; }
 };
 
 window.deleteKlima = async function(k) {
@@ -2913,12 +2963,14 @@ window.renderKlima = function() {
       ? `<span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${o.price} zł</span>`
       : `<span style="font-size:11px;color:var(--muted)">cena nieustalona</span>`;
     const extras = [o.filter?'filtr':'', o.ozone?'odgrzybienie':''].filter(Boolean).join(', ');
+    const todo = [o.do_filter?'🔧 Wymiana filtra':'', o.do_ozone?'🌿 Odgrzybienie':''].filter(Boolean).join(' · ');
     return `<div class="card" style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:14px;color:var(--accent);font-family:var(--mono)">${o.car||'—'}${o.year?' ('+o.year+')':''}</div>
           <div style="font-size:12px;color:var(--text);margin-top:2px">${o.name||'—'}${o.phone?' · '+o.phone:''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)">📥 ${o.start||'—'}${o.end?' → 📅 '+o.end:''}</div>
+          ${todo?`<div style="font-size:12px;color:var(--accent);margin-top:4px;font-weight:600">${todo}</div>`:''}
           ${extras?`<div style="font-size:11px;color:var(--muted);margin-top:2px">+ ${extras}</div>`:''}
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end">
@@ -3372,6 +3424,86 @@ window.cleanOldData = async function() {
 };
 
 window.showPrivacyPolicy = function() { document.getElementById('privacyModal').style.display = 'block'; };
+
+// ── WYSZUKIWARKA R134a ──
+window.searchR134a = async function() {
+  const make = document.getElementById('r134a_make').value.trim();
+  const model = document.getElementById('r134a_model').value.trim();
+  const year = document.getElementById('r134a_year').value.trim();
+  const engine = document.getElementById('r134a_engine').value.trim();
+  const result = document.getElementById('r134aResult');
+  const btn = document.getElementById('r134aBtn');
+
+  if (!make || !model) {
+    result.style.display = 'block';
+    result.style.background = 'rgba(248,113,113,0.1)';
+    result.style.border = '1px solid rgba(248,113,113,0.3)';
+    result.style.color = 'var(--red)';
+    result.innerHTML = '⚠ Podaj co najmniej markę i model pojazdu.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Szukam...';
+  result.style.display = 'block';
+  result.style.background = 'var(--surface)';
+  result.style.border = '1px solid var(--border)';
+  result.style.color = 'var(--muted)';
+  result.innerHTML = '⏳ Wyszukuję dane dla ' + make + ' ' + model + '...';
+
+  const query = `Podaj pojemność układu klimatyzacji R134a dla: ${make} ${model}${year ? ', rok ' + year : ''}${engine ? ', silnik ' + engine : ''}.
+Odpowiedz TYLKO w formacie JSON, bez żadnych dodatkowych słów ani markdown:
+{"found": true/false, "model": "pełna nazwa modelu z rokiem", "capacity_g": liczba, "capacity_range": "np. 450-500" lub null, "notes": "uwagi np. różne wersje kompresora", "warning": "ostrzeżenie jeśli dane mogą być niedokładne"}
+Jeśli nie masz pewnych danych, ustaw found: false.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        system: 'Jesteś ekspertem od układów klimatyzacji samochodowej. Odpowiadasz WYŁĄCZNIE czystym JSON bez żadnego tekstu przed ani po. Baza danych: NRF Filling Chart 2020, dane fabryczne producentów.',
+        messages: [{ role: 'user', content: query }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || '';
+    let parsed;
+    try {
+      parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    } catch(e) {
+      throw new Error('Nieprawidłowa odpowiedź');
+    }
+
+    if (!parsed.found) {
+      result.style.background = 'rgba(234,179,8,0.08)';
+      result.style.border = '1px solid rgba(234,179,8,0.3)';
+      result.style.color = 'var(--text)';
+      result.innerHTML = '⚠️ Brak pewnych danych dla tego pojazdu w bazie. Sprawdź nalepkę pod maską lub w dokumentacji serwisowej.';
+    } else {
+      const cap = parsed.capacity_range || (parsed.capacity_g + ' g');
+      result.style.background = 'rgba(6,182,212,0.08)';
+      result.style.border = '1px solid rgba(6,182,212,0.35)';
+      result.style.color = 'var(--text)';
+      result.innerHTML =
+        '<div style="font-family:var(--mono);font-size:11px;color:#06b6d4;letter-spacing:1px;margin-bottom:8px">WYNIK</div>' +
+        '<div style="font-weight:700;font-size:15px;color:var(--accent);margin-bottom:4px">❄ ' + cap + ' R134a</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">' + (parsed.model || make + ' ' + model) + '</div>' +
+        (parsed.notes ? '<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:4px">ℹ ' + parsed.notes + '</div>' : '') +
+        (parsed.warning ? '<div style="font-size:11px;color:#eab308;margin-top:6px">⚠ ' + parsed.warning + '</div>' : '') +
+        '<div style="font-size:10px;color:var(--muted);margin-top:8px;border-top:1px solid var(--border);padding-top:6px">Zawsze weryfikuj z nalepką pod maską pojazdu.</div>';
+    }
+  } catch(e) {
+    result.style.background = 'rgba(248,113,113,0.1)';
+    result.style.border = '1px solid rgba(248,113,113,0.3)';
+    result.style.color = 'var(--red)';
+    result.innerHTML = '❌ Błąd połączenia. Sprawdź internet i spróbuj ponownie.';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Szukaj pojemności';
+  }
+};
 
 window.showTab = function(id, el) {
   const btn = document.getElementById('printBtn');
