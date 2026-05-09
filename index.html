@@ -3464,9 +3464,15 @@ window.searchTires = function() {
     return;
   }
 
+  // Normalizacja: usuń myślniki, kropki, spacje dla porównania
+  const norm = s => s.toLowerCase().replace(/[-.\s\/]/g,'');
+  const makeN = norm(make);
+  const modelN = norm(model);
+
   const matches = (typeof WHEEL_DB !== "undefined" ? WHEEL_DB : []).filter(([m, mod, yFrom, yTo]) => {
-    const makeMatch = m.toLowerCase().includes(make) || make.includes(m.toLowerCase().split(' ')[0]);
-    const modelMatch = mod.toLowerCase().includes(model) || model.includes(mod.toLowerCase().split(' ')[0]);
+    const mN = norm(m); const modN = norm(mod);
+    const makeMatch = mN.includes(makeN) || makeN.includes(mN.split('')[0]) || m.toLowerCase().includes(make);
+    const modelMatch = modN.includes(modelN) || modelN.includes(modN.split('(')[0].trim().replace(/[-.\s\/]/g,'').substring(0,4));
     const yearMatch = !year || (year >= yFrom && year <= yTo);
     return makeMatch && modelMatch && yearMatch;
   });
@@ -3531,9 +3537,12 @@ window.searchR134a = function() {
 
   // Szukaj w bazie danych
   const ALL_DB = R134A_DB;
+  const norm134 = s => s.toLowerCase().replace(/[-.\s\/]/g,'');
+  const makeN134 = norm134(make); const modelN134 = norm134(model);
   const matches = ALL_DB.filter(([m, mod, yFrom, yTo, cap, notes]) => {
-    const makeMatch = m.toLowerCase().includes(make) || make.includes(m.toLowerCase().split(' ')[0].toLowerCase());
-    const modelMatch = mod.toLowerCase().includes(model) || model.includes(mod.toLowerCase().split(' ')[0].toLowerCase());
+    const mN = norm134(m); const modN = norm134(mod);
+    const makeMatch = mN.includes(makeN134) || makeN134.includes(mN) || m.toLowerCase().includes(make);
+    const modelMatch = modN.includes(modelN134) || modelN134.includes(modN.split('(')[0].trim().replace(/[-.\s\/]/g,'').substring(0,4));
     const yearMatch = !year || (year >= yFrom && year <= yTo);
     return makeMatch && modelMatch && yearMatch;
   });
