@@ -3041,6 +3041,8 @@ window.qvChangePeriod = function(delta) {
     qvDate.setDate(qvDate.getDate() + delta * 7);
   } else {
     qvDate.setDate(qvDate.getDate() + delta);
+    // Pomiń niedzielę
+    if (qvDate.getDay() === 0) qvDate.setDate(qvDate.getDate() + (delta > 0 ? 1 : -1));
   }
   renderQuickView();
 };
@@ -3128,6 +3130,12 @@ function renderQuickView() {
   const d = formatDate(qvDate);
   const dayName = qvDate.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   if (label) label.textContent = dayName;
+
+  // Niedziela — warsztat nieczynny
+  if (qvDate.getDay() === 0) {
+    grid.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:14px">🚫 Niedziela — warsztat nieczynny</div>';
+    return;
+  }
 
   const dayVisits = Object.entries(visits).filter(([k,v]) => v.date === d);
   const slots = [];
