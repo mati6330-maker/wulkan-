@@ -527,6 +527,35 @@ body.light .wm-logo img{filter:none;}
 
 <div id="cashBox"></div>
 <button onclick="calculateCash()" style="margin-top:8px">↻ Odśwież</button>
+
+<!-- LICZNIK R134a -->
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-top:14px">
+  <div style="font-family:var(--mono);font-size:11px;color:#06b6d4;letter-spacing:2px;margin-bottom:12px">❄ ZUŻYCIE R134a</div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <button onclick="calcR134a('all')" id="r134aBtn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:#06b6d4;color:#000;border:1px solid #06b6d4">Całość</button>
+    <button onclick="calcR134a('month')" id="r134aBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten miesiąc</button>
+    <button onclick="calcR134a('week')" id="r134aBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten tydzień</button>
+    <button onclick="calcR134a('year')" id="r134aBtn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten rok</button>
+  </div>
+  <div id="r134aResult" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NAPEŁNIONO</div>
+      <div id="r134aFilled" style="font-family:var(--mono);font-size:18px;font-weight:700;color:#06b6d4">—</div>
+      <div style="font-size:10px;color:var(--muted)">gramów</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ODZYSKANO</div>
+      <div id="r134aRecovered" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green)">—</div>
+      <div style="font-size:10px;color:var(--muted)">gramów</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ZUŻYTO NETTO</div>
+      <div id="r134aNet" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)">—</div>
+      <div style="font-size:10px;color:var(--muted)">gramów</div>
+    </div>
+  </div>
+  <div id="r134aDetails" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono)"></div>
+</div>
 <div class="section-label" style="margin-top:16px">Raporty</div>
 <button onclick="printDailyFullReport()">▶ Raport dzienny</button>
 <label style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#888;letter-spacing:1px;display:block;margin-top:10px;margin-bottom:2px">TYDZIEŃ</label>
@@ -3629,7 +3658,7 @@ window.showTab = function(id, el) {
   if (id==='list') window.renderList();
   if (id==='orders') window.renderOrders();
   if (id==='quickview') renderQuickView();
-  if (id==='cash') { window.calculateCash(); }
+  if (id==='cash') { window.calculateCash(); window.calcR134a('all'); }
   if (id==='archive') window.renderArchive();
   if (id==='pricing') window.renderPricing();
   if (id==='klima') window.renderKlima();
@@ -3748,6 +3777,73 @@ window.saveInvoice = async function() {
     btn.disabled = false;
     btn.textContent = '✔ Zapisz wystawioną fakturę';
   }
+};
+
+// ── LICZNIK R134a ──
+window.calcR134a = function(period) {
+  // Podświetl aktywny przycisk
+  ['all','month','week','year'].forEach(p => {
+    const btn = document.getElementById('r134aBtn_' + p);
+    if (!btn) return;
+    const active = p === period;
+    btn.style.background = active ? '#06b6d4' : 'transparent';
+    btn.style.color = active ? '#000' : 'var(--muted)';
+    btn.style.borderColor = active ? '#06b6d4' : 'var(--border)';
+  });
+
+  const today = getToday();
+  const now = new Date();
+
+  // Wyznacz zakres dat
+  let dateFrom = null;
+  if (period === 'week') {
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    dateFrom = formatDate(mon);
+  } else if (period === 'month') {
+    dateFrom = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  } else if (period === 'year') {
+    dateFrom = `${now.getFullYear()}-01-01`;
+  }
+
+  // Filtruj zrealizowane klima (status = true lub data realizacji <= dziś)
+  const entries = Object.values(klimas).filter(k => {
+    if (!k || k.price == null) return false; // tylko z ustaloną ceną (kalkulator użyty)
+    if (!k.capacity) return false; // brak danych o pojemności
+    const realDate = k.end || k.start || '';
+    if (!realDate) return false;
+    if (realDate > today) return false; // przyszłe
+    if (dateFrom && realDate < dateFrom) return false;
+    return true;
+  });
+
+  let totalFilled = 0;   // suma napełnionego (capacity - recovered)
+  let totalCapacity = 0; // suma pojemności układów
+  let totalRecovered = 0; // suma odzyskanego
+  let count = 0;
+
+  entries.forEach(k => {
+    const cap = parseFloat(k.capacity) || 0;
+    const rec = parseFloat(k.recovered) || 0;
+    const filled = Math.max(0, cap - rec);
+    totalCapacity += cap;
+    totalRecovered += rec;
+    totalFilled += filled;
+    count++;
+  });
+
+  const net = totalFilled; // zużyte netto = napełnione - odzyskane = capacity - recovered
+
+  document.getElementById('r134aFilled').textContent = totalFilled > 0 ? totalFilled + ' g' : '0 g';
+  document.getElementById('r134aRecovered').textContent = totalRecovered > 0 ? totalRecovered + ' g' : '0 g';
+  document.getElementById('r134aNet').textContent = net > 0 ? net + ' g' : '0 g';
+
+  const periodLabel = {all:'cały czas',month:'bieżący miesiąc',week:'bieżący tydzień',year:'bieżący rok'}[period];
+  const kg = (net/1000).toFixed(2).replace('.',',');
+  document.getElementById('r134aDetails').textContent =
+    count > 0
+      ? `${periodLabel} · ${count} serwisów · napełniono łącznie ${totalFilled}g, odzyskano ${totalRecovered}g · netto: ${net}g (${kg} kg)`
+      : `${periodLabel} · brak danych`;
 };
 
 window.toggleSlotBlock = async function(dateStr, time) {
