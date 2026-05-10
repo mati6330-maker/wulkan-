@@ -506,6 +506,25 @@ body.light .wm-logo img{filter:none;}
 </div>
 
 <div class="section" id="cash">
+
+<!-- TRACKER FAKTUR -->
+<div id="invoiceTracker" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
+  <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🧾 TRACKER FAKTUR</div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">OSTATNIA FAKTURA</div>
+      <div id="lastInvoiceDisplay" style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--text)">—</div>
+      <div id="lastInvoiceDateDisplay" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+    </div>
+    <div style="width:1px;height:40px;background:var(--border);flex-shrink:0"></div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">KOLEJNA</div>
+      <div id="nextInvoiceDisplay" style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">—</div>
+    </div>
+    <button onclick="saveInvoice()" id="invoiceSaveBtn" style="margin-left:auto;width:auto;padding:10px 16px;font-size:13px;letter-spacing:0;background:rgba(249,115,22,0.15);color:var(--accent);border:1px solid rgba(249,115,22,0.4)">✔ Zapisz wystawioną fakturę</button>
+  </div>
+</div>
+
 <div id="cashBox"></div>
 <button onclick="calculateCash()" style="margin-top:8px">↻ Odśwież</button>
 <div class="section-label" style="margin-top:16px">Raporty</div>
@@ -1004,6 +1023,10 @@ function initPublic() {
   onValue(ref(db, 'dayNotes'), snap => {
     dayNotes = snap.val() || {};
   });
+  onValue(ref(db, 'invoices/last'), snap => {
+    lastInvoice = snap.val() || null;
+    updateInvoiceDisplay();
+  });
 }
 function initApp() {
   unsubscribeAll();
@@ -1051,6 +1074,10 @@ function initApp() {
     if (input && document.activeElement !== input) {
       input.value = dayNotes[key] || '';
     }
+  });
+  onValue(ref(db, 'invoices/last'), snap => {
+    lastInvoice = snap.val() || null;
+    updateInvoiceDisplay();
   });
   onValue(ref(db, 'klima'), snap => {
     klimas = snap.val() || {};
@@ -3667,6 +3694,60 @@ window.printOrder = function(k) {
   win.document.write(content);
   win.document.close();
   win.print();
+};
+
+// ── TRACKER FAKTUR ──
+let lastInvoice = null; // { number: '11/26', date: '2026-05-09' }
+
+function parseInvoiceNumber(numStr) {
+  // Format: NR/YY np. "11/26"
+  if (!numStr) return null;
+  const m = numStr.match(/^(\d+)\/(\d+)$/);
+  if (!m) return null;
+  return { nr: parseInt(m[1]), yy: parseInt(m[2]) };
+}
+
+function nextInvoiceNumber(numStr) {
+  const currentYear = new Date().getFullYear() % 100; // np. 26
+  if (!numStr) return `1/${currentYear}`;
+  const parsed = parseInvoiceNumber(numStr);
+  if (!parsed) return `1/${currentYear}`;
+  // Nowy rok — reset do 1
+  if (parsed.yy !== currentYear) return `1/${currentYear}`;
+  return `${parsed.nr + 1}/${parsed.yy}`;
+}
+
+function updateInvoiceDisplay() {
+  const lastNum = document.getElementById('lastInvoiceDisplay');
+  const lastDate = document.getElementById('lastInvoiceDateDisplay');
+  const nextNum = document.getElementById('nextInvoiceDisplay');
+  if (!lastNum) return;
+  if (lastInvoice && lastInvoice.number) {
+    lastNum.textContent = lastInvoice.number;
+    lastDate.textContent = lastInvoice.date || '';
+    nextNum.textContent = nextInvoiceNumber(lastInvoice.number);
+  } else {
+    lastNum.textContent = '—';
+    lastDate.textContent = 'Brak danych';
+    nextNum.textContent = nextInvoiceNumber(null);
+  }
+}
+
+window.saveInvoice = async function() {
+  const next = nextInvoiceNumber(lastInvoice?.number);
+  const today = getToday();
+  const btn = document.getElementById('invoiceSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Zapisuję...';
+  try {
+    await set(ref(db, 'invoices/last'), { number: next, date: today });
+    showToast(`✔ Zapisano fakturę ${next}`, 'var(--green)');
+  } catch(e) {
+    showToast('❌ Błąd zapisu: ' + e.message, 'var(--red)');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✔ Zapisz wystawioną fakturę';
+  }
 };
 
 window.toggleSlotBlock = async function(dateStr, time) {
