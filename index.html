@@ -555,6 +555,10 @@ body.light .wm-logo img{filter:none;}
     </div>
   </div>
   <div id="r134aDetails" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono)"></div>
+  <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div id="r134aResetInfo" style="font-size:11px;color:var(--muted);flex:1">Ostatnie uzupełnienie zapasów: <span id="r134aResetDate" style="color:var(--text)">—</span></div>
+    <button onclick="resetR134aCounter()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">❄ Uzupełniłem zapasy — resetuj licznik</button>
+  </div>
 </div>
 <div class="section-label" style="margin-top:16px">Raporty</div>
 <button onclick="printDailyFullReport()">▶ Raport dzienny</button>
@@ -1056,6 +1060,11 @@ function initPublic() {
     lastInvoice = snap.val() || null;
     updateInvoiceDisplay();
   });
+  onValue(ref(db, 'invoices/r134aReset'), snap => {
+    window._r134aResetDate = snap.val() || null;
+    const el = document.getElementById('r134aResetDate');
+    if (el) el.textContent = window._r134aResetDate || '—';
+  });
 }
 function initApp() {
   unsubscribeAll();
@@ -1107,6 +1116,12 @@ function initApp() {
   onValue(ref(db, 'invoices/last'), snap => {
     lastInvoice = snap.val() || null;
     updateInvoiceDisplay();
+  });
+  onValue(ref(db, 'invoices/r134aReset'), snap => {
+    window._r134aResetDate = snap.val() || null;
+    const el = document.getElementById('r134aResetDate');
+    if (el) el.textContent = window._r134aResetDate || '—';
+    window.calcR134a('all');
   });
   onValue(ref(db, 'klima'), snap => {
     klimas = snap.val() || {};
@@ -3781,7 +3796,6 @@ window.saveInvoice = async function() {
 
 // ── LICZNIK R134a ──
 window.calcR134a = function(period) {
-  // Podświetl aktywny przycisk
   ['all','month','week','year'].forEach(p => {
     const btn = document.getElementById('r134aBtn_' + p);
     if (!btn) return;
@@ -3804,46 +3818,64 @@ window.calcR134a = function(period) {
     dateFrom = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
   } else if (period === 'year') {
     dateFrom = `${now.getFullYear()}-01-01`;
+  } else if (period === 'all') {
+    // Od ostatniego uzupełnienia zapasów jeśli istnieje
+    const resetDate = window._r134aResetDate || null;
+    if (resetDate) dateFrom = resetDate;
   }
 
-  // Filtruj zrealizowane klima (status = true lub data realizacji <= dziś)
+  // Filtruj: wszystkie serwisy z wpisaną pojemnością i datą realizacji <= dziś
   const entries = Object.values(klimas).filter(k => {
-    if (!k || k.price == null) return false; // tylko z ustaloną ceną (kalkulator użyty)
-    if (!k.capacity) return false; // brak danych o pojemności
+    if (!k) return false;
+    if (!k.capacity || parseFloat(k.capacity) <= 0) return false; // brak pojemności
     const realDate = k.end || k.start || '';
     if (!realDate) return false;
-    if (realDate > today) return false; // przyszłe
+    if (realDate > today) return false; // przyszłe — nie liczymy
     if (dateFrom && realDate < dateFrom) return false;
     return true;
   });
 
-  let totalFilled = 0;   // suma napełnionego (capacity - recovered)
-  let totalCapacity = 0; // suma pojemności układów
-  let totalRecovered = 0; // suma odzyskanego
+  let totalFilled = 0;    // ile faktycznie wpompowano z butli
+  let totalRecovered = 0; // ile odzyskano z układu
   let count = 0;
 
   entries.forEach(k => {
     const cap = parseFloat(k.capacity) || 0;
     const rec = parseFloat(k.recovered) || 0;
+    // Ile wpompowano = pojemność układu minus to co zostało odzyskane
     const filled = Math.max(0, cap - rec);
-    totalCapacity += cap;
-    totalRecovered += rec;
     totalFilled += filled;
+    totalRecovered += rec;
     count++;
   });
 
-  const net = totalFilled; // zużyte netto = napełnione - odzyskane = capacity - recovered
+  // Zużyte netto z butli = suma wpompowanego
+  const net = totalFilled;
 
-  document.getElementById('r134aFilled').textContent = totalFilled > 0 ? totalFilled + ' g' : '0 g';
-  document.getElementById('r134aRecovered').textContent = totalRecovered > 0 ? totalRecovered + ' g' : '0 g';
-  document.getElementById('r134aNet').textContent = net > 0 ? net + ' g' : '0 g';
+  document.getElementById('r134aFilled').textContent = totalFilled + ' g';
+  document.getElementById('r134aRecovered').textContent = totalRecovered + ' g';
+  document.getElementById('r134aNet').textContent = net + ' g';
 
-  const periodLabel = {all:'cały czas',month:'bieżący miesiąc',week:'bieżący tydzień',year:'bieżący rok'}[period];
-  const kg = (net/1000).toFixed(2).replace('.',',');
-  document.getElementById('r134aDetails').textContent =
-    count > 0
-      ? `${periodLabel} · ${count} serwisów · napełniono łącznie ${totalFilled}g, odzyskano ${totalRecovered}g · netto: ${net}g (${kg} kg)`
-      : `${periodLabel} · brak danych`;
+  const periodLabel = period === 'all'
+    ? (window._r134aResetDate ? `od ${window._r134aResetDate}` : 'cały czas')
+    : {month:'bieżący miesiąc', week:'bieżący tydzień', year:'bieżący rok'}[period];
+  const kg = (net / 1000).toFixed(3).replace('.', ',');
+  document.getElementById('r134aDetails').textContent = count > 0
+    ? `${periodLabel} · ${count} serwisów · wpompowano ${totalFilled}g, odzyskano ${totalRecovered}g · zużyto z butli: ${net}g (${kg} kg)`
+    : `${periodLabel} · brak danych`;
+};
+
+window.resetR134aCounter = async function() {
+  if (!confirm('Potwierdzasz uzupełnienie zapasów R134a?\nLicznik "Całość" będzie liczył od dzisiaj.')) return;
+  const today = getToday();
+  try {
+    await set(ref(db, 'invoices/r134aReset'), today);
+    window._r134aResetDate = today;
+    showToast('❄ Zapasy uzupełnione — licznik zresetowany od ' + today, '#06b6d4');
+    window.calcR134a('all');
+  } catch(e) {
+    showToast('❌ Błąd: ' + e.message, 'var(--red)');
+  }
 };
 
 window.toggleSlotBlock = async function(dateStr, time) {
