@@ -2136,14 +2136,29 @@ window.renderList = function renderList() {
           </span>
         </div>
         <div id="sizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USŁUGA</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:8px">
+            ${['Wymiana opon','Wyważanie','Naprawa','Przechowanie'].map(s=>`<button onclick="setVisitField('${k}','service','${s}')" style="padding:6px 4px;font-size:11px;margin:0;background:${v.service===s?'var(--accent)':'var(--surface2)'};color:${v.service===s?'#000':'var(--text)'};border:1px solid var(--border)">${s}</button>`).join('')}
+          </div>
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">USTAW ŚREDNICĘ FELG</div>
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">
             ${[12,13,14,15,16,17,18,19,20,21,22,23,24].map(s=>`<button onclick="setVisitSize('${k}',${s})" style="padding:5px 2px;font-size:11px;font-family:var(--mono);margin:0;background:${v.tireSize==s?'var(--accent)':'var(--surface2)'};color:${v.tireSize==s?'#000':'var(--text)'};border:1px solid var(--border)">${s}"</button>`).join('')}
           </div>
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">TYP FELG</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px">
             <button onclick="setVisitWheel('${k}','Aluminiowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Aluminiowe'?'var(--accent)':'var(--surface2)'};color:${v.wheel==='Aluminiowe'?'#000':'var(--text)'};border:1px solid var(--border)">Aluminiowe</button>
             <button onclick="setVisitWheel('${k}','Stalowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Stalowe'?'var(--accent)':'var(--surface2)'};color:${v.wheel==='Stalowe'?'#000':'var(--text)'};border:1px solid var(--border)">Stalowe</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">DODATKI</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:8px">
+            <button onclick="setVisitToggle('${k}','runflat')" style="padding:6px 3px;font-size:11px;margin:0;background:${v.runflat?'var(--accent)':'var(--surface2)'};color:${v.runflat?'#000':'var(--text)'};border:1px solid var(--border)">Run-flat</button>
+            <button onclick="setVisitToggle('${k}','low')" style="padding:6px 3px;font-size:11px;margin:0;background:${v.low?'var(--accent)':'var(--surface2)'};color:${v.low?'#000':'var(--text)'};border:1px solid var(--border)">Niski profil</button>
+            <button onclick="setVisitToggle('${k}','valve')" style="padding:6px 3px;font-size:11px;margin:0;background:${v.valve?'var(--accent)':'var(--surface2)'};color:${v.valve?'#000':'var(--text)'};border:1px solid var(--border)">Wentyl ×4</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">NOTATKA</div>
+          <div style="display:flex;gap:4px">
+            <input id="qnote-${k}" placeholder="Notatka..." value="${v.note||''}" style="flex:1;margin:0;font-size:12px;padding:6px 8px" onclick="event.stopPropagation()"/>
+            <button onclick="setVisitNote('${k}')" style="width:auto;padding:6px 10px;font-size:12px;margin:0;background:var(--accent);color:#000;border:1px solid var(--accent)">✔</button>
           </div>
         </div>
         <button onclick="event.stopPropagation();toggleSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${v.tireSize?'var(--muted)':'var(--accent)'};border:1px solid ${v.tireSize?'var(--border)':'var(--accent)'}">
@@ -2237,6 +2252,31 @@ window.toggleSizePicker = function(k) {
   const el = document.getElementById('sizepicker-'+k);
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 };
+window.setVisitField = async function(k, field, value) {
+  const v = visits[k]; if (!v) return;
+  const upd = { [field]: value };
+  upd.price = calcVisitPrice({...v, [field]: value});
+  await update(ref(db, 'wizyty/' + k), upd);
+  showToast('✔ Zaktualizowano', 'var(--green)');
+};
+
+window.setVisitToggle = async function(k, field) {
+  const v = visits[k]; if (!v) return;
+  const newVal = !v[field];
+  const upd = { [field]: newVal };
+  if (field === 'valve') upd.valveCount = newVal ? 4 : 0;
+  upd.price = calcVisitPrice({...v, [field]: newVal, valveCount: field==='valve'?(newVal?4:0):v.valveCount});
+  await update(ref(db, 'wizyty/' + k), upd);
+  showToast('✔ Zaktualizowano', 'var(--green)');
+};
+
+window.setVisitNote = async function(k) {
+  const inp = document.getElementById('qnote-' + k);
+  if (!inp) return;
+  await update(ref(db, 'wizyty/' + k), { note: inp.value.trim() });
+  showToast('✔ Notatka zapisana', 'var(--green)');
+};
+
 window.setVisitSize = async function(k, size) {
   if (!visits[k]) return;
   await update(ref(db,'wizyty/'+k), {tireSize: String(size)});
