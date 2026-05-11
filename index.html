@@ -539,7 +539,7 @@ body.light .wm-logo img{filter:none;}
   </div>
   <div id="r134aResult" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NAPEŁNIONO</div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NABITO ŁĄCZNIE</div>
       <div id="r134aFilled" style="font-family:var(--mono);font-size:18px;font-weight:700;color:#06b6d4">—</div>
       <div style="font-size:10px;color:var(--muted)">gramów</div>
     </div>
@@ -3824,35 +3824,34 @@ window.calcR134a = function(period) {
     if (resetDate) dateFrom = resetDate;
   }
 
-  // Filtruj: wszystkie serwisy z wpisaną pojemnością i datą realizacji <= dziś
+  // Filtruj: tylko zrealizowane (status=true) + ustalona cena + wpisana pojemność
   const entries = Object.values(klimas).filter(k => {
     if (!k) return false;
-    if (!k.capacity || parseFloat(k.capacity) <= 0) return false; // brak pojemności
+    if (!k.status) return false;                            // tylko zakończone
+    if (k.price == null || k.price === '') return false;   // tylko z ustaloną ceną
+    if (!k.capacity || parseFloat(k.capacity) <= 0) return false; // musi być pojemność
     const realDate = k.end || k.start || '';
     if (!realDate) return false;
-    if (realDate > today) return false; // przyszłe — nie liczymy
     if (dateFrom && realDate < dateFrom) return false;
     return true;
   });
 
-  let totalFilled = 0;    // ile faktycznie wpompowano z butli
-  let totalRecovered = 0; // ile odzyskano z układu
+  let totalCapacity = 0;  // suma pojemności układów (ile nabito łącznie)
+  let totalRecovered = 0; // suma odzyskanego z układów
   let count = 0;
 
   entries.forEach(k => {
     const cap = parseFloat(k.capacity) || 0;
     const rec = parseFloat(k.recovered) || 0;
-    // Ile wpompowano = pojemność układu minus to co zostało odzyskane
-    const filled = Math.max(0, cap - rec);
-    totalFilled += filled;
+    totalCapacity += cap;
     totalRecovered += rec;
     count++;
   });
 
-  // Zużyte netto z butli = suma wpompowanego
-  const net = totalFilled;
+  // Czynnik netto = ile wyszło z naszej butli = nabito łącznie - odzyskano
+  const net = Math.max(0, totalCapacity - totalRecovered);
 
-  document.getElementById('r134aFilled').textContent = totalFilled + ' g';
+  document.getElementById('r134aFilled').textContent = totalCapacity + ' g';
   document.getElementById('r134aRecovered').textContent = totalRecovered + ' g';
   document.getElementById('r134aNet').textContent = net + ' g';
 
@@ -3861,8 +3860,8 @@ window.calcR134a = function(period) {
     : {month:'bieżący miesiąc', week:'bieżący tydzień', year:'bieżący rok'}[period];
   const kg = (net / 1000).toFixed(3).replace('.', ',');
   document.getElementById('r134aDetails').textContent = count > 0
-    ? `${periodLabel} · ${count} serwisów · wpompowano ${totalFilled}g, odzyskano ${totalRecovered}g · zużyto z butli: ${net}g (${kg} kg)`
-    : `${periodLabel} · brak danych`;
+    ? `${periodLabel} · ${count} serwisów · nabito ${totalCapacity}g · odzyskano ${totalRecovered}g · z butli: ${net}g (${kg} kg)`
+    : `${periodLabel} · brak zrealizowanych serwisów z ustaloną ceną`;
 };
 
 window.resetR134aCounter = async function() {
