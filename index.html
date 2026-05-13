@@ -1145,7 +1145,6 @@ function initPublic() {
     initCalendar();
     renderGrid();
     renderQuickView();
-    startNextSlotTimer();
     setSyncStatus('ok', '● Na żywo');
   }, () => {
     setSyncStatus('err', '✕ Błąd połączenia');
@@ -1165,6 +1164,7 @@ function initPublic() {
     renderGrid();
     initCalendar();
     renderQuickView();
+    startNextSlotTimer(); // Timer TUTAJ — po załadowaniu slotBlocks
   });
   onValue(ref(db, 'dayNotes'), snap => {
     dayNotes = snap.val() || {};
@@ -1193,7 +1193,6 @@ function initApp() {
     renderList();
     renderGrid();
     renderQuickView();
-    startNextSlotTimer();
     setSyncStatus('ok', '● Zsynchronizowano');
     // Synchronizuj slots — publiczna gałąź tylko z date+time
     syncSlotsFromVisits(visits);
@@ -1218,6 +1217,7 @@ function initApp() {
     renderGrid();
     initCalendar();
     renderQuickView();
+    startNextSlotTimer(); // Timer TUTAJ — po załadowaniu slotBlocks
   });
   onValue(ref(db, 'dayNotes'), snap => {
     dayNotes = snap.val() || {};
