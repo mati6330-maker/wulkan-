@@ -877,7 +877,7 @@ body.light .wm-logo img{filter:none;}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getDatabase, ref, set, push, remove, onValue, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, set, push, remove, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 // ── FIREBASE CONFIG ──
 const firebaseConfig = {
@@ -1141,6 +1141,8 @@ function initApp() {
     renderQuickView();
     startNextSlotTimer();
     setSyncStatus('ok', '● Zsynchronizowano');
+    // Synchronizuj slots — publiczna gałąź tylko z date+time
+    syncSlotsFromVisits(visits);
   }, () => { setSyncStatus('err', '✕ Błąd połączenia'); });
   unsubOrders = onValue(ref(db, 'zlecenia'), snap => {
     orders = snap.val() || {};
@@ -2321,6 +2323,42 @@ window.applyOrderDiscount = async function(k, delta) {
   if (el) el.textContent = newPrice + ' zł';
   showToast((delta > 0 ? '+' : '') + delta + ' zł → ' + newPrice + ' zł');
 };
+// ── SYNCHRONIZACJA SLOTS (publiczna gałąź bez danych osobowych) ──
+let _syncSlotsTimeout = null;
+async function syncSlotsFromVisits(allVisits) {
+  // Debounce — nie sync częściej niż raz na 3s
+  if (_syncSlotsTimeout) return;
+  _syncSlotsTimeout = setTimeout(async () => {
+    _syncSlotsTimeout = null;
+    try {
+      const slotsSnap = await get(ref(db, 'slots'));
+      const currentSlots = slotsSnap.val() || {};
+      const updates = {};
+
+      // Dodaj/aktualizuj slots dla każdej wizyty
+      Object.entries(allVisits).forEach(([k, v]) => {
+        if (v && v.date && v.time) {
+          const cur = currentSlots[k];
+          if (!cur || cur.date !== v.date || cur.time !== v.time) {
+            updates['slots/' + k] = { date: v.date, time: v.time };
+          }
+        }
+      });
+
+      // Usuń slots dla których nie ma już wizyty
+      Object.keys(currentSlots).forEach(k => {
+        if (!allVisits[k]) updates['slots/' + k] = null;
+      });
+
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+      }
+    } catch(e) {
+      console.warn('Sync slots error:', e);
+    }
+  }, 3000);
+}
+
 // ── TIMER NAJBLIŻSZEGO WOLNEGO SLOTU ──
 let _nextSlotTimer = null;
 
