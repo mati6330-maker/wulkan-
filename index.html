@@ -24,16 +24,16 @@
   --mono:'Share Tech Mono',monospace;
 }
 body.light{
-  --bg:#e8edf2;
+  --bg:#dde8f7;
   --surface:#ffffff;
-  --surface2:#f0f4f8;
-  --border:#c8d0da;
-  --accent:#c2410c;
-  --accent2:var(--accent);
-  --green:#15803d;
-  --red:#b91c1c;
-  --text:#0f172a;
-  --muted:#475569;
+  --surface2:#eaf1fb;
+  --border:#a8c4e8;
+  --accent:#2563eb;
+  --accent2:#3b82f6;
+  --green:#059669;
+  --red:#dc2626;
+  --text:#0c1a3a;
+  --muted:#3a5a8a;
 }
 body.light .tabs{background:#dce8ff;border-bottom:2px solid #c7dcff;}
 body.light .tab{color:#2d4f8a !important;}
@@ -41,13 +41,13 @@ body.light .tab.active{color:#0f2454 !important;border-bottom-color:var(--accent
 body.light .section-active{box-shadow:0 2px 12px rgba(37,99,235,0.1);}
 body.light input,body.light select,body.light textarea{background:#fff;border-color:#a0c0f0;color:#0f2454;}
 body.light input:focus,body.light select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,0.15);}
-body.light .card{background:#fff;border:1px solid #c7dcff;box-shadow:0 1px 4px rgba(37,99,235,0.06);}
-body.light .slot{border:1px solid #c7dcff !important;}
-body.light .slot:hover{background:rgba(37,99,235,0.08) !important;}
-body.light #adminBar,body.light #guestBar{background:#0f2454;border-bottom:1px solid #0a1a3a;}
+body.light .card{background:#fff;border:1px solid #a8c4e8;border-left:2px solid #2563eb;box-shadow:0 1px 6px rgba(37,99,235,0.08);}
+body.light .slot{border:1px solid #a8c4e8 !important;}
+body.light .slot:hover{background:rgba(37,99,235,0.1) !important;}
+body.light #adminBar,body.light #guestBar{background:#0c1a3a;border-bottom:1px solid #071020;}
 body.light #syncStatus{background:#dce8ff;color:#5070a8;border-bottom:1px solid #c7dcff;}
-body.light .section-label{color:#2d4f8a;}
-body.light h3{color:#0f2454;}
+body.light .section-label{color:#3a5a8a;border-left-color:#2563eb;}
+body.light h3{color:#0c1a3a;}
 body.light .qv-time{color:#0f2454;}
 body.light .cal-day{border:1px solid #c7dcff;}
 body.light .cal-day.selected{background:rgba(37,99,235,0.15) !important;border-color:var(--accent) !important;}
@@ -315,10 +315,10 @@ button.selected,#tireSizeButtons button.selected,#o_diameterButtons button.selec
 body.light .tabs{background:#dce8ff;border-bottom:2px solid var(--border);}
 body.light .tab{color:var(--muted)!important;}
 body.light .tab.active{color:var(--text)!important;border-bottom-color:var(--accent)!important;}
-body.light input,body.light select,body.light textarea{background:#fff;border-color:#a0c0f0;color:var(--text);}
-body.light .day{border:1px solid #c7dcff;background:#fff;}
-body.light .day.active{background:var(--accent);color:#fff;box-shadow:0 0 0 2px rgba(37,99,235,0.4);}
-body.light #adminBar,body.light #guestBar{background:#0f2454;border-bottom:1px solid #0a1a3a;}
+body.light input,body.light select,body.light textarea{background:#fff;border-color:#a0c0ee;color:#0c1a3a;}
+body.light .day{border:1px solid #a8c4e8;background:#fff;color:#0c1a3a;}
+body.light .day.active{background:#2563eb;color:#fff;box-shadow:0 0 0 2px rgba(37,99,235,0.5);}
+body.light #adminBar,body.light #guestBar{background:#0c1a3a;border-bottom:1px solid #071020;}
 body.light .day-count.all-free{color:#059669;background:rgba(5,150,105,0.1);}
 body.light .day-count.full{color:#b91c1c;background:rgba(185,28,28,0.08);}
 body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08);}
@@ -2417,20 +2417,25 @@ async function syncSlotsFromVisits(allVisits) {
 let _nextSlotTimer = null;
 
 function findNextFreeSlot() {
-  // Użyj tych samych zakresów godzin co grafik
-  const hourRanges = currentUser
-    ? [[8,8],[9,13],[15,17],[18,18]]
-    : [[9,13],[15,17]];
-
-  const allSlots = [];
-  for (const [hFrom, hTo] of hourRanges) {
+  // Sloty klienckie: 9:00-13:30, 15:00-17:30 (co 30 min)
+  // Sloty admina: dodatkowo 8:00 i 18:00
+  const clientSlots = [];
+  for (const [hFrom, hTo] of [[9,13],[15,17]]) {
     for (let h = hFrom; h <= hTo; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        if (h === hTo && m > 0 && hFrom !== hTo) continue; // tylko :00 dla godzin granicznych
-        allSlots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
-      }
+      clientSlots.push(`${String(h).padStart(2,'0')}:00`);
+      if (h < hTo || hFrom === hTo) clientSlots.push(`${String(h).padStart(2,'0')}:30`);
     }
   }
+  clientSlots.push('13:30');
+  clientSlots.push('17:30');
+
+  const adminExtra = ['08:00','18:00'];
+  const allSlots = currentUser
+    ? ['08:00', ...clientSlots, '18:00']
+    : clientSlots;
+
+  // Deduplikuj i posortuj
+  const slots = [...new Set(allSlots)].sort();
 
   const now = new Date();
 
@@ -2442,7 +2447,7 @@ function findNextFreeSlot() {
     const dateStr = formatDate(d);
     if (isDateBlocked(dateStr)) continue;
 
-    for (const slot of allSlots) {
+    for (const slot of slots) {
       // Dziś — pomiń przeszłe sloty
       if (dayOffset === 0) {
         const [sh, sm] = slot.split(':').map(Number);
@@ -2451,11 +2456,12 @@ function findNextFreeSlot() {
         if (slotTime <= now) continue;
       }
 
-      const slotBlocked = slotBlocks[dateStr]?.[slot];
+      // Pomiń sloty zablokowane
+      if (slotBlocks[dateStr]?.[slot]) continue;
+
+      // Pomiń sloty zajęte wizytami
       const taken = Object.values(visits).some(v => v.date === dateStr && v.time === slot);
-      if (!slotBlocked && !taken) {
-        return { dateStr, slot };
-      }
+      if (!taken) return { dateStr, slot };
     }
   }
   return null;
