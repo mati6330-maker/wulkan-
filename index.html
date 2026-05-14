@@ -1695,7 +1695,7 @@ function renderGrid() {
         div.classList.add('busy');
         div.style.background = 'rgba(100,100,100,0.15)';
         div.style.color = 'var(--muted)';
-        div.style.borderColor = 'rgba(100,100,100,0.3)';
+        div.style.borderColor = 'rgba(100,100,100,0.35)';
         div.style.cursor = 'not-allowed';
         div.innerHTML = `<span style="font-size:10px">${baseTime}</span><span style="font-size:9px;display:block;margin-top:2px">🔒</span>`;
         grid.appendChild(div);
@@ -1703,20 +1703,31 @@ function renderGrid() {
       }
 
       if (allBusy) {
-        div.classList.add('busy');
+        // Czerwony — zajęty cały slot
+        div.style.background = 'rgba(248,113,113,0.15)';
+        div.style.color = '#f87171';
+        div.style.borderColor = 'rgba(248,113,113,0.5)';
+        div.style.cursor = 'not-allowed';
       } else if (isSelected) {
         div.classList.add('selected');
       } else if (anyBusy) {
         if (!currentUser) {
-          div.classList.add('busy');
+          // Gość widzi częściowo zajęty jako czerwony
+          div.style.background = 'rgba(248,113,113,0.15)';
+          div.style.color = '#f87171';
+          div.style.borderColor = 'rgba(248,113,113,0.5)';
+          div.style.cursor = 'not-allowed';
         } else {
-          div.classList.add('free');
-          div.style.borderColor = 'rgba(234,179,8,0.6)';
+          // Admin widzi żółty — wolne 15 minut
+          div.style.background = 'rgba(234,179,8,0.12)';
           div.style.color = '#eab308';
-          div.style.background = 'rgba(234,179,8,0.08)';
+          div.style.borderColor = 'rgba(234,179,8,0.5)';
         }
       } else {
-        div.classList.add('free');
+        // Zielony — wolny cały slot
+        div.style.background = 'rgba(52,211,153,0.12)';
+        div.style.color = '#34d399';
+        div.style.borderColor = 'rgba(52,211,153,0.5)';
       }
 
       if (currentUser) {
