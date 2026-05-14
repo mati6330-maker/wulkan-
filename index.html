@@ -625,8 +625,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <option>Aluminiowe</option><option>Stalowe</option>
 </select>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0">
-  <label><input type="checkbox" id="o_runflat" class="custom-cb"> Run-flat</label>
-  <label><input type="checkbox" id="o_low" class="custom-cb"> Niski profil</label>
+  <label><input type="checkbox" id="o_runflat" class="custom-cb" onchange="updateOrderPrice()"> Run-flat</label>
+  <label><input type="checkbox" id="o_low" class="custom-cb" onchange="updateOrderPrice()"> Niski profil</label>
   <label><input type="checkbox" id="o_valve" class="custom-cb" onchange="toggleOrderValveCount(this)"> Nowy wentyl</label>
 </div>
 <div id="o_valve_count_wrap" style="display:none;margin-bottom:6px">
@@ -1358,7 +1358,10 @@ function updateOrderPrice() {
   const wheel = document.getElementById('o_type').value;
   const tireSize = document.getElementById('o_diameter').value;
   const wheelCount = parseInt(document.getElementById('o_wheel_count').value)||4;
-  const price = calcVisitPrice({service, wheel, tireSize, wheelCount}, true);
+  const runflat = document.getElementById('o_runflat')?.checked || false;
+  const low = document.getElementById('o_low')?.checked || false;
+  const valve = document.getElementById('o_valve')?.checked || false;
+  const price = calcVisitPrice({service, wheel, tireSize, wheelCount, runflat, low, valve}, true);
   const el = document.getElementById('liveOrderPriceDisplay');
   if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
@@ -4241,9 +4244,9 @@ window.showTab = function(id, el) {
 window.toggleOrderValveCount = function(cb) {
   document.getElementById('o_valve_count_wrap').style.display = cb.checked ? 'block' : 'none';
   if (cb.checked) {
-    // Domyślnie zaznacz 4
     setOrderValveCount(4, document.querySelector('#o_valve_count_wrap button:last-child'));
   }
+  updateOrderPrice();
 };
 window.setOrderValveCount = function(n, btn) {
   document.getElementById('o_valve_count').value = n;
