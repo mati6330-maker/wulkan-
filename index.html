@@ -1193,8 +1193,8 @@ function calcVisitPrice(v, isOrder = false) {
   const wheelCount = parseInt(v.wheelCount)||4;
   if (wheelCount < 4) price = Math.round(price * wheelCount / 4);
 
-  // Wentyl doliczany PO podziale — cena za sztukę × ilość kół
-  if (v.valve) price += p.nw * wheelCount;
+  // Wentyl doliczany PO podziale — cena za sztukę × ilość wentyli (lub kół jeśli nie podano osobno)
+  if (v.valve) price += p.nw * (parseInt(v.valveCount) || wheelCount);
 
   // Rabat dla zleceń przy wymianie opon
   if (isOrder && v.service === "Wymiana opon") price -= p.zlecenie_discount;
@@ -1361,7 +1361,8 @@ function updateOrderPrice() {
   const runflat = document.getElementById('o_runflat')?.checked || false;
   const low = document.getElementById('o_low')?.checked || false;
   const valve = document.getElementById('o_valve')?.checked || false;
-  const price = calcVisitPrice({service, wheel, tireSize, wheelCount, runflat, low, valve}, true);
+  const valveCount = valve ? (parseInt(document.getElementById('o_valve_count')?.value)||4) : 0;
+  const price = calcVisitPrice({service, wheel, tireSize, wheelCount, runflat, low, valve, valveCount}, true);
   const el = document.getElementById('liveOrderPriceDisplay');
   if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
@@ -4258,6 +4259,7 @@ window.setOrderValveCount = function(n, btn) {
   btn.style.background = '#4f8ef7';
   btn.style.borderColor = '#4f8ef7';
   btn.style.color = '#000';
+  updateOrderPrice();
 };
 
 window.printOrder = function(k) {
