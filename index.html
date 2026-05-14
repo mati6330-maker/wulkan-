@@ -1029,6 +1029,77 @@ async function ensureEmailJS() {
     document.head.appendChild(s);
   });
 }
+
+window.showLoginScreen = function() {
+  document.getElementById('loginScreen').style.display = 'flex';
+};
+
+window.doLogin = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  err.style.display = 'none';
+  btn.innerHTML = '<span class="spinner"></span>Logowanie...';
+  btn.disabled = true;
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    err.style.display = 'block';
+    btn.innerHTML = '▶ Zaloguj się';
+    btn.disabled = false;
+  }
+};
+
+window.doLogout = async function() {
+  await signOut(auth);
+};
+
+// ── AUTH STATE ──
+let currentUser = null;
+
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  if (user) {
+    // Zalogowany — pokaż panel admina
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminBar').style.display = 'flex';
+    document.getElementById('guestBar').style.display = 'none';
+    document.getElementById('adminEmail').textContent = user.email;
+    document.getElementById('printBtn').style.display = 'block';
+    document.getElementById('noteField').style.display = 'block';
+    // Odblokuj zakładki admina
+    document.querySelectorAll('.admin-tab').forEach(t => {
+      t.classList.remove('tab-locked');
+    });
+    document.getElementById('loginBtn').innerHTML = '▶ Zaloguj się';
+    document.getElementById('loginBtn').disabled = false;
+    initApp();
+  } else {
+    // Niezalogowany — pokaż tylko grafik i formularz zapisu
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminBar').style.display = 'none';
+    document.getElementById('guestBar').style.display = 'flex';
+    document.getElementById('printBtn').style.display = 'none';
+    document.getElementById('noteField').style.display = 'none';
+    // Zablokuj zakładki admina
+    document.querySelectorAll('.admin-tab').forEach(t => {
+      t.classList.add('tab-locked');
+    });
+    initPublic();
+  }
+});
+
+window.requireAdmin = function(tabId, el) {
+  if (currentUser) {
+    window.showTab(tabId, el);
+  } else {
+    window.showLoginScreen();
+  }
+};
+
+// ── INIT PUBLICZNY (bez logowania) ──
+
 function calcVisitPrice(v, isOrder = false) {
   let price = 0, size = parseInt(v.tireSize||v.diameter)||0;
   if (!v.service || !size || !(v.wheel||v.type)) return 0;
@@ -4443,8 +4514,8 @@ function renderPricing() {
       Aluminiowe ≤ 16" — ${p.wka_s} zł / ≥ 17" — ${p.wka_l} zł
     </div>
     <div class="card"><b>Dodatkowe</b>
-      Wyważenie kół stalowe — ${p.wws} zł<br>
-      Wyważenie kół aluminiowe — ${p.wwa} zł<br>
+      Wyważenie stal ≤16\" — ${p.wws_s} zł / >16\" — ${p.wws_l} zł<br>
+      Wyważenie alu ≤15\" — ${p.wwa_15} zł / 16-17\" — ${p.wwa_17} zł / >17\" — ${p.wwa_big} zł<br>
       Naprawa opony — ${p.no} zł<br>
       Run-flat — +${p.rf} zł<br>
       Niski profil — +${p.np} zł<br>
