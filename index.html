@@ -3306,6 +3306,8 @@ window.printDay = function() {
   const win = window.open('','_blank');
   if (!win) { alert('\u26a0 Zezw\u00f3l na wyskakuj\u0105ce okna aby drukowa\u0107'); return; }
 
+  const checkbox = '<span style="display:inline-block;width:16px;height:16px;border:1.5px solid #333;vertical-align:middle"></span>';
+
   // Zablokowane sloty na ten dzień — dołącz do wizyt
   const blockedSlots = Object.values(slotBlocks)
     .filter(s => s?.date === d)
