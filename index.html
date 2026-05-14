@@ -427,12 +427,17 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <div id="nextSlotBanner" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
   <div style="font-size:18px">⏱</div>
   <div>
-    <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">NAJBLIŻSZY WOLNY SLOT</div>
+    <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">NASTĘPNY WOLNY TERMIN</div>
     <div id="nextSlotDate" style="font-family:var(--mono);font-size:13px;color:var(--text);font-weight:600"></div>
   </div>
   <div style="margin-left:auto;text-align:right">
-    <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">DO WIZYTY</div>
+    <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">DO WOLNEGO</div>
     <div id="nextSlotCountdown" style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)"></div>
+  </div>
+  <div id="nextVisitBlock" style="display:none;border-left:1px solid var(--border);padding-left:12px;text-align:right">
+    <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">NASTĘPNA WIZYTA</div>
+    <div id="nextVisitDate" style="font-family:var(--mono);font-size:13px;color:var(--text);font-weight:600"></div>
+    <div id="nextVisitCountdown" style="font-family:var(--mono);font-size:16px;font-weight:700;color:#eab308"></div>
   </div>
 </div>
 <div class="grid" id="grid" onclick="if(event.target===this){selectedTime=null;renderGrid()}"></div>
@@ -524,12 +529,17 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div id="nextSlotBannerQV" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div style="font-size:18px">⏱</div>
     <div>
-      <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">NAJBLIŻSZY WOLNY SLOT</div>
+      <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">NASTĘPNY WOLNY TERMIN</div>
       <div id="nextSlotDateQV" style="font-family:var(--mono);font-size:13px;color:var(--text);font-weight:600"></div>
     </div>
     <div style="margin-left:auto;text-align:right">
-      <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">DO WIZYTY</div>
+      <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">DO WOLNEGO</div>
       <div id="nextSlotCountdownQV" style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)"></div>
+    </div>
+    <div id="nextVisitBlockQV" style="display:none;border-left:1px solid var(--border);padding-left:12px;text-align:right">
+      <div style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px">NASTĘPNA WIZYTA</div>
+      <div id="nextVisitDateQV" style="font-family:var(--mono);font-size:13px;color:var(--text);font-weight:600"></div>
+      <div id="nextVisitCountdownQV" style="font-family:var(--mono);font-size:16px;font-weight:700;color:#eab308"></div>
     </div>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px">
@@ -1162,7 +1172,11 @@ function calcVisitPrice(v, isOrder = false) {
     if(wheel==="Stalowe") price=size<=16?p.wks_s:p.wks_l;
     if(wheel==="Aluminiowe") price=size<=16?p.wka_s:p.wka_l;
   }
-  if (v.service === "Naprawa opony" || v.service === "Naprawa koła") price = p.no;
+  if (v.service === "Naprawa opony" || v.service === "Naprawa koła") {
+    // Cena za sztukę × ilość kół (domyślnie 1 jeśli nie wybrano)
+    const repairCount = parseInt(v.wheelCount) || 1;
+    return Math.max(0, p.no * repairCount);
+  }
   if (v.service === "Wyważenie kół") {
     if (wheel === "Stalowe") price = size<=16 ? p.wws_s : p.wws_l;
     if (wheel === "Aluminiowe") {
@@ -2570,24 +2584,57 @@ function formatSlotLabel(dateStr, slot) {
   return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dateLabel} — ${slot}`;
 }
 
+function findNextVisit() {
+  // Znajdź najbliższą przyszłą wizytę (tylko admin widzi)
+  if (!currentUser) return null;
+  const now = new Date();
+  const todayStr = formatDate(now);
+
+  const future = Object.values(visits)
+    .filter(v => v.date && v.time && (v.date > todayStr || (v.date === todayStr && v.time > `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`)))
+    .sort((a, b) => a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date));
+
+  return future.length > 0 ? future[0] : null;
+}
+
 function updateNextSlotBanners() {
   const result = findNextFreeSlot();
+  const nextVisit = findNextVisit();
+  const now = new Date();
+
   const ids = [
-    { date: 'nextSlotDate', countdown: 'nextSlotCountdown', banner: 'nextSlotBanner' },
-    { date: 'nextSlotDateQV', countdown: 'nextSlotCountdownQV', banner: 'nextSlotBannerQV' }
+    { date: 'nextSlotDate', countdown: 'nextSlotCountdown', visitBlock: 'nextVisitBlock', visitDate: 'nextVisitDate', visitCountdown: 'nextVisitCountdown' },
+    { date: 'nextSlotDateQV', countdown: 'nextSlotCountdownQV', visitBlock: 'nextVisitBlockQV', visitDate: 'nextVisitDateQV', visitCountdown: 'nextVisitCountdownQV' }
   ];
-  ids.forEach(({ date, countdown, banner }) => {
+
+  ids.forEach(({ date, countdown, visitBlock, visitDate, visitCountdown }) => {
     const dateEl = document.getElementById(date);
     const countEl = document.getElementById(countdown);
-    const bannerEl = document.getElementById(banner);
+    const vBlock = document.getElementById(visitBlock);
+    const vDate = document.getElementById(visitDate);
+    const vCount = document.getElementById(visitCountdown);
     if (!dateEl || !countEl) return;
+
+    // Wolny termin
     if (result) {
-      if (bannerEl) bannerEl.style.display = 'flex';
       dateEl.textContent = formatSlotLabel(result.dateStr, result.slot);
       countEl.textContent = formatCountdown(result.dateStr, result.slot);
     } else {
       dateEl.textContent = 'Brak wolnych terminów';
       countEl.textContent = '—';
+    }
+
+    // Następna wizyta (tylko admin)
+    if (vBlock && vDate && vCount) {
+      if (nextVisit && currentUser) {
+        vBlock.style.display = 'block';
+        const label = formatSlotLabel(nextVisit.date, nextVisit.time);
+        const name = nextVisit.name ? ` · ${nextVisit.name}` : '';
+        vDate.textContent = label + name;
+        vCount.textContent = formatCountdown(nextVisit.date, nextVisit.time);
+      } else {
+        vBlock.style.display = 'none';
+      }
     }
   });
 }
