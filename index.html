@@ -4040,7 +4040,7 @@ window.searchTires = function() {
   const makeN = norm(make);
   const modelN = norm(model);
 
-  const matches = (typeof WHEEL_DB !== "undefined" ? WHEEL_DB : []).filter(([m, mod, yFrom, yTo]) => {
+  const matches = (window.WHEEL_DB || []).filter(([m, mod, yFrom, yTo]) => {
     const mN = norm(m); const modN = norm(mod);
     const makeMatch = mN.includes(makeN) || makeN.includes(mN.split('')[0]) || m.toLowerCase().includes(make);
     const modelMatch = modN.includes(modelN) || modelN.includes(modN.split('(')[0].trim().replace(/[-.\s\/]/g,'').substring(0,4));
@@ -4107,7 +4107,13 @@ window.searchR134a = function() {
   }
 
   // Szukaj w bazie danych
-  const ALL_DB = R134A_DB;
+  const ALL_DB = window.R134A_DB;
+  if (!ALL_DB) {
+    result.style.display = 'block';
+    result.innerHTML = '⚠ Baza danych nie jest załadowana. Sprawdź czy plik klima.js jest w tym samym folderze.';
+    result.style.color = 'var(--red)';
+    return;
+  }
   const norm134 = s => s.toLowerCase().replace(/[-.\s\/]/g,'');
   const makeN134 = norm134(make); const modelN134 = norm134(model);
   const matches = ALL_DB.filter(([m, mod, yFrom, yTo, cap, notes]) => {
@@ -4122,7 +4128,7 @@ window.searchR134a = function() {
 
   if (matches.length === 0) {
     // Spróbuj samą markę bez roku
-    const brandOnly = R134A_DB.filter(([m]) => m.toLowerCase().includes(make) || make.includes(m.toLowerCase().split(' ')[0].toLowerCase()));
+    const brandOnly = window.R134A_DB.filter(([m]) => m.toLowerCase().includes(make) || make.includes(m.toLowerCase().split(' ')[0].toLowerCase()));
     result.style.background = 'rgba(234,179,8,0.08)';
     result.style.border = '1px solid rgba(234,179,8,0.3)';
     result.style.color = 'var(--text)';
