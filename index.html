@@ -427,12 +427,21 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <div class="section-label">Usługa i typ felg</div>
 <select id="service">
   <option disabled hidden selected value="">— Wybierz usługę —</option>
-  <option>Wymiana opon</option><option>Wymiana kół</option><option>Naprawa opony</option>
+  <option>Wymiana opon</option><option>Wymiana kół</option><option>Wyważenie kół</option><option>Naprawa opony</option>
 </select>
 <select id="wheel">
   <option disabled hidden selected value="">— Typ felg —</option>
   <option>Aluminiowe</option><option>Stalowe</option>
 </select>
+<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin:8px 0 4px">ILOŚĆ KÓŁ</div>
+<div style="display:flex;gap:6px;margin-bottom:8px">
+  <button type="button" onclick="setVisitWheelCount(1,this)" id="vwc_1" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">1</button>
+  <button type="button" onclick="setVisitWheelCount(2,this)" id="vwc_2" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">2</button>
+  <button type="button" onclick="setVisitWheelCount(3,this)" id="vwc_3" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">3</button>
+  <button type="button" onclick="setVisitWheelCount(4,this)" id="vwc_4" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">4</button>
+  <span style="font-size:11px;color:var(--muted);align-self:center">(brak = komplet 4)</span>
+</div>
+<input id="wheel_count" type="hidden" value=""/>
 <div class="section-label">Dodatkowe opcje</div>
 <div class="check-group">
   <label><input type="checkbox" id="cb_runflat" class="custom-cb"> Run-flat</label>
@@ -551,7 +560,15 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 </div>
 <input id="o_diameter" type="hidden">
 <div class="section-label">Usługa i typ felg</div>
-<input id="o_wheels" placeholder="Ilość kół — np. 4 (opcjonalne)"/>
+<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ILOŚĆ KÓŁ</div>
+<div style="display:flex;gap:6px;margin-bottom:10px" id="o_wheelCountWrap">
+  <button type="button" onclick="setOrderWheelCount(1,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">1</button>
+  <button type="button" onclick="setOrderWheelCount(2,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">2</button>
+  <button type="button" onclick="setOrderWheelCount(3,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">3</button>
+  <button type="button" onclick="setOrderWheelCount(4,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">4</button>
+  <span style="font-size:11px;color:var(--muted);align-self:center;padding-left:4px">(brak = komplet 4)</span>
+</div>
+<input id="o_wheel_count" type="hidden" value=""/>
 <select id="o_service">
   <option disabled hidden selected value="">— Wybierz usługę —</option>
   <option>Wyważenie kół</option><option>Naprawa koła</option><option>Wymiana opon</option>
@@ -834,8 +851,11 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   </div>
   <div class="section-label">Dodatkowe</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Wyważenie stalowe</div><input type="number" id="p_wws" style="margin:0"/></div>
-    <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Wyważenie aluminiowe</div><input type="number" id="p_wwa" style="margin:0"/></div>
+    <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Wyważenie stal ≤16"</div><input type="number" id="p_wws_s" style="margin:0"/></div>
+    <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Wyważenie stal >16"</div><input type="number" id="p_wws_l" style="margin:0"/></div>
+    <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Wyważenie alu ≤15"</div><input type="number" id="p_wwa_15" style="margin:0"/></div>
+    <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Wyważenie alu 16-17"</div><input type="number" id="p_wwa_17" style="margin:0"/></div>
+    <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Wyważenie alu >17"</div><input type="number" id="p_wwa_big" style="margin:0"/></div>
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Naprawa opony</div><input type="number" id="p_no" style="margin:0"/></div>
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Run-flat</div><input type="number" id="p_rf" style="margin:0"/></div>
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Niski profil</div><input type="number" id="p_np" style="margin:0"/></div>
@@ -989,11 +1009,12 @@ let prices = {
   woa_19: 160, woa_20: 190, woa_21: 220, woa_22: 250,
   wks_s: 50, wks_l: 60,                           // wymiana kół stalowe
   wka_s: 60, wka_l: 80,                           // wymiana kół aluminiowe
-  wws: 50, wwa: 60,                               // wyważenie
-  no: 50,                                         // naprawa opony
-  rf: 20, np: 20, nw: 20,                        // dodatki
-  zlecenie_discount: 20,                          // rabat dla zleceń
-  klima_rate: 39                                  // cena czynnika za 100g
+  wws_s: 50, wws_l: 60,                           // wyważenie stalowe ≤16 / >16
+  wwa_15: 60, wwa_17: 70, wwa_big: 80,            // wyważenie aluminiowe ≤15 / 16-17 / >17
+  no: 50,                                          // naprawa opony
+  rf: 30, np: 20, nw: 15,                         // run-flat, niski profil, wentyl
+  klima_rate: 39,                                  // stawka klimy zł/100g
+  zlecenie_discount: 10                            // rabat dla zleceń
 };
 
 // ── EMAILJS LAZY LOAD ──
@@ -1031,95 +1052,28 @@ function calcVisitPrice(v, isOrder = false) {
     if(wheel==="Aluminiowe") price=size<=16?p.wka_s:p.wka_l;
   }
   if (v.service === "Naprawa opony" || v.service === "Naprawa koła") price = p.no;
-  if (v.service === "Wyważenie kół") price = wheel==="Stalowe" ? p.wws : p.wwa;
+  if (v.service === "Wyważenie kół") {
+    if (wheel === "Stalowe") price = size<=16 ? p.wws_s : p.wws_l;
+    if (wheel === "Aluminiowe") {
+      if(size<=15) price=p.wwa_15;
+      else if(size<=17) price=p.wwa_17;
+      else price=p.wwa_big;
+    }
+  }
 
   if (v.runflat) price += p.rf;
   if (v.low) price += p.np;
   if (v.valve) price += p.nw * (parseInt(v.valveCount)||4);
+
+  // Podziel przez ilość kół jeśli wybrana (domyślnie 4)
+  const wheelCount = parseInt(v.wheelCount)||4;
+  if (wheelCount < 4) price = Math.round(price * wheelCount / 4);
 
   // Rabat dla zleceń przy wymianie opon
   if (isOrder && v.service === "Wymiana opon") price -= p.zlecenie_discount;
 
   return Math.max(0, price);
 }
-
-// ── LOGOWANIE ──
-window.showLoginScreen = function() {
-  document.getElementById('loginScreen').style.display = 'flex';
-};
-
-window.doLogin = async function() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPassword').value;
-  const btn = document.getElementById('loginBtn');
-  const err = document.getElementById('loginError');
-  err.style.display = 'none';
-  btn.innerHTML = '<span class="spinner"></span>Logowanie...';
-  btn.disabled = true;
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-  } catch(e) {
-    err.style.display = 'block';
-    btn.innerHTML = '▶ Zaloguj się';
-    btn.disabled = false;
-  }
-};
-
-window.doLogout = async function() {
-  await signOut(auth);
-};
-
-// ── AUTH STATE ──
-let currentUser = null;
-
-onAuthStateChanged(auth, user => {
-  currentUser = user;
-  if (user) {
-    // Zalogowany — pokaż panel admina
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminBar').style.display = 'flex';
-    document.getElementById('guestBar').style.display = 'none';
-    document.getElementById('adminEmail').textContent = user.email;
-    document.getElementById('printBtn').style.display = 'block';
-    document.getElementById('noteField').style.display = 'block';
-    const rodoEl = document.getElementById('rodoClause'); if (rodoEl) rodoEl.style.display = 'none';
-    const footerEl = document.getElementById('siteFooter'); if (footerEl) footerEl.style.display = 'none';
-    // Odblokuj zakładki admina
-    document.querySelectorAll('.admin-tab').forEach(t => {
-      t.classList.remove('tab-locked');
-    });
-    document.getElementById('loginBtn').innerHTML = '▶ Zaloguj się';
-    document.getElementById('loginBtn').disabled = false;
-    initApp();
-  } else {
-    // Niezalogowany — pokaż tylko grafik i formularz zapisu
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminBar').style.display = 'none';
-    document.getElementById('guestBar').style.display = 'flex';
-    document.getElementById('printBtn').style.display = 'none';
-    document.getElementById('noteField').style.display = 'none';
-    const rodoEl2 = document.getElementById('rodoClause'); if (rodoEl2) rodoEl2.style.display = 'block';
-    const footerEl2 = document.getElementById('siteFooter'); if (footerEl2) footerEl2.style.display = 'block';
-    // Zablokuj zakładki admina
-    document.querySelectorAll('.admin-tab').forEach(t => {
-      t.classList.add('tab-locked');
-    });
-    initPublic();
-  }
-});
-
-window.requireAdmin = function(tabId, el) {
-  if (currentUser) {
-    window.showTab(tabId, el);
-  } else {
-    window.showLoginScreen();
-  }
-};
-
-// ── INIT PUBLICZNY (bez logowania) ──
-let unsubVisits = null;
-let unsubOrders = null;
-
 function unsubscribeAll() {
   if (unsubVisits) { unsubVisits(); unsubVisits = null; }
   if (unsubOrders) { unsubOrders(); unsubOrders = null; }
@@ -1267,7 +1221,8 @@ function updateLivePrice() {
   const runflat = document.getElementById('cb_runflat').checked;
   const low = document.getElementById('cb_low').checked;
   const valve = document.getElementById('cb_valve').checked;
-  const price = calcVisitPrice({tireSize, service, wheel, runflat, low, valve});
+  const wheelCount = parseInt(document.getElementById('wheel_count').value)||4;
+  const price = calcVisitPrice({tireSize, service, wheel, runflat, low, valve, wheelCount});
   const el = document.getElementById('livePriceDisplay');
   if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
@@ -1275,7 +1230,8 @@ function updateOrderPrice() {
   const service = document.getElementById('o_service').value;
   const wheel = document.getElementById('o_type').value;
   const tireSize = document.getElementById('o_diameter').value;
-  const price = calcVisitPrice({service, wheel, tireSize}, true);
+  const wheelCount = parseInt(document.getElementById('o_wheel_count').value)||4;
+  const price = calcVisitPrice({service, wheel, tireSize, wheelCount}, true);
   const el = document.getElementById('liveOrderPriceDisplay');
   if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
@@ -1825,6 +1781,7 @@ window.save = async function() {
     email: emailVal,
     car: document.getElementById('car').value,
     tireSize, service, wheel,
+    wheelCount: parseInt(document.getElementById('wheel_count').value)||4,
     note: document.getElementById('note').value,
     runflat: document.getElementById('cb_runflat').checked,
     low: document.getElementById('cb_low').checked,
@@ -1832,8 +1789,8 @@ window.save = async function() {
     valveCount: document.getElementById('cb_valve').checked ? 4 : 0,
     date: formatDate(selectedDate),
     time: selectedTime,
-    price: calcVisitPrice({tireSize,service,wheel,runflat:document.getElementById('cb_runflat').checked,low:document.getElementById('cb_low').checked,valve:document.getElementById('cb_valve').checked,valveCount:4})
   };
+  v.price = calcVisitPrice(v);
 
   setSyncStatus('syncing','⟳ Zapisywanie...');
   try {
@@ -1910,13 +1867,15 @@ window.save = async function() {
 };
 
 function resetVisitForm() {
-  ['name','phone','email','car','tireSize','note'].forEach(id=>document.getElementById(id).value='');
+  ['name','phone','email','car','tireSize','note','wheel_count'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('service').selectedIndex=0;
   document.getElementById('wheel').selectedIndex=0;
   document.getElementById('cb_runflat').checked=false;
   document.getElementById('cb_low').checked=false;
   document.getElementById('cb_valve').checked=false;
   document.querySelectorAll('#tireSizeButtons button').forEach(b=>b.classList.remove('selected'));
+  _visitWheelCount = '';
+  [1,2,3,4].forEach(i=>{const b=document.getElementById('vwc_'+i);if(b){b.style.background='var(--surface2)';b.style.color='var(--text)';b.style.borderColor='var(--border)';}});
   selectedTime=null;
   document.querySelectorAll('.slot').forEach(x=>x.classList.remove('selected'));
   document.getElementById('editBanner').style.display='none';
@@ -2519,6 +2478,52 @@ function startNextSlotTimer() {
 
 window._qe = {}; // { visitKey: { service, tireSize, wheel, runflat, low, valve, note } }
 
+// ── ILOŚĆ KÓŁ — formularz rezerwacji ──
+let _visitWheelCount = '';
+window.setVisitWheelCount = function(n, btn) {
+  // Toggle — kliknięcie tego samego odznacza
+  if (_visitWheelCount == n) {
+    _visitWheelCount = '';
+    [1,2,3,4].forEach(i => {
+      const b = document.getElementById('vwc_'+i);
+      if(b){b.style.background='var(--surface2)';b.style.color='var(--text)';b.style.borderColor='var(--border)';}
+    });
+  } else {
+    _visitWheelCount = n;
+    [1,2,3,4].forEach(i => {
+      const b = document.getElementById('vwc_'+i);
+      if(!b) return;
+      const active = i===n;
+      b.style.background = active ? 'var(--accent)' : 'var(--surface2)';
+      b.style.color = active ? '#fff' : 'var(--text)';
+      b.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    });
+  }
+  document.getElementById('wheel_count').value = _visitWheelCount;
+  updateLivePrice();
+};
+
+// ── ILOŚĆ KÓŁ — formularz zlecenia ──
+let _orderWheelCount = '';
+window.setOrderWheelCount = function(n, btn) {
+  if (_orderWheelCount == n) {
+    _orderWheelCount = '';
+    document.querySelectorAll('#o_wheelCountWrap button').forEach(b => {
+      b.style.background='var(--surface2)';b.style.color='var(--text)';b.style.borderColor='var(--border)';
+    });
+  } else {
+    _orderWheelCount = n;
+    document.querySelectorAll('#o_wheelCountWrap button').forEach(b => {
+      const active = parseInt(b.textContent)===n;
+      b.style.background = active ? 'var(--accent)' : 'var(--surface2)';
+      b.style.color = active ? '#fff' : 'var(--text)';
+      b.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    });
+  }
+  document.getElementById('o_wheel_count').value = _orderWheelCount;
+  updateOrderPrice();
+};
+
 window.toggleSizePicker = function(k) {
   const el = document.getElementById('sizepicker-' + k);
   if (!el) return;
@@ -2691,7 +2696,7 @@ window.addOrder = async function() {
   tomorrow.setDate(today.getDate()+1);
   const o = {
     status:false, name:document.getElementById('o_name').value, phone:document.getElementById('o_phone').value,
-    car:document.getElementById('o_car').value, diameter, wheels:document.getElementById('o_wheels').value,
+    car:document.getElementById('o_car').value, diameter, wheels: document.getElementById('o_wheel_count').value || '4',
     note:document.getElementById('o_note').value,
     service, type, time, custom,
     runflat, low, valve, valveCount,
@@ -4463,8 +4468,11 @@ window.openPriceEdit = function() {
   document.getElementById('p_wks_l').value = p.wks_l;
   document.getElementById('p_wka_s').value = p.wka_s;
   document.getElementById('p_wka_l').value = p.wka_l;
-  document.getElementById('p_wws').value = p.wws;
-  document.getElementById('p_wwa').value = p.wwa;
+  document.getElementById('p_wws_s').value = p.wws_s;
+  document.getElementById('p_wws_l').value = p.wws_l;
+  document.getElementById('p_wwa_15').value = p.wwa_15;
+  document.getElementById('p_wwa_17').value = p.wwa_17;
+  document.getElementById('p_wwa_big').value = p.wwa_big;
   document.getElementById('p_no').value = p.no;
   document.getElementById('p_rf').value = p.rf;
   document.getElementById('p_np').value = p.np;
@@ -4485,8 +4493,11 @@ window.savePrices = async function() {
     wks_l: +document.getElementById('p_wks_l').value,
     wka_s: +document.getElementById('p_wka_s').value,
     wka_l: +document.getElementById('p_wka_l').value,
-    wws: +document.getElementById('p_wws').value,
-    wwa: +document.getElementById('p_wwa').value,
+    wws_s: +document.getElementById('p_wws_s').value,
+    wws_l: +document.getElementById('p_wws_l').value,
+    wwa_15: +document.getElementById('p_wwa_15').value,
+    wwa_17: +document.getElementById('p_wwa_17').value,
+    wwa_big: +document.getElementById('p_wwa_big').value,
     no: +document.getElementById('p_no').value,
     rf: +document.getElementById('p_rf').value,
     np: +document.getElementById('p_np').value,
