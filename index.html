@@ -35,9 +35,11 @@ body.light{
   --text:#0c1a3a;
   --muted:#3a5a8a;
 }
-body.light .tabs{background:#dce8ff;border-bottom:2px solid #c7dcff;}
-body.light .tab{color:#2d4f8a !important;}
-body.light .tab.active{color:#0f2454 !important;border-bottom-color:var(--accent) !important;}
+body.light .tabs{background:#fff;border-bottom:1px solid #a8c4e8;padding:8px 8px 0;gap:4px;}
+body.light .tab{color:#5070a8;}
+body.light .tab:hover:not(.active){background:rgba(37,99,235,0.06);border-color:rgba(37,99,235,0.15);color:#0c1a3a;}
+body.light .tab.active{color:#2563eb;background:linear-gradient(180deg,rgba(37,99,235,0.1) 0%,rgba(37,99,235,0.03) 100%);border-color:rgba(37,99,235,0.25);box-shadow:0 -2px 12px rgba(37,99,235,0.12),inset 0 1px 0 rgba(37,99,235,0.15);}
+body.light .tab.active::after{background:#fff;}
 body.light .section-active{box-shadow:0 2px 12px rgba(37,99,235,0.1);}
 body.light input,body.light select,body.light textarea{background:#fff;border-color:#a0c0f0;color:#0f2454;}
 body.light input:focus,body.light select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,0.15);}
@@ -73,10 +75,47 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   input,select,textarea{font-size:14px;}
 }
 #clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 14px rgba(79,142,247,0.45);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
-.tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;}
-.tab{flex:1;padding:13px 6px;text-align:center;background:transparent;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:all 0.15s;}
-.tab.active{color:var(--accent);border-bottom:3px solid var(--accent);background:rgba(79,142,247,0.06);}
-.tab:hover:not(.active){color:var(--text)}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;padding:8px 8px 0;gap:4px;}
+.tab{
+  flex:1;
+  padding:10px 8px 12px;
+  text-align:center;
+  background:transparent;
+  cursor:pointer;
+  font-family:var(--font);
+  font-weight:600;
+  font-size:12px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--muted);
+  border-radius:8px 8px 0 0;
+  border:1px solid transparent;
+  border-bottom:none;
+  white-space:nowrap;
+  transition:all 0.2s ease;
+  position:relative;
+}
+.tab:hover:not(.active){
+  color:var(--text);
+  background:rgba(79,142,247,0.06);
+  border-color:rgba(79,142,247,0.15);
+}
+.tab.active{
+  color:var(--accent);
+  background:linear-gradient(180deg,rgba(79,142,247,0.12) 0%,rgba(79,142,247,0.04) 100%);
+  border-color:rgba(79,142,247,0.3);
+  border-bottom:none;
+  box-shadow:0 -2px 12px rgba(79,142,247,0.15),inset 0 1px 0 rgba(79,142,247,0.2);
+}
+.tab.active::after{
+  content:'';
+  position:absolute;
+  bottom:-1px;
+  left:0;
+  right:0;
+  height:1px;
+  background:var(--surface);
+}
 .tab-locked{display:none;}
 
 /* ── POPUP SZCZEGÓŁÓW ── */
@@ -312,9 +351,7 @@ button.selected,#tireSizeButtons button.selected,#o_diameterButtons button.selec
 .qv-slot.busy{background:rgba(248,113,113,0.1)!important;border-color:rgba(248,113,113,0.4)!important;color:#f87171!important;cursor:default;}
 #tireSizeButtons button,#o_diameterButtons button{background:var(--surface2);border:1px solid #1d3461;color:var(--text);font-weight:500;}
 #tireSizeButtons button:hover,#o_diameterButtons button:hover{border-color:var(--accent);color:var(--accent);background:rgba(79,142,247,0.1);}
-body.light .tabs{background:#dce8ff;border-bottom:2px solid var(--border);}
-body.light .tab{color:var(--muted)!important;}
-body.light .tab.active{color:var(--text)!important;border-bottom-color:var(--accent)!important;}
+/* light tabs - patrz wyżej */
 body.light input,body.light select,body.light textarea{background:#fff;border-color:#a0c0ee;color:#0c1a3a;}
 body.light .day{border:1px solid #a8c4e8;background:#fff;color:#0c1a3a;}
 body.light .day.active{background:#2563eb;color:#fff;box-shadow:0 0 0 2px rgba(37,99,235,0.5);}
@@ -983,6 +1020,9 @@ let editKey = null;
 let visitFilter = 'all';
 let orderFilter = 'all';
 let highlightVisitKey = null;
+let unsubVisits = null;
+let unsubOrders = null;
+let _qe = {};
 
 // ── HELPERS ──
 function formatDate(d) {
@@ -2546,8 +2586,6 @@ function startNextSlotTimer() {
   updateNextSlotBanners();
   _nextSlotTimer = setInterval(updateNextSlotBanners, 30000); // odśwież co 30s
 }
-
-window._qe = {}; // { visitKey: { service, tireSize, wheel, runflat, low, valve, note } }
 
 // ── ILOŚĆ KÓŁ — formularz rezerwacji ──
 let _visitWheelCount = '';
