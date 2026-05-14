@@ -1111,32 +1111,40 @@ let currentUser = null;
 onAuthStateChanged(auth, user => {
   currentUser = user;
   if (user) {
-    // Zalogowany — pokaż panel admina
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminBar').style.display = 'flex';
     document.getElementById('guestBar').style.display = 'none';
     document.getElementById('adminEmail').textContent = user.email;
     document.getElementById('printBtn').style.display = 'block';
     document.getElementById('noteField').style.display = 'block';
-    // Odblokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.remove('tab-locked');
     });
     document.getElementById('loginBtn').innerHTML = '▶ Zaloguj się';
     document.getElementById('loginBtn').disabled = false;
-    initApp();
+    try {
+      initApp();
+    } catch(e) {
+      setSyncStatus('err', '✕ Błąd: ' + e.message);
+      console.error('initApp error:', e);
+      alert('Błąd: ' + e.message);
+    }
   } else {
-    // Niezalogowany — pokaż tylko grafik i formularz zapisu
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminBar').style.display = 'none';
     document.getElementById('guestBar').style.display = 'flex';
     document.getElementById('printBtn').style.display = 'none';
     document.getElementById('noteField').style.display = 'none';
-    // Zablokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.add('tab-locked');
     });
-    initPublic();
+    try {
+      initPublic();
+    } catch(e) {
+      setSyncStatus('err', '✕ Błąd: ' + e.message);
+      console.error('initPublic error:', e);
+      alert('Błąd: ' + e.message);
+    }
   }
 });
 
