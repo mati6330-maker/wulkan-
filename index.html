@@ -3837,9 +3837,11 @@ function renderQuickView() {
         const v1 = slotVisits.find(([k,v]) => v.time === timesInSlot[1]);
         const renderHalfBusy = (entry, t) => {
           const v = entry ? entry[1] : null;
+          const k = entry ? entry[0] : null;
           const main = v ? [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ') : '—';
           const extra = v ? [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ') : '';
-          return `<div style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)">
+          const click = k ? `onclick="goToVisitInList('${k}')" style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12);cursor:pointer"` : `style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)"`;
+          return `<div ${click}>
             <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
             <div class="qv-info" style="color:var(--red)">${main}</div>
             ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
@@ -3866,9 +3868,10 @@ function renderQuickView() {
             </div>`;
           }
           const v = entry[1];
+          const k = entry[0];
           const main = [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ');
           const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
-          return `<div style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)">
+          return `<div onclick="goToVisitInList('${k}')" style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12);cursor:pointer">
             <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
             <div class="qv-info" style="color:var(--red)">${main}</div>
             ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
@@ -3896,6 +3899,13 @@ function renderQuickView() {
         </div>`;
   }).join('');
 }
+
+window.goToVisitInList = function(key) {
+  highlightVisitKey = key;
+  const listTab = document.querySelector('.tab[onclick*="list"]');
+  window.showTab('list', listTab);
+  renderList();
+};
 
 window.goToMainSlot = function(date, time) {
   selectedDate = parseDate(date);
