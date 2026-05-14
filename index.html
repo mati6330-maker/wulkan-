@@ -803,7 +803,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       <input id="r134a_engine" placeholder="Silnik opcjonalnie (np. 1.9 TDI)" style="flex:1;margin:0"/>
     </div>
     <button onclick="searchR134a()" id="r134aBtn" style="background:rgba(6,182,212,0.15);color:#06b6d4;border:1px solid rgba(6,182,212,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
-    <div id="r134aResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
+    <div id="klimaSearchResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
     <div class="section-label" style="margin:0">Klima serwis — nowe zlecenie</div>
@@ -1062,7 +1062,7 @@ let prices = {
   wws_s: 50, wws_l: 60,                           // wyważenie stalowe ≤16 / >16
   wwa_15: 60, wwa_17: 70, wwa_big: 80,            // wyważenie aluminiowe ≤15 / 16-17 / >17
   no: 50,                                          // naprawa opony
-  rf: 30, np: 20, nw: 15,                         // run-flat, niski profil, wentyl
+  rf: 30, np: 20, nw: 5,                          // run-flat, niski profil, wentyl (za szt.)
   klima_rate: 39,                                  // stawka klimy zł/100g
   zlecenie_discount: 10                            // rabat dla zleceń
 };
@@ -1188,11 +1188,13 @@ function calcVisitPrice(v, isOrder = false) {
 
   if (v.runflat) price += p.rf;
   if (v.low) price += p.np;
-  if (v.valve) price += p.nw * (parseInt(v.valveCount)||4);
 
   // Podziel przez ilość kół jeśli wybrana (domyślnie 4)
   const wheelCount = parseInt(v.wheelCount)||4;
   if (wheelCount < 4) price = Math.round(price * wheelCount / 4);
+
+  // Wentyl doliczany PO podziale — cena za sztukę × ilość kół
+  if (v.valve) price += p.nw * wheelCount;
 
   // Rabat dla zleceń przy wymianie opon
   if (isOrder && v.service === "Wymiana opon") price -= p.zlecenie_discount;
@@ -2886,7 +2888,7 @@ window.addOrder = async function() {
 };
 
 function resetOrderForm() {
-  ['o_name','o_phone','o_car','o_wheels','o_note'].forEach(id=>document.getElementById(id).value='');
+  ['o_name','o_phone','o_car','o_note'].forEach(id=>document.getElementById(id).value='');
   ['o_service','o_type','o_time'].forEach(id=>document.getElementById(id).selectedIndex=0);
   document.getElementById('o_custom_date').value=''; document.getElementById('o_custom_date').style.display='none';
   document.getElementById('o_start_date').value='';
@@ -3056,7 +3058,7 @@ window.editOrder = function(k) {
   if (!o) return;
   editOrderKey=k;
   document.getElementById('o_name').value=o.name||''; document.getElementById('o_phone').value=o.phone||'';
-  document.getElementById('o_car').value=o.car||''; document.getElementById('o_wheels').value=o.wheels||'';
+  document.getElementById('o_car').value=o.car||''; document.getElementById('o_wheel_count').value=o.wheels||'4';
   document.getElementById('o_note').value=o.note||'';
   document.getElementById('o_service').value=o.service||''; document.getElementById('o_type').value=o.type||'';
   document.getElementById('o_time').value=o.time||''; document.getElementById('o_custom_date').value=o.custom||'';
@@ -4153,7 +4155,7 @@ window.searchR134a = function() {
   const model = document.getElementById('r134a_model').value.trim().toLowerCase();
   const yearStr = document.getElementById('r134a_year').value.trim();
   const year = parseInt(yearStr) || 0;
-  const result = document.getElementById('r134aResult');
+  const result = document.getElementById('klimaSearchResult');
 
   if (!make || !model) {
     result.style.display = 'block';
