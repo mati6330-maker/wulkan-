@@ -4195,12 +4195,12 @@ window.searchR134a = function() {
   };
   const makeAlt = ALIASES[make] || ALIASES[norm(make)] || null;
 
-  const matches = ALL_DB.filter(([m, mod, rok, silnik, ilosc, czynnik, uwagi]) => {
+  const matches = ALL_DB.filter(([m, mod, rok_od, rok_do, silnik, ilosc, czynnik, tolerancja]) => {
     const mN = norm(m); const modN = norm(mod);
     const makeMatch = mN.includes(makeN) || makeN.includes(mN) ||
       (makeAlt && (mN.includes(norm(makeAlt)) || norm(makeAlt).includes(mN)));
     const modelMatch = modN.includes(modelN) || modelN.includes(modN.substring(0,5));
-    const yearMatch = !year || Math.abs(rok - year) <= 3;
+    const yearMatch = !year || (year >= rok_od - 1 && year <= (rok_do || 2099) + 1);
     return makeMatch && modelMatch && yearMatch;
   });
 
@@ -4224,15 +4224,16 @@ window.searchR134a = function() {
   result.style.border = '1px solid rgba(52,211,153,0.3)';
   result.style.color = 'var(--text)';
 
-  const rows = matches.map(([marka, mod, rok, silnik, ilosc, czynnik, uwagi]) => {
+  const rows = matches.map(([marka, mod, rok_od, rok_do, silnik, ilosc, czynnik, tolerancja]) => {
     const silnikCell = silnik ? '<td style="color:var(--accent);font-family:var(--mono)">' + silnik + '</td>' : '<td style="color:var(--muted)">—</td>';
-    const uwagiCell = uwagi ? '<span style="font-size:10px;color:var(--muted)"> · ' + uwagi + '</span>' : '';
+    const rokStr = rok_do && rok_do < 2099 ? rok_od + '–' + rok_do : rok_od + '–';
     const czynnikColor = czynnik === 'R1234yf' ? '#eab308' : 'var(--accent)';
+    const tolStr = tolerancja ? ' <span style="font-size:10px;opacity:0.6">' + tolerancja + '</span>' : '';
     return '<tr>' +
-      '<td style="font-family:var(--mono);color:var(--muted)">' + (rok || '—') + '</td>' +
+      '<td style="font-family:var(--mono);color:var(--muted);font-size:11px">' + rokStr + '</td>' +
       silnikCell +
-      '<td style="font-weight:700;color:' + czynnikColor + '">' + ilosc + ' g</td>' +
-      '<td style="font-size:11px;color:var(--muted)">' + czynnik + uwagiCell + '</td>' +
+      '<td style="font-weight:700;color:' + czynnikColor + '">' + ilosc + ' g' + tolStr + '</td>' +
+      '<td style="font-size:11px;color:var(--muted)">' + czynnik + '</td>' +
       '</tr>';
   }).join('');
 
