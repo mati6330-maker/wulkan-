@@ -4183,9 +4183,22 @@ window.searchR134a = function() {
   const makeN = norm(make);
   const modelN = norm(model);
 
+  // Aliasy marek
+  const ALIASES = {
+    'volkswagen': 'vw', 'vw': 'volkswagen',
+    'mercedes': 'mercedes-benz', 'mercedes-benz': 'mercedes',
+    'merc': 'mercedes',
+    'land rover': 'landrover', 'landrover': 'land rover',
+    'alfa': 'alfa romeo', 'alfa romeo': 'alfa',
+    'chevy': 'chevrolet',
+    'rangerover': 'range rover',
+  };
+  const makeAlt = ALIASES[make] || ALIASES[norm(make)] || null;
+
   const matches = ALL_DB.filter(([m, mod, rok, silnik, ilosc, czynnik, uwagi]) => {
     const mN = norm(m); const modN = norm(mod);
-    const makeMatch = mN.includes(makeN) || makeN.includes(mN);
+    const makeMatch = mN.includes(makeN) || makeN.includes(mN) ||
+      (makeAlt && (mN.includes(norm(makeAlt)) || norm(makeAlt).includes(mN)));
     const modelMatch = modN.includes(modelN) || modelN.includes(modN.substring(0,5));
     const yearMatch = !year || Math.abs(rok - year) <= 3;
     return makeMatch && modelMatch && yearMatch;
