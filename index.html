@@ -3004,7 +3004,7 @@ window.renderOrders = function renderOrders() {
             <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
             <button onclick="applyOrderDiscount('${k}',-10)" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
             <button onclick="applyOrderDiscount('${k}',+10)" title="Dodaj +10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(74,222,128,0.1);color:var(--green);border:1px solid rgba(74,222,128,0.3)">+10</button>
-            <button onclick="printOrder('${k}')" title="Drukuj zlecenie" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">🖨</button>
+            <button onclick="printOrder('${k}')" title="Drukuj zlecenie" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.5)">🖨</button>
             <button onclick="editOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
             </div>
@@ -3754,7 +3754,7 @@ window.renderKlima = function() {
         <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;justify-content:space-between">
           <div style="display:flex;gap:4px;flex-wrap:wrap">
             <button onclick="toggleKlima('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
-            <button onclick="printKlima('${k}')" title="Drukuj" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.4)">🖨</button>
+            <button onclick="printKlima('${k}')" title="Drukuj" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.5)">🖨</button>
             <button onclick="openKlimaPriceModal('${k}')" title="Ustal cenę" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(79,142,247,0.12);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">❄️</button>
             <button onclick="applyKlimaDiscount('${k}',-10)" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
             <button onclick="applyKlimaDiscount('${k}',+10)" title="Dodaj +10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(74,222,128,0.1);color:var(--green);border:1px solid rgba(74,222,128,0.3)">+10</button>
@@ -4442,7 +4442,7 @@ window.printKlima = function(k) {
   const total = o.price != null ? o.price : Math.round(serviceFee + gasPrice + filterPrice + ozonePrice);
 
   const gasRow = filled > 0
-    ? `<tr><td>Nabito z butli</td><td>${filled} g × ${(rate/100).toFixed(2).replace('.',',')} zł/g + ${serviceFee} zł serwis = ${serviceFee + gasPrice} zł</td></tr>`
+    ? `<tr><td>Różnica / uzupełniono</td><td>${filled} g × ${(rate/100).toFixed(2).replace('.',',')} zł/g + ${serviceFee} zł serwis = ${serviceFee + gasPrice} zł</td></tr>`
     : `<tr><td>Nabito z butli</td><td>0 g${serviceFee ? ` + ${serviceFee} zł serwis` : ' — brak opłaty za serwis'}</td></tr>`;
 
   const content = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
