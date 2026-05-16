@@ -894,10 +894,32 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 
 <div class="section" id="uzytkowe">
   <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">🛠 NARZĘDZIA UŻYTKOWE</div>
-  
-  
+
+  <!-- WYSZUKIWARKA R134a -->
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
-    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🔑 DEKODER VIN</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">❄ POJEMNOŚĆ CZYNNIKA R134a / R1234yf</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <input id="r134a_make" placeholder="Marka (np. VW)" style="flex:1;min-width:100px"/>
+      <input id="r134a_model" placeholder="Model (np. Golf)" style="flex:1;min-width:100px"/>
+      <input id="r134a_year" placeholder="Rok" inputmode="numeric" style="width:80px"/>
+    </div>
+    <button onclick="searchR134a()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
+    <div id="klimaSearchResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
+  </div>
+
+  <!-- WYSZUKIWARKA OEM -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🔧 ROZMIARY OEM</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <input id="tire_make" placeholder="Marka (np. BMW)" style="flex:1;min-width:100px"/>
+      <input id="tire_model" placeholder="Model (np. E90)" style="flex:1;min-width:100px"/>
+      <input id="tire_year" placeholder="Rok" inputmode="numeric" style="width:80px"/>
+    </div>
+    <button onclick="searchTires()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj rozmiarów</button>
+    <div id="tireResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
+  </div>
+
+  <!-- DEKODER VIN -->
     <div style="display:flex;gap:6px;margin-bottom:8px">
       <input id="vin_input" placeholder="Wpisz numer VIN (17 znaków)" maxlength="17"
         style="flex:1;font-family:var(--mono);text-transform:uppercase;letter-spacing:2px"
@@ -1297,11 +1319,11 @@ function renderZamowienia() {
 // Firebase listenery
 onValue(ref(db, 'przechowalnia'), snap => {
   przechowalnia = snap.val() || {};
-  renderPrzechowalnia();
+  if (document.getElementById('prList')) renderPrzechowalnia();
 });
 onValue(ref(db, 'zamowienia_tmp'), snap => {
   zamowienia_tmp = snap.val() || {};
-  renderZamowienia();
+  if (document.getElementById('zamList')) renderZamowienia();
 });
 
 let prices = {
