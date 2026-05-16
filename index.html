@@ -903,6 +903,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       <input id="r134a_model" placeholder="Model (np. Golf)" style="flex:1;min-width:100px"/>
       <input id="r134a_year" placeholder="Rok" inputmode="numeric" style="width:80px"/>
     </div>
+    <input id="r134a_engine" placeholder="Silnik (opcjonalnie, np. 1.6 TDI)" style="margin-bottom:8px"/>
     <button onclick="searchR134a()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
     <div id="klimaSearchResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
   </div>
@@ -915,6 +916,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       <input id="tire_model" placeholder="Model (np. E90)" style="flex:1;min-width:100px"/>
       <input id="tire_year" placeholder="Rok" inputmode="numeric" style="width:80px"/>
     </div>
+    <input id="tire_engine" placeholder="Silnik (opcjonalnie, np. 2.0d)" style="margin-bottom:8px"/>
     <button onclick="searchTires()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj rozmiarów</button>
     <div id="tireResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
   </div>
@@ -1198,6 +1200,71 @@ window.addPrzechowalnia = async function() {
   showToast('✔ Dodano do przechowalni', 'var(--green)');
 };
 
+window.editZamowienie = function(k) {
+  const v = zamowienia_tmp[k];
+  if (!v) return;
+  document.getElementById('zam_name').value = v.name || '';
+  document.getElementById('zam_phone').value = v.phone || '';
+  document.getElementById('zam_type').value = v.type || '';
+  document.getElementById('zam_size').value = v.size || '';
+  document.getElementById('zam_location').value = v.location || '';
+  document.getElementById('zam_price').value = v.price || '';
+  document.getElementById('zam_note').value = v.note || '';
+  const btn = document.querySelector('[onclick="addZamowienie()"]');
+  if (btn) { btn.textContent = '✔ ZAPISZ ZMIANY'; btn.onclick = () => saveZamowienie(k); }
+  window.scrollTo(0, 0);
+};
+
+window.saveZamowienie = async function(k) {
+  const name = document.getElementById('zam_name').value.trim();
+  const phone = document.getElementById('zam_phone').value.trim();
+  const type = document.getElementById('zam_type').value;
+  const size = document.getElementById('zam_size').value.trim();
+  const location = document.getElementById('zam_location').value.trim();
+  const price = parseFloat(document.getElementById('zam_price').value) || 0;
+  const note = document.getElementById('zam_note').value.trim();
+  if (!name) { showToast('⚠ Podaj imię i nazwisko', '#f87171'); return; }
+  await update(ref(db, 'zamowienia_tmp/' + k), { name, phone, type, size, location, price, note });
+  ['zam_name','zam_phone','zam_size','zam_location','zam_price','zam_note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('zam_type').value = '';
+  const btn = document.querySelector('[onclick*="saveZamowienie"]');
+  if (btn) { btn.textContent = '▶ DODAJ ZAMÓWIENIE'; btn.onclick = addZamowienie; }
+  showToast('✔ Zapisano zmiany', 'var(--green)');
+};
+
+window.printZamowienie = function(k) {
+  const v = zamowienia_tmp[k];
+  if (!v) return;
+  const win = window.open('', '_blank');
+  if (!win) { alert('⚠ Zezwól na wyskakujące okna'); return; }
+  const STATUS_LABEL = { zamowione: '📦 Zamówione', dostarczone: '✅ Dostarczone', odebrane: '🏁 Odebrane' };
+  const content = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{font-family:Arial,sans-serif;padding:24px;font-size:13px;color:#111;max-width:500px;margin:0 auto}
+    h1{font-size:18px;font-weight:900;margin-bottom:4px}
+    .sub{color:#666;font-size:11px;margin-bottom:20px;border-bottom:2px solid #111;padding-bottom:12px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px}
+    td:first-child{color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;width:40%}
+    @media print{@page{margin:10mm}}
+  </style></head><body>
+    <h1>Wulkanizacja Mielczarek</h1>
+    <div class="sub">Zamówienie tymczasowe · ${new Date().toLocaleDateString('pl-PL')}</div>
+    <table>
+      <tr><td>Klient</td><td>${v.name||'—'}</td></tr>
+      <tr><td>Telefon</td><td>${v.phone||'—'}</td></tr>
+      <tr><td>Zamówione</td><td>${v.type||'—'}</td></tr>
+      <tr><td>Rozmiar</td><td>${v.size||'—'}</td></tr>
+      <tr><td>Miejsce</td><td>${v.location||'—'}</td></tr>
+      <tr><td>Cena</td><td>${v.price ? v.price + ' zł' : '—'}</td></tr>
+      <tr><td>Status</td><td>${STATUS_LABEL[v.status||'zamowione']||v.status}</td></tr>
+      ${v.note ? `<tr><td>Notatka</td><td>${v.note}</td></tr>` : ''}
+    </table>
+  </body></html>`;
+  win.document.write(content);
+  win.document.close();
+  win.print();
+};
+
 window.addZamowienie = async function() {
   const name = document.getElementById('zam_name').value.trim();
   const phone = document.getElementById('zam_phone').value.trim();
@@ -1311,7 +1378,11 @@ window.renderZamowienia = function renderZamowienia() {
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:space-between;align-items:center">
           <div style="display:flex;gap:4px;flex-wrap:wrap">${statusBtns}</div>
-          <button onclick="deleteZamowienie('${k}')" style="width:auto;padding:5px 10px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕ Usuń</button>
+          <div style="display:flex;gap:4px">
+            <button onclick="printZamowienie('${k}')" style="width:auto;padding:5px 8px;font-size:12px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.5)">🖨</button>
+            <button onclick="editZamowienie('${k}')" style="width:auto;padding:5px 8px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
+            <button onclick="deleteZamowienie('${k}')" style="width:auto;padding:5px 8px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -4708,6 +4779,7 @@ window.searchR134a = function() {
   const model = document.getElementById('r134a_model').value.trim().toLowerCase();
   const yearStr = document.getElementById('r134a_year').value.trim();
   const year = parseInt(yearStr) || 0;
+  const engineStr = (document.getElementById('r134a_engine')?.value || '').trim().toLowerCase();
   const result = document.getElementById('klimaSearchResult');
 
   if (!make || !model) {
@@ -4750,7 +4822,8 @@ window.searchR134a = function() {
       (makeAlt && (mN.includes(norm(makeAlt)) || norm(makeAlt).includes(mN)));
     const modelMatch = modN.includes(modelN) || modelN.includes(modN.substring(0,5));
     const yearMatch = !year || (year >= rok_od - 1 && year <= (rok_do || 2099) + 1);
-    return makeMatch && modelMatch && yearMatch;
+    const engineMatch = !engineStr || (silnik||'').toLowerCase().includes(engineStr);
+    return makeMatch && modelMatch && yearMatch && engineMatch;
   });
 
   result.style.display = 'block';
