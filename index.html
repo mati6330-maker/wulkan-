@@ -402,6 +402,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('cash',this)">Kasa</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('archive',this)">Archiwum</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('pricing',this)">Cennik</div>
+  <div class="tab admin-tab tab-locked" onclick="requireAdmin('uzytkowe',this)">Użytkowe</div>
+  <div class="tab admin-tab tab-locked" onclick="requireAdmin('przechowalnia',this)">Przechowalnia</div>
 </div>
 <div class="container">
 <button id="printBtn" onclick="printDay()" style="display:none;margin:0 0 6px 0;width:100%;background:transparent;color:var(--accent);border:1px solid var(--accent);letter-spacing:2px">⎙ DRUKUJ DZIEŃ</button>
@@ -1027,6 +1029,154 @@ function setSyncStatus(state, msg) {
 }
 
 // ── CENY DOMYŚLNE ──
+let przechowalnia = {};
+let zamowienia_tmp = {};
+
+window.addPrzechowalnia = async function() {
+  const name = document.getElementById('pr_name').value.trim();
+  const phone = document.getElementById('pr_phone').value.trim();
+  const type = document.getElementById('pr_type').value;
+  const size = document.getElementById('pr_size').value.trim();
+  const location = document.getElementById('pr_location').value.trim();
+  const note = document.getElementById('pr_note').value.trim();
+  if (!name) { showToast('⚠ Podaj imię i nazwisko', '#f87171'); return; }
+  if (!type) { showToast('⚠ Wybierz co jest przechowywane', '#f87171'); return; }
+  if (!location) { showToast('⚠ Podaj miejsce przechowania', '#f87171'); return; }
+  const entry = { name, phone, type, size, location, note, createdAt: Date.now() };
+  await push(ref(db, 'przechowalnia'), entry);
+  ['pr_name','pr_phone','pr_size','pr_location','pr_note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pr_type').value = '';
+  showToast('✔ Dodano do przechowalni', 'var(--green)');
+};
+
+window.addZamowienie = async function() {
+  const name = document.getElementById('zam_name').value.trim();
+  const phone = document.getElementById('zam_phone').value.trim();
+  const type = document.getElementById('zam_type').value;
+  const size = document.getElementById('zam_size').value.trim();
+  const location = document.getElementById('zam_location').value.trim();
+  const price = parseFloat(document.getElementById('zam_price').value) || 0;
+  const note = document.getElementById('zam_note').value.trim();
+  if (!name) { showToast('⚠ Podaj imię i nazwisko', '#f87171'); return; }
+  if (!type) { showToast('⚠ Wybierz co jest zamówione', '#f87171'); return; }
+  const entry = { name, phone, type, size, location, price, note, status: 'zamowione', createdAt: Date.now() };
+  await push(ref(db, 'zamowienia_tmp'), entry);
+  ['zam_name','zam_phone','zam_size','zam_location','zam_price','zam_note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('zam_type').value = '';
+  showToast('✔ Zamówienie dodane', '#eab308');
+};
+
+window.deletePrzechowalnia = async function(k) {
+  if (!confirm('Usunąć wpis z przechowalni?')) return;
+  await remove(ref(db, 'przechowalnia/' + k));
+  showToast('✔ Usunięto', 'var(--green)');
+};
+
+window.deleteZamowienie = async function(k) {
+  if (!confirm('Usunąć zamówienie?')) return;
+  await remove(ref(db, 'zamowienia_tmp/' + k));
+  showToast('✔ Usunięto', 'var(--green)');
+};
+
+window.setZamStatus = async function(k, status) {
+  await update(ref(db, 'zamowienia_tmp/' + k), { status });
+  showToast('✔ Status zaktualizowany', 'var(--green)');
+};
+
+function renderPrzechowalnia() {
+  const search = (document.getElementById('pr_search')?.value || '').toLowerCase();
+  const box = document.getElementById('prList');
+  if (!box) return;
+
+  const entries = Object.entries(przechowalnia)
+    .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0))
+    .filter(([k,v]) => !search ||
+      (v.name||'').toLowerCase().includes(search) ||
+      (v.phone||'').includes(search) ||
+      (v.location||'').toLowerCase().includes(search));
+
+  if (!entries.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:8px 0">Brak wpisów</div>';
+    return;
+  }
+
+  box.innerHTML = entries.map(([k, v]) => `
+    <div class="card" style="margin-bottom:8px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text)">${v.name}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">
+            ${v.phone ? v.phone + ' · ' : ''}${v.type||'—'}${v.size ? ' · ' + v.size : ''}
+          </div>
+          <div style="font-size:12px;color:var(--accent);margin-top:4px;font-family:var(--mono)">📍 ${v.location||'—'}</div>
+          ${v.note ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">📝 ${v.note}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:4px;justify-content:flex-end">
+          <button onclick="deletePrzechowalnia('${k}')" style="width:auto;padding:5px 10px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕ Usuń</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderZamowienia() {
+  const box = document.getElementById('zamList');
+  if (!box) return;
+
+  const STATUS_LABEL = { zamowione: '📦 Zamówione', dostarczone: '✅ Dostarczone', odebrane: '🏁 Odebrane przez klienta' };
+  const STATUS_COLOR = { zamowione: '#eab308', dostarczone: 'var(--green)', odebrane: 'var(--muted)' };
+
+  const entries = Object.entries(zamowienia_tmp)
+    .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+  if (!entries.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:8px 0">Brak zamówień</div>';
+    return;
+  }
+
+  box.innerHTML = entries.map(([k, v]) => {
+    const status = v.status || 'zamowione';
+    const color = STATUS_COLOR[status] || '#eab308';
+    const statusBtns = ['zamowione','dostarczone','odebrane'].map(s =>
+      `<button onclick="setZamStatus('${k}','${s}')" style="width:auto;padding:4px 8px;font-size:10px;letter-spacing:0;
+        background:${s===status ? 'rgba(79,142,247,0.2)' : 'transparent'};
+        color:${s===status ? 'var(--accent)' : 'var(--muted)'};
+        border:1px solid ${s===status ? 'var(--accent)' : 'var(--border)'}">
+        ${STATUS_LABEL[s].split(' ')[0]} ${s.charAt(0).toUpperCase()+s.slice(1)}
+      </button>`).join('');
+    return `
+    <div class="card" style="margin-bottom:8px;border-left:3px solid ${color}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="font-weight:700;font-size:14px;color:var(--text)">${v.name}</div>
+            ${v.price ? `<div style="font-weight:700;font-size:14px;color:var(--accent);font-family:var(--mono)">${v.price} zł</div>` : ''}
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">
+            ${v.phone ? v.phone + ' · ' : ''}${v.type||'—'}${v.size ? ' · ' + v.size : ''}
+          </div>
+          ${v.location ? `<div style="font-size:12px;color:var(--accent);margin-top:4px;font-family:var(--mono)">📍 ${v.location}</div>` : ''}
+          ${v.note ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">📝 ${v.note}</div>` : ''}
+          <div style="font-size:11px;color:${color};margin-top:4px;font-weight:600">${STATUS_LABEL[status]||status}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:space-between;align-items:center">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">${statusBtns}</div>
+          <button onclick="deleteZamowienie('${k}')" style="width:auto;padding:5px 10px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕ Usuń</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Firebase listenery
+onValue(ref(db, 'przechowalnia'), snap => {
+  przechowalnia = snap.val() || {};
+  renderPrzechowalnia();
+});
+onValue(ref(db, 'zamowienia_tmp'), snap => {
+  zamowienia_tmp = snap.val() || {};
+  renderZamowienia();
+});
+
 let prices = {
   wos_s: 70, wos_l: 80,                          // wymiana opon stalowe ≤16 / ≥17
   woa_16: 100, woa_17: 120, woa_18: 140,          // wymiana opon aluminiowe
@@ -5089,8 +5239,54 @@ setInterval(updateClock,1000); updateClock();
       <p style="margin-bottom:8px"><b>Udostępnianie:</b> Dane nie są udostępniane osobom trzecim ani wykorzystywane w celach marketingowych.</p>
       <p style="margin-bottom:8px"><b>Twoje prawa:</b> Masz prawo dostępu do swoich danych, ich sprostowania, usunięcia oraz wniesienia skargi do Prezesa UODO (uodo.gov.pl).</p>
       <p style="margin-bottom:0"><b>Infrastruktura:</b> Dane przechowywane są w usłudze Firebase (Google LLC) na serwerach w Europie, zgodnie z RODO.</p>
-    </div>
+</div>
+</div>
+</div>
+
+<div class="section admin-tab" id="przechowalnia" style="display:none">
+
+  <!-- FORMULARZ PRZECHOWALNIA -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🗄 DODAJ DO PRZECHOWALNI</div>
+    <input id="pr_name" placeholder="Imię i nazwisko" style="margin-bottom:6px"/>
+    <input id="pr_phone" placeholder="Telefon" inputmode="numeric" style="margin-bottom:6px"/>
+    <select id="pr_type" style="margin-bottom:6px">
+      <option value="">— Co jest przechowywane —</option>
+      <option value="Opony">Opony (bez felg)</option>
+      <option value="Koła">Koła (opony + felgi)</option>
+    </select>
+    <input id="pr_size" placeholder="Rozmiar (np. 205/55 R16)" style="margin-bottom:6px"/>
+    <input id="pr_location" placeholder="Miejsce (np. regał 3, półka 2)" style="margin-bottom:6px"/>
+    <input id="pr_note" placeholder="Notatka (opcjonalnie)" style="margin-bottom:10px"/>
+    <button onclick="addPrzechowalnia()" style="width:100%;letter-spacing:2px">▶ DODAJ DO PRZECHOWALNI</button>
   </div>
+
+  <!-- FORMULARZ ZAMÓWIEŃ TYMCZASOWYCH -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:#eab308;letter-spacing:2px;margin-bottom:10px">📦 DODAJ ZAMÓWIENIE TYMCZASOWE</div>
+    <input id="zam_name" placeholder="Imię i nazwisko" style="margin-bottom:6px"/>
+    <input id="zam_phone" placeholder="Telefon" inputmode="numeric" style="margin-bottom:6px"/>
+    <select id="zam_type" style="margin-bottom:6px">
+      <option value="">— Co jest zamówione —</option>
+      <option value="Opony">Opony (bez felg)</option>
+      <option value="Koła">Koła (opony + felgi)</option>
+    </select>
+    <input id="zam_size" placeholder="Rozmiar (np. 205/55 R16)" style="margin-bottom:6px"/>
+    <input id="zam_location" placeholder="Miejsce przechowania" style="margin-bottom:6px"/>
+    <input id="zam_price" placeholder="Cena do zapłaty (zł)" inputmode="numeric" style="margin-bottom:6px"/>
+    <input id="zam_note" placeholder="Notatka (opcjonalnie)" style="margin-bottom:10px"/>
+    <button onclick="addZamowienie()" style="width:100%;letter-spacing:2px;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.4)">▶ DODAJ ZAMÓWIENIE</button>
+  </div>
+
+  <!-- LISTA PRZECHOWALNIA -->
+  <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:6px">PRZECHOWALNIA</div>
+  <input id="pr_search" placeholder="🔍 Szukaj..." oninput="renderPrzechowalnia()" style="margin-bottom:10px"/>
+  <div id="prList"></div>
+
+  <!-- LISTA ZAMÓWIEŃ -->
+  <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin:14px 0 6px">ZAMÓWIENIA TYMCZASOWE</div>
+  <div id="zamList"></div>
+
 </div>
 </body>
 </html>
