@@ -404,7 +404,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('pricing',this)">Cennik</div>
 </div>
 <div class="container">
-<button id="printBtn" onclick="printDay()" style="display:none;margin:0 0 12px 0;width:100%;background:transparent;color:var(--accent);border:1px solid var(--accent);letter-spacing:2px">⎙ DRUKUJ DZIEŃ</button>
+<button id="printBtn" onclick="printDay()" style="display:none;margin:0 0 6px 0;width:100%;background:transparent;color:var(--accent);border:1px solid var(--accent);letter-spacing:2px">⎙ DRUKUJ DZIEŃ</button>
+<button id="printWeekBtn" onclick="printWeek()" style="display:none;margin:0 0 12px 0;width:100%;background:transparent;color:var(--muted);border:1px solid var(--border);letter-spacing:2px">⎙ DRUKUJ TYDZIEŃ</button>
 
 <div class="section active" id="main">
 <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:5px;padding:16px;margin-bottom:14px;line-height:1.8">
@@ -1112,6 +1113,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('guestBar').style.display = 'none';
     document.getElementById('adminEmail').textContent = user.email;
     document.getElementById('printBtn').style.display = 'block';
+    document.getElementById('printWeekBtn').style.display = 'block';
     document.getElementById('noteField').style.display = 'block';
     // Odblokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
@@ -1126,6 +1128,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('adminBar').style.display = 'none';
     document.getElementById('guestBar').style.display = 'flex';
     document.getElementById('printBtn').style.display = 'none';
+    document.getElementById('printWeekBtn').style.display = 'none';
     document.getElementById('noteField').style.display = 'none';
     // Zablokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
@@ -3280,6 +3283,134 @@ window.printMonthFullReport = function() {
 };
 
 // ── DRUK DNIA ──
+window.printWeek = function() {
+  const win = window.open('', '_blank');
+  if (!win) { alert('⚠ Zezwól na wyskakujące okna aby drukować'); return; }
+
+  // Oblicz poniedziałek bieżącego tygodnia (weekOffset)
+  const base = new Date(selectedDate);
+  const dow = base.getDay() || 7; // 1=pon, 7=nie
+  base.setDate(base.getDate() - dow + 1);
+  base.setHours(0,0,0,0);
+
+  // 6 dni: pon-sob
+  const days = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    days.push(d);
+  }
+
+  const dayNames = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota'];
+
+  const dayCards = days.map((d, idx) => {
+    const dateStr = formatDate(d);
+    const dayName = dayNames[idx];
+    const shortDate = d.toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit'});
+    const isBlocked = isDateBlocked(dateStr);
+    const isSunday = d.getDay() === 0;
+
+    if (isBlocked || isSunday) {
+      const reason = isSunday ? 'Niedziela — nieczynne' : (isBlocked.reason || 'Zablokowany');
+      return `<div class="day-card blocked">
+        <div class="day-header"><span class="day-name">${dayName}</span><span class="day-date">${shortDate}</span></div>
+        <div class="blocked-msg">🚫 ${reason}</div>
+      </div>`;
+    }
+
+    // Wizyty
+    const dv = Object.values(visits)
+      .filter(v => v.date === dateStr)
+      .sort((a,b) => (a.time||'').localeCompare(b.time||''));
+
+    // Zlecenia
+    const dorders = Object.values(orders)
+      .filter(o => (o.startDate||o.dateStamp||'') === dateStr && !o.status)
+      .sort((a,b) => (a.time||'').localeCompare(b.time||''));
+
+    // Zablokowane sloty
+    const blocked = Object.values(slotBlocks)
+      .filter(s => s?.date === dateStr)
+      .sort((a,b) => (a.time||'').localeCompare(b.time||''));
+
+    // Połącz i posortuj
+    const allRows = [
+      ...dv.map(v => ({time: v.time||'', type:'visit', data:v})),
+      ...dorders.map(o => ({time: o.time||'', type:'order', data:o})),
+      ...blocked.map(s => ({time: s.time||'', type:'blocked', data:s})),
+    ].sort((a,b) => a.time.localeCompare(b.time));
+
+    const checkbox = '<span class="cb"></span>';
+    const rows = allRows.map(row => {
+      if (row.type === 'blocked') {
+        return `<tr class="blocked-row"><td>${row.time}</td><td colspan="3">🔒 ${row.data.reason||'Zablokowany slot'}</td></tr>`;
+      }
+      const v = row.data;
+      const info = row.type === 'visit'
+        ? `${v.service||'—'} ${v.tireSize?v.tireSize+'"':''} ${v.wheel||''}`
+        : `ZLEC: ${v.service||'—'} ${v.diameter?v.diameter+'"':''}`;
+      const name = v.name || '—';
+      const car = row.type === 'visit' ? (v.car||'') : (v.car||'');
+      return `<tr><td>${checkbox} ${row.time}</td><td>${name}</td><td>${car}</td><td>${info.trim()}</td></tr>`;
+    }).join('');
+
+    const empty = allRows.length === 0
+      ? '<tr><td colspan="4" class="empty">Brak wizyt</td></tr>' : '';
+
+    const note = dayNotes[dateStr]
+      ? `<div class="daynote">📌 ${dayNotes[dateStr]}</div>` : '';
+
+    return `<div class="day-card">
+      <div class="day-header"><span class="day-name">${dayName}</span><span class="day-date">${shortDate}</span></div>
+      ${note}
+      <table><tbody>${rows}${empty}</tbody></table>
+    </div>`;
+  }).join('');
+
+  const weekLabel = days[0].toLocaleDateString('pl-PL',{day:'2-digit',month:'long'}) +
+    ' – ' + days[5].toLocaleDateString('pl-PL',{day:'2-digit',month:'long',year:'numeric'});
+
+  const content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Tydzień ${weekLabel}</title><style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:11px;color:#111;padding:12px}
+    .page-header{display:flex;justify-content:space-between;align-items:baseline;
+      border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:12px}
+    .page-title{font-size:16px;font-weight:900;letter-spacing:1px}
+    .page-sub{font-size:11px;color:#666}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .day-card{border:1px solid #ccc;border-radius:4px;overflow:hidden;break-inside:avoid}
+    .day-card.blocked{background:#f8f8f8}
+    .day-header{display:flex;justify-content:space-between;align-items:center;
+      background:#111;color:#fff;padding:5px 8px}
+    .day-name{font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+    .day-date{font-size:10px;opacity:0.8;font-family:monospace}
+    .blocked-msg{padding:10px 8px;color:#888;font-style:italic;font-size:11px}
+    .daynote{background:#fffbeb;border-left:3px solid #f59e0b;padding:4px 6px;
+      font-size:10px;color:#92400e;font-style:italic}
+    table{width:100%;border-collapse:collapse}
+    td{padding:3px 6px;border-bottom:1px solid #eee;font-size:10px;vertical-align:top}
+    td:first-child{white-space:nowrap;color:#666;width:60px;font-family:monospace}
+    td:last-child{color:#555}
+    tr.blocked-row td{color:#aaa;font-style:italic}
+    .empty{text-align:center;color:#bbb;padding:8px;font-style:italic}
+    .cb{display:inline-block;width:10px;height:10px;border:1px solid #999;
+      vertical-align:middle;margin-right:2px}
+    .footer{margin-top:10px;font-size:9px;color:#aaa;text-align:center}
+    @media print{@page{margin:8mm;size:A4 landscape}body{padding:0}}
+  </style></head><body>
+    <div class="page-header">
+      <span class="page-title">Wulkanizacja Mielczarek — Plan tygodnia</span>
+      <span class="page-sub">${weekLabel} · Wydrukowano: ${new Date().toLocaleString('pl-PL')}</span>
+    </div>
+    <div class="grid">${dayCards}</div>
+    <div class="footer">Wulkanizacja Mielczarek</div>
+  </body></html>`;
+
+  win.document.write(content);
+  win.document.close();
+  win.print();
+};
+
 window.printDay = function() {
   const d = formatDate(selectedDate);
   const dayName = selectedDate.toLocaleDateString('pl-PL', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
@@ -4254,7 +4385,10 @@ window.searchR134a = function() {
 
 window.showTab = function(id, el) {
   const btn = document.getElementById('printBtn');
-  if (btn) btn.style.display = (id==='main' && currentUser) ? 'block' : 'none';
+  const btnW = document.getElementById('printWeekBtn');
+  const show = (id==='main' && currentUser) ? 'block' : 'none';
+  if (btn) btn.style.display = show;
+  if (btnW) btnW.style.display = show;
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
