@@ -903,7 +903,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       <input id="r134a_model" placeholder="Model (np. Golf)" style="flex:1;min-width:100px"/>
       <input id="r134a_year" placeholder="Rok" inputmode="numeric" style="width:80px"/>
     </div>
-    <input id="r134a_engine" placeholder="Silnik (opcjonalnie, np. 1.6 TDI)" style="margin-bottom:8px"/>
+    <input id="r134a_engine" placeholder="Silnik (opcjonalnie, np. 1.6 TDI)" style="margin-bottom:6px"/>
+    <input id="r134a_kw" placeholder="Moc (opcjonalnie, np. 105 kW)" inputmode="numeric" style="margin-bottom:8px"/>
     <button onclick="searchR134a()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
     <div id="klimaSearchResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
   </div>
@@ -4780,6 +4781,8 @@ window.searchR134a = function() {
   const yearStr = document.getElementById('r134a_year').value.trim();
   const year = parseInt(yearStr) || 0;
   const engineStr = (document.getElementById('r134a_engine')?.value || '').trim().toLowerCase();
+  const kwStr = (document.getElementById('r134a_kw')?.value || '').trim();
+  const kw = parseInt(kwStr) || 0;
   const result = document.getElementById('klimaSearchResult');
 
   if (!make || !model) {
@@ -4799,12 +4802,10 @@ window.searchR134a = function() {
     return;
   }
 
-  // Nowy format: [marka, model, rok, pojemnosc_silnika, ilosc_g, czynnik, uwagi]
-  const norm = s => s.toLowerCase().replace(/[-.\ s\/]/g,'');
+  const norm = s => s.toLowerCase().replace(/[-.\s\/]/g,'');
   const makeN = norm(make);
   const modelN = norm(model);
 
-  // Aliasy marek
   const ALIASES = {
     'volkswagen': 'vw', 'vw': 'volkswagen',
     'mercedes': 'mercedes-benz', 'mercedes-benz': 'mercedes',
@@ -4812,23 +4813,42 @@ window.searchR134a = function() {
     'land rover': 'landrover', 'landrover': 'land rover',
     'alfa': 'alfa romeo', 'alfa romeo': 'alfa',
     'chevy': 'chevrolet',
-    'rangerover': 'range rover',
   };
   const makeAlt = ALIASES[make] || ALIASES[norm(make)] || null;
 
-  const matches = ALL_DB.filter(([m, mod, rok_od, rok_do, silnik, ilosc, czynnik, tolerancja]) => {
+  // Najpierw znajdź wszystkie pasujące po marce+modelu+roku (bez silnika)
+  const baseMatches = ALL_DB.filter(([m, mod, rok_od, rok_do]) => {
     const mN = norm(m); const modN = norm(mod);
     const makeMatch = mN.includes(makeN) || makeN.includes(mN) ||
       (makeAlt && (mN.includes(norm(makeAlt)) || norm(makeAlt).includes(mN)));
     const modelMatch = modN.includes(modelN) || modelN.includes(modN.substring(0,5));
     const yearMatch = !year || (year >= rok_od - 1 && year <= (rok_do || 2099) + 1);
-    const engineMatch = !engineStr || (silnik||'').toLowerCase().includes(engineStr);
-    return makeMatch && modelMatch && yearMatch && engineMatch;
+    return makeMatch && modelMatch && yearMatch;
   });
+
+  // Filtruj po silniku i kW jeśli podane
+  let matches = baseMatches;
+  if (engineStr) {
+    const engineFiltered = baseMatches.filter(([m, mod, rok_od, rok_do, silnik]) =>
+      (silnik||'').toLowerCase().includes(engineStr)
+    );
+    if (engineFiltered.length > 0) matches = engineFiltered;
+    // jeśli brak wyników z filtrem silnika — zostaw baseMatches ale pokaż info
+  }
+  if (kw && matches.length > 0) {
+    const kwFiltered = matches.filter(([m, mod, rok_od, rok_do, silnik]) => {
+      // szukaj kW w polu silnika np "150 kW" lub "150kW"
+      const kwMatch = (silnik||'').match(/(\d+)\s*kw/i);
+      if (!kwMatch) return true; // brak info o kW — zostaw
+      return Math.abs(parseInt(kwMatch[1]) - kw) <= 5;
+    });
+    if (kwFiltered.length > 0) matches = kwFiltered;
+  }
 
   result.style.display = 'block';
 
-  if (matches.length === 0) {
+  if (baseMatches.length === 0) {
+    // Brak wyników w ogóle - pokaż dostępne modele marki
     const brandOnly = ALL_DB.filter(([m]) => norm(m).includes(makeN) || makeN.includes(norm(m)));
     result.style.background = 'rgba(234,179,8,0.08)';
     result.style.border = '1px solid rgba(234,179,8,0.3)';
@@ -4839,6 +4859,18 @@ window.searchR134a = function() {
     } else {
       result.innerHTML = '<b>Brak wyników</b> — sprawdź pisownię marki i modelu.';
     }
+    return;
+  }
+
+  if (matches.length === 0) {
+    // Jest model ale silnik nie pasuje — pokaż wszystkie warianty silnikowe
+    result.style.background = 'rgba(234,179,8,0.08)';
+    result.style.border = '1px solid rgba(234,179,8,0.3)';
+    result.style.color = 'var(--text)';
+    const engines = [...new Set(baseMatches.map(([m,mod,r1,r2,silnik]) => silnik).filter(Boolean))];
+    result.innerHTML = '<b>Brak wpisu dla silnika "' + engineStr + '"</b><br>' +
+      '<span style="font-size:11px;color:var(--muted)">Dostępne silniki: ' +
+      (engines.length ? engines.join(', ') : 'brak podziału — jeden wpis dla wszystkich') + '</span>';
     return;
   }
 
@@ -4859,17 +4891,20 @@ window.searchR134a = function() {
       '</tr>';
   }).join('');
 
+  const engineInfo = engineStr && matches !== baseMatches
+    ? ' <span style="font-size:10px;color:var(--muted)">· silnik: ' + engineStr + (kw ? ', ' + kw + ' kW' : '') + '</span>' : '';
+
   result.innerHTML =
-    '<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:8px">' + matches[0][0] + ' ' + matches[0][1] + ' — POJEMNOŚĆ CZYNNIKA</div>' +
+    '<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:8px">' +
+    matches[0][0] + ' ' + matches[0][1] + ' — POJEMNOŚĆ CZYNNIKA' + engineInfo + '</div>' +
     '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
     '<thead><tr style="border-bottom:1px solid var(--border)">' +
-    '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">ROK</th>' +
+    '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">ROCZNIK</th>' +
     '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">SILNIK</th>' +
     '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">ILOŚĆ</th>' +
     '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">CZYNNIK</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>';
 };
-
 
 window.showTab = function(id, el) {
   const btn = document.getElementById('printBtn');
