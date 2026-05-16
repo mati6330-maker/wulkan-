@@ -920,6 +920,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   </div>
 
   <!-- DEKODER VIN -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🔑 DEKODER VIN</div>
     <div style="display:flex;gap:6px;margin-bottom:8px">
       <input id="vin_input" placeholder="Wpisz numer VIN (17 znaków)" maxlength="17"
         style="flex:1;font-family:var(--mono);text-transform:uppercase;letter-spacing:2px"
@@ -1230,7 +1232,7 @@ window.setZamStatus = async function(k, status) {
   showToast('✔ Status zaktualizowany', 'var(--green)');
 };
 
-function renderPrzechowalnia() {
+window.renderPrzechowalnia = function renderPrzechowalnia() {
   const search = (document.getElementById('pr_search')?.value || '').toLowerCase();
   const box = document.getElementById('prList');
   if (!box) return;
@@ -1267,7 +1269,7 @@ function renderPrzechowalnia() {
     </div>`).join('');
 }
 
-function renderZamowienia() {
+window.renderZamowienia = function renderZamowienia() {
   const box = document.getElementById('zamList');
   if (!box) return;
 
@@ -1319,11 +1321,11 @@ function renderZamowienia() {
 // Firebase listenery
 onValue(ref(db, 'przechowalnia'), snap => {
   przechowalnia = snap.val() || {};
-  if (document.getElementById('prList')) renderPrzechowalnia();
+  if (document.getElementById('prList')) window.renderPrzechowalnia();
 });
 onValue(ref(db, 'zamowienia_tmp'), snap => {
   zamowienia_tmp = snap.val() || {};
-  if (document.getElementById('zamList')) renderZamowienia();
+  if (document.getElementById('zamList')) window.renderZamowienia();
 });
 
 let prices = {
@@ -4807,14 +4809,13 @@ window.showTab = function(id, el) {
   document.getElementById(id).classList.add('active');
   if (el) el.classList.add('active');
   if (id==='list') window.renderList();
-  if (id==='list') window.renderList();
   if (id==='orders') window.renderOrders();
   if (id==='quickview') renderQuickView();
   if (id==='cash') { window.calculateCash(); window.calcR134a('all'); }
   if (id==='archive') window.renderArchive();
   if (id==='pricing') window.renderPricing();
   if (id==='klima') window.renderKlima();
-  if (id==='przechowalnia') { renderPrzechowalnia(); renderZamowienia(); }
+  if (id==='przechowalnia') { window.renderPrzechowalnia(); window.renderZamowienia(); }
 };
 
 // ── BLOKOWANIE DNI ──
