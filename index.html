@@ -62,12 +62,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 @media(min-width:900px){
   body{font-size:15px;}
   #appScreen{display:grid;grid-template-columns:1fr;grid-template-rows:auto auto auto auto 1fr;gap:0;}
-  #editBanner{grid-column:1;grid-row:1;}
+  
   #adminBar,#guestBar{grid-column:1;grid-row:2;}
   #syncStatus{grid-column:1;grid-row:3;text-align:right;padding:2px 16px;}
-  .tabs{grid-column:1;grid-row:4;display:flex;flex-direction:row;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;}
-  .tab{flex:1 !important;padding:13px 20px !important;font-size:13px !important;border-bottom:3px solid transparent !important;text-align:center !important;}
-  .tab.active{border-bottom:3px solid var(--accent) !important;background:rgba(79,142,247,0.06) !important;box-shadow:none !important;}
   .container{grid-column:1;grid-row:5;padding:20px 40px;max-width:1100px;width:100%;margin:0 auto;}
   .grid{grid-template-columns:repeat(6,1fr);}
   .calendar{grid-template-columns:repeat(6,1fr);}
@@ -323,9 +320,7 @@ body.light .wm-logo img{filter:none;}
 
 /* ── BMW PREMIUM STYLE ── */
 body{background-image:radial-gradient(ellipse at 50% 0%,rgba(28,105,211,0.08) 0%,transparent 60%),repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(79,142,247,0.03) 39px,rgba(79,142,247,0.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(79,142,247,0.03) 39px,rgba(79,142,247,0.03) 40px);}
-.tabs{background:var(--surface);border-bottom:1px solid var(--border);}
-.tab{font-size:12px!important;letter-spacing:2px!important;font-weight:500!important;color:var(--muted)!important;text-transform:uppercase;}
-.tab.active{color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;background:rgba(79,142,247,0.06)!important;}
+
 .section-label{font-size:10px;letter-spacing:3px;color:var(--muted);border-left:2px solid var(--accent);padding-left:8px;}
 h3{font-weight:300;letter-spacing:4px;font-size:13px;text-transform:uppercase;color:var(--text);}
 button{font-family:'Inter',sans-serif;letter-spacing:1.5px;font-size:13px;font-weight:600;}
@@ -2988,12 +2983,12 @@ window.renderOrders = function renderOrders() {
         cursor:pointer;
         ${cardOpacity}
       ">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <div style="min-width:0;flex:1">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div>
             <div style="font-weight:700;font-size:13px;color:${isOverdue?'#888':'var(--text)'}">
               ${o.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)">${o.phone||''}</span>${overdueLabel}
             </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">
               ${o.service||'—'} · ${o.diameter ? o.diameter+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
             </div>
             <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)">
@@ -3001,17 +2996,17 @@ window.renderOrders = function renderOrders() {
             </div>
             ${o.note?`<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic">📝 ${o.note}</div>`:''}
           </div>
-          <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
+          <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;justify-content:space-between" onclick="event.stopPropagation()">
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
             <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
             <button onclick="applyOrderDiscount('${k}',-10)" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
             <button onclick="applyOrderDiscount('${k}',+10)" title="Dodaj +10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(74,222,128,0.1);color:var(--green);border:1px solid rgba(74,222,128,0.3)">+10</button>
             <button onclick="printOrder('${k}')" title="Drukuj zlecenie" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">🖨</button>
             <button onclick="editOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
-          </div>
-        </div>
-        <div onclick="event.stopPropagation()" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">
-          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">CENA</span>
+            </div>
+            <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px">
+              <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">CENA</span>
           <span style="display:flex;align-items:center;gap:6px">
             ${(()=>{const base=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true),curr=o.price!==undefined?o.price:base,disc=base>0?Math.round((1-curr/base)*100):0;return disc>0?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${disc}%</span>`:''})()}
             <span id="oprice-${k}" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${o.price||0} zł</span>
@@ -3617,16 +3612,16 @@ window.renderKlima = function() {
     const extras = [o.filter?'filtr':'', o.ozone?'odgrzybienie':''].filter(Boolean).join(', ');
     const todo = [o.do_filter?'🔧 Wymiana filtra':'', o.do_ozone?'🌿 Odgrzybienie':''].filter(Boolean).join(' · ');
     return `<div class="card" style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div style="flex:1;min-width:0">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
           <div style="font-weight:700;font-size:14px;color:var(--accent);font-family:var(--mono)">${o.car||'—'}${o.year?' ('+o.year+')':''}</div>
           <div style="font-size:12px;color:var(--text);margin-top:2px">${o.name||'—'}${o.phone?' · '+o.phone:''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)">📥 ${o.start||'—'}${o.end?' → 📅 '+o.end:''}</div>
           ${todo?`<div style="font-size:12px;color:var(--accent);margin-top:4px;font-weight:600">${todo}</div>`:''}
           ${extras?`<div style="font-size:11px;color:var(--muted);margin-top:2px">+ ${extras}</div>`:''}
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end">
-          <div style="display:flex;gap:4px">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
             <button onclick="toggleKlima('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
             <button onclick="printKlima('${k}')" title="Drukuj" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.4)">🖨</button>
             <button onclick="openKlimaPriceModal('${k}')" title="Ustal cenę" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(79,142,247,0.12);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">❄️</button>
