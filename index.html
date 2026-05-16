@@ -3563,12 +3563,19 @@ window.calcKlimaPrice = function() {
   const ozone = document.getElementById('k_ozone').checked ? 30 : 0;
   const z = x - y;
   const rate = prices.klima_rate || 39;
-  const base = z > 0 ? ((z / 100) * rate) + 50 : 50;
+  // Opłata 50 zł za serwis tylko gdy podłączamy maszynę (pojemność > 0 lub ściągnięto > 0)
+  const serviceFee = (x === 0 && y === 0) ? 0 : 50;
+  const base = z > 0 ? ((z / 100) * rate) + serviceFee : serviceFee;
   const total = Math.round(base + filter + ozone);
   const el = document.getElementById('klimaPriceResult');
   const breakdown = [];
-  if (z > 0) breakdown.push(`uzupełniono ${z}g × ${((prices.klima_rate||39)/100).toFixed(2).replace('.',',')} zł + 50 zł`);
-  else breakdown.push('brak uzupełnienia + 50 zł');
+  if (x === 0 && y === 0) {
+    breakdown.push('brak napełnienia — brak opłaty za serwis');
+  } else if (z > 0) {
+    breakdown.push(`uzupełniono ${z}g × ${((prices.klima_rate||39)/100).toFixed(2).replace('.',',')} zł + 50 zł`);
+  } else {
+    breakdown.push('brak uzupełnienia + 50 zł');
+  }
   if (filter) breakdown.push('filtr +50 zł');
   if (ozone) breakdown.push('odgrzybienie +30 zł');
   el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px">${breakdown.join(' | ')}</div><b>${total} zł</b>`;
@@ -3621,6 +3628,7 @@ window.renderKlima = function() {
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end">
           <div style="display:flex;gap:4px">
             <button onclick="toggleKlima('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
+            <button onclick="printKlima('${k}')" title="Drukuj" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.4)">🖨</button>
             <button onclick="openKlimaPriceModal('${k}')" title="Ustal cenę" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(79,142,247,0.12);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">❄️</button>
             <button onclick="applyKlimaDiscount('${k}',-10)" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
             <button onclick="applyKlimaDiscount('${k}',+10)" title="Dodaj +10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(74,222,128,0.1);color:var(--green);border:1px solid rgba(74,222,128,0.3)">+10</button>
@@ -4285,6 +4293,65 @@ window.setOrderValveCount = function(n, btn) {
   btn.style.borderColor = '#4f8ef7';
   btn.style.color = '#000';
   updateOrderPrice();
+};
+
+window.printKlima = function(k) {
+  const o = klimas[k];
+  if (!o) return;
+  const win = window.open('', '_blank');
+  if (!win) { alert('⚠ Zezwól na wyskakujące okna'); return; }
+
+  // Dane kalkulatora
+  const capacity = o.capacity || 0;
+  const recovered = o.recovered || 0;
+  const filled = Math.max(0, capacity - recovered);
+  const rate = prices.klima_rate || 39;
+  const serviceFee = (capacity === 0 && recovered === 0) ? 0 : 50;
+  const gasPrice = filled > 0 ? Math.round((filled / 100) * rate) : 0;
+  const filterPrice = o.filter ? 50 : 0;
+  const ozonePrice = o.ozone ? 30 : 0;
+  const total = o.price != null ? o.price : Math.round(serviceFee + gasPrice + filterPrice + ozonePrice);
+
+  const gasRow = filled > 0
+    ? `<tr><td>Nabito z butli</td><td>${filled} g × ${(rate/100).toFixed(2).replace('.',',')} zł/g + ${serviceFee} zł serwis = ${serviceFee + gasPrice} zł</td></tr>`
+    : `<tr><td>Nabito z butli</td><td>0 g${serviceFee ? ` + ${serviceFee} zł serwis` : ' — brak opłaty za serwis'}</td></tr>`;
+
+  const content = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+    'body{font-family:Arial,sans-serif;padding:24px;font-size:13px;color:#111;max-width:600px;margin:0 auto}' +
+    'h1{font-size:18px;font-weight:900;margin-bottom:4px}' +
+    '.subtitle{color:#666;font-size:11px;margin-bottom:20px}' +
+    'table{width:100%;border-collapse:collapse;margin-top:16px}' +
+    'td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px}' +
+    'td:first-child{color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;width:40%}' +
+    '.total{font-size:16px;font-weight:700;color:#111}' +
+    '.section{font-weight:700;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;padding:12px 10px 4px;border-bottom:none}' +
+    '.footer{margin-top:24px;font-size:10px;color:#999;text-align:center;border-top:1px solid #eee;padding-top:12px}' +
+    '@media print{@page{margin:10mm}}' +
+    '</style></head><body>' +
+    '<h1>Wulkanizacja Mielczarek</h1>' +
+    '<div class="subtitle">Serwis klimatyzacji · Wydrukowano: ' + new Date().toLocaleString('pl-PL') + '</div>' +
+    '<table>' +
+    '<tr><td>Klient</td><td>' + (o.name||'—') + '</td></tr>' +
+    '<tr><td>Telefon</td><td>' + (o.phone||'—') + '</td></tr>' +
+    '<tr><td>Auto</td><td>' + (o.car||'—') + '</td></tr>' +
+    '<tr><td>Rok produkcji</td><td>' + (o.year||'—') + '</td></tr>' +
+    '<tr><td>Data przyjęcia</td><td>' + (o.start||'—') + '</td></tr>' +
+    '<tr><td>Data odbioru</td><td>' + (o.end||'—') + '</td></tr>' +
+    (o.note ? '<tr><td>Notatka</td><td>' + o.note + '</td></tr>' : '') +
+    '<tr><td colspan="2" class="section">Wykonane usługi</td></tr>' +
+    '<tr><td>Pojemność układu</td><td>' + (capacity ? capacity + ' g' : '—') + '</td></tr>' +
+    '<tr><td>Ściągnięto z układu</td><td>' + (recovered ? recovered + ' g' : '—') + '</td></tr>' +
+    gasRow +
+    (filterPrice ? '<tr><td>Wymiana filtra</td><td>+50 zł</td></tr>' : '') +
+    (ozonePrice ? '<tr><td>Odgrzybienie</td><td>+30 zł</td></tr>' : '') +
+    '<tr><td class="total">Łącznie</td><td class="total">' + total + ' zł</td></tr>' +
+    '</table>' +
+    '<div class="footer">Wulkanizacja Mielczarek · Dziękujemy za wizytę</div>' +
+    '</body></html>';
+
+  win.document.write(content);
+  win.document.close();
+  win.print();
 };
 
 window.printOrder = function(k) {
