@@ -570,16 +570,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 
 <div class="section" id="orders">
 <h3>Zlecenia</h3>
-<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
-    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🔍 WYSZUKIWARKA ROZMIARÓW OEM</div>
-    <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input id="tire_make" placeholder="Marka (np. Volkswagen)" style="flex:1;margin:0"/>
-      <input id="tire_model" placeholder="Model (np. Golf)" style="flex:1;margin:0"/>
-    </div>
-    <input id="tire_year" placeholder="Rok produkcji (opcjonalnie)" style="margin-bottom:8px" inputmode="numeric"/>
-    <button onclick="searchTires()" style="background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj rozmiarów</button>
-    <div id="tireResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
-  </div>
+
 
   <div class="section-label">Dane klienta</div>
 <input id="o_name" placeholder="Imię (opcjonalne)"/>
@@ -787,20 +778,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 </div>
 
 <div class="section" id="klima">
-  <!-- WYSZUKIWARKA POJEMNOŚCI R134a -->
-  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
-    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">❄ WYSZUKIWARKA POJEMNOŚCI R134a</div>
-    <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input id="r134a_make" placeholder="Marka (np. Volkswagen)" style="flex:1;margin:0"/>
-      <input id="r134a_model" placeholder="Model (np. Golf)" style="flex:1;margin:0"/>
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input id="r134a_year" placeholder="Rok (np. 2008)" style="flex:1;margin:0" inputmode="numeric"/>
-      <input id="r134a_engine" placeholder="Silnik opcjonalnie (np. 1.9 TDI)" style="flex:1;margin:0"/>
-    </div>
-    <button onclick="searchR134a()" id="r134aBtn" style="background:rgba(6,182,212,0.15);color:#06b6d4;border:1px solid rgba(6,182,212,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
-    <div id="klimaSearchResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
-  </div>
+  
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
     <div class="section-label" style="margin:0">Klima serwis — nowe zlecenie</div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -3250,7 +3228,22 @@ function renderReport(title, list, sum) {
   </div>
 
   <div class="footer">Liczba pozycji: ${list.length}</div>
-  </body></html>`;
+  <div class="section admin-tab" id="uzytkowe" style="display:none">
+  <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">🛠 NARZĘDZIA UŻYTKOWE</div>
+  
+  
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🔑 DEKODER VIN</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input id="vin_input" placeholder="Wpisz numer VIN (17 znaków)" maxlength="17"
+        style="flex:1;font-family:var(--mono);text-transform:uppercase;letter-spacing:2px"
+        oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')decodeVin()"/>
+      <button onclick="decodeVin()" style="width:auto;padding:8px 16px;font-size:12px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Dekoduj</button>
+    </div>
+    <div id="vinResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.8"></div>
+  </div>
+</div>
+</body></html>`;
 
   w.document.write(content);
   w.document.close();
@@ -4287,6 +4280,141 @@ window.searchTires = function() {
 
 // ── WYSZUKIWARKA R134a ──
 // R134A_DB załadowana z klima.js
+
+window.decodeVin = function() {
+  const vin = document.getElementById('vin_input').value.trim().toUpperCase();
+  const result = document.getElementById('vinResult');
+
+  if (vin.length !== 17) {
+    result.style.display = 'block';
+    result.style.background = 'rgba(248,113,113,0.1)';
+    result.style.border = '1px solid rgba(248,113,113,0.3)';
+    result.style.color = 'var(--red)';
+    result.innerHTML = '⚠ VIN musi mieć dokładnie 17 znaków (podano: ' + vin.length + ')';
+    return;
+  }
+  if (/[IOQ]/i.test(vin)) {
+    result.style.display = 'block';
+    result.style.background = 'rgba(248,113,113,0.1)';
+    result.style.border = '1px solid rgba(248,113,113,0.3)';
+    result.style.color = 'var(--red)';
+    result.innerHTML = '⚠ VIN nie może zawierać liter I, O, Q';
+    return;
+  }
+
+  // WMI - World Manufacturer Identifier (znaki 1-3)
+  const WMI = {
+    '1G':'GM USA','1F':'Ford USA','1H':'Honda USA','1J':'Jeep USA','1L':'Lincoln USA',
+    '2G':'GM Kanada','2F':'Ford Kanada','2T':'Toyota Kanada',
+    '3G':'GM Meksyk','3F':'Ford Meksyk','3VW':'VW Meksyk',
+    'JA':'Isuzu Japonia','JF':'Fuji/Subaru Japonia','JH':'Honda Japonia',
+    'JM':'Mazda Japonia','JN':'Nissan Japonia','JS':'Suzuki Japonia',
+    'JT':'Toyota Japonia','JY':'Yamaha Japonia',
+    'KL':'Daewoo Korea','KM':'Hyundai Korea','KNA':'Kia Korea','KNB':'Kia Korea',
+    'SAJ':'Jaguar UK','SAL':'Land Rover UK','SAR':'Rover UK','SCA':'Rolls-Royce UK',
+    'SCB':'Bentley UK','SCC':'Lotus UK',
+    'TRU':'Audi Węgry','TMB':'Skoda Czechy','TMA':'Skoda Czechy',
+    'VSK':'Seat Hiszpania','VSS':'Seat Hiszpania','VF1':'Renault Francja',
+    'VF2':'Renault Francja','VF3':'Peugeot Francja','VF4':'Talbot Francja',
+    'VF6':'Renault Francja','VF7':'Citroen Francja','VF8':'Matra Francja',
+    'VNK':'Toyota Francja',
+    'WAU':'Audi Niemcy','WBA':'BMW Niemcy','WBS':'BMW M Niemcy','WBX':'BMW Niemcy',
+    'WDB':'Mercedes Niemcy','WDD':'Mercedes Niemcy','WDC':'Mercedes Niemcy',
+    'WMW':'MINI Niemcy','WP0':'Porsche Niemcy','WP1':'Porsche Niemcy',
+    'WUA':'Audi Niemcy','WV1':'VW Niemcy','WV2':'VW Niemcy','WVG':'VW Niemcy',
+    'WVW':'VW Niemcy','WV3':'VW Niemcy',
+    'XTA':'AvtoVAZ Rosja','XTT':'UAZ Rosja',
+    'YV1':'Volvo Szwecja','YS3':'Saab Szwecja',
+    'ZAR':'Alfa Romeo Włochy','ZCG':'Alfa Romeo Włochy','ZFF':'Ferrari Włochy',
+    'ZHW':'Lamborghini Włochy','ZLA':'Lancia Włochy','ZCF':'Iveco Włochy',
+  };
+
+  // Kraj produkcji (1. znak)
+  const COUNTRY = {
+    '1':'USA','2':'Kanada','3':'Meksyk','4':'USA','5':'USA',
+    '6':'Australia','7':'Nowa Zelandia','8':'Argentyna','9':'Brazylia',
+    'A':'RPA','B':'Angola','C':'Benin','D':'Egipt','E':'Etiopia',
+    'F':'Ghana','G':'Tanzania','H':'Kenia','J':'Japonia',
+    'K':'Korea Pd.','L':'Chiny','M':'Indie','N':'Turcja',
+    'P':'Filipiny','R':'Tajwan','S':'UK/Polska/Niemcy','T':'Czechy/Węgry/Szwajcaria',
+    'V':'Francja/Hiszpania','W':'Niemcy','X':'Rosja/Holandia',
+    'Y':'Belgia/Finlandia/Szwecja','Z':'Włochy',
+  };
+
+  // Rok modelowy (10. znak - litery/cyfry)
+  const MODEL_YEAR = {
+    'A':1980,'B':1981,'C':1982,'D':1983,'E':1984,'F':1985,'G':1986,'H':1987,
+    'J':1988,'K':1989,'L':1990,'M':1991,'N':1992,'P':1993,'R':1994,'S':1995,
+    'T':1996,'V':1997,'W':1998,'X':1999,'Y':2000,
+    '1':2001,'2':2002,'3':2003,'4':2004,'5':2005,'6':2006,'7':2007,'8':2008,'9':2009,
+    'A':2010,'B':2011,'C':2012,'D':2013,'E':2014,'F':2015,'G':2016,'H':2017,
+    'J':2018,'K':2019,'L':2020,'M':2021,'N':2022,'P':2023,'R':2024,'S':2025,'T':2026,
+  };
+  // Zduplikowane litery (2010+) - poprawka
+  const MODEL_YEAR_FULL = {
+    'A':1980,'B':1981,'C':1982,'D':1983,'E':1984,'F':1985,'G':1986,'H':1987,
+    'J':1988,'K':1989,'L':1990,'M':1991,'N':1992,'P':1993,'R':1994,'S':1995,
+    'T':1996,'V':1997,'W':1998,'X':1999,'Y':2000,
+    '1':2001,'2':2002,'3':2003,'4':2004,'5':2005,'6':2006,'7':2007,'8':2008,'9':2009,
+  };
+  const yearChar = vin[9];
+  const yearVal = MODEL_YEAR_FULL[yearChar];
+  const yearStr = yearVal
+    ? `${yearVal} lub ${yearVal+30}`
+    : '?';
+
+  // Walidacja cyfry kontrolnej (pozycja 9)
+  const VALS = {'A':1,'B':2,'C':3,'D':4,'E':5,'F':6,'G':7,'H':8,'J':1,'K':2,'L':3,
+    'M':4,'N':5,'P':7,'R':9,'S':2,'T':3,'U':4,'V':5,'W':6,'X':7,'Y':8,'Z':9};
+  const WEIGHTS = [8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2];
+  let sum = 0;
+  let checkValid = true;
+  for (let i = 0; i < 17; i++) {
+    const c = vin[i];
+    const v = /\d/.test(c) ? parseInt(c) : VALS[c];
+    if (v === undefined) { checkValid = false; break; }
+    sum += v * WEIGHTS[i];
+  }
+  const checkDigit = vin[8];
+  const expected = (sum % 11 === 10) ? 'X' : String(sum % 11);
+  const checkOK = checkValid && (checkDigit === expected);
+
+  // WMI lookup
+  let manufacturer = '—';
+  for (const [prefix, name] of Object.entries(WMI).sort((a,b) => b[0].length - a[0].length)) {
+    if (vin.startsWith(prefix)) { manufacturer = name; break; }
+  }
+
+  const country = COUNTRY[vin[0]] || '?';
+  const wmi = vin.substring(0,3);
+  const vds = vin.substring(3,9);
+  const vis = vin.substring(9,17);
+  const plant = vin[10];
+  const serial = vin.substring(11);
+
+  result.style.display = 'block';
+  result.style.background = checkOK ? 'rgba(52,211,153,0.06)' : 'rgba(234,179,8,0.06)';
+  result.style.border = checkOK ? '1px solid rgba(52,211,153,0.3)' : '1px solid rgba(234,179,8,0.3)';
+  result.style.color = 'var(--text)';
+
+  const row = (label, val, mono) =>
+    `<tr><td style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:4px 8px;width:45%">${label}</td>` +
+    `<td style="padding:4px 8px;font-weight:600${mono?';font-family:var(--mono)':''}">${val}</td></tr>`;
+
+  result.innerHTML =
+    `<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:8px;font-family:var(--mono)">${vin}</div>` +
+    `<table style="width:100%;border-collapse:collapse;font-size:12px">` +
+    row('Producent', manufacturer) +
+    row('Kraj produkcji', country) +
+    row('WMI (1–3)', wmi, true) +
+    row('VDS (4–9)', vds, true) +
+    row('VIS (10–17)', vis, true) +
+    row('Rok modelowy (10)', `${yearChar} → ${yearStr}`) +
+    row('Fabryka (11)', plant, true) +
+    row('Nr seryjny (12–17)', serial, true) +
+    row('Cyfra kontrolna (9)', `${checkDigit} ${checkOK ? '✔ poprawna' : '✗ niepoprawna — VIN może być sfałszowany'}`) +
+    `</table>`;
+};
 
 window.searchR134a = function() {
   const make = document.getElementById('r134a_make').value.trim().toLowerCase();
