@@ -2502,14 +2502,17 @@ function renderArchiveVisits() {
 
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak archiwalnych wizyt</div>'; return; }
 
-  entries.sort((a,b)=>(b[1].date+b[1].time).localeCompare(a[1].date+a[1].time));
+  entries.sort((a,b) => {
+    if (a[1].date !== b[1].date) return b[1].date.localeCompare(a[1].date); // daty malejąco
+    return (a[1].time||'').localeCompare(b[1].time||''); // godziny rosnąco
+  });
 
   const grouped = {};
   entries.forEach(([k,v]) => { if(!grouped[v.date])grouped[v.date]=[]; grouped[v.date].push([k,v]); });
 
   const html = [];
   Object.keys(grouped).sort().reverse().forEach(date => {
-    const dayEntries = grouped[date];
+    const dayEntries = grouped[date]; // już posortowane po godzinie
     const d = parseDate(date);
     const dayName = d.toLocaleDateString('pl-PL',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     const done = dayEntries.filter(([k,v])=>v.status).length;
