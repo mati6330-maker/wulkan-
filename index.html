@@ -2655,7 +2655,7 @@ window.renderList = function renderList() {
   });
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak wyników</div>'; return; }
 
-  // Funkcja dopasowania do przechowalni((a,b)=>(a[1].date+a[1].time).localeCompare(b[1].date+b[1].time));
+  entries.sort((a,b)=>(a[1].date+(a[1].time||'')).localeCompare(b[1].date+(b[1].time||'')));
 
   // Grupuj po dacie
   const grouped = {};
