@@ -2503,8 +2503,10 @@ function renderArchiveVisits() {
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak archiwalnych wizyt</div>'; return; }
 
   entries.sort((a,b) => {
-    if (a[1].date !== b[1].date) return b[1].date.localeCompare(a[1].date); // daty malejąco
-    return (a[1].time||'').localeCompare(b[1].time||''); // godziny rosnąco
+    if (a[1].date !== b[1].date) return b[1].date.localeCompare(a[1].date);
+    const ta = (a[1].time||'').padStart(5,'0');
+    const tb = (b[1].time||'').padStart(5,'0');
+    return ta.localeCompare(tb);
   });
 
   const grouped = {};
@@ -2521,7 +2523,11 @@ function renderArchiveVisits() {
         <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase">${dayName}</div>
         <div style="font-family:var(--mono);font-size:11px;color:${done===dayEntries.length?'var(--green)':'var(--muted)'}">✔ ${done}/${dayEntries.length}</div>
       </div>`);
-    dayEntries.sort((a,b)=>a[1].time.localeCompare(b[1].time)).forEach(([k,v]) => {
+    dayEntries.sort((a,b) => {
+      const ta = (a[1].time||'').padStart(5,'0');
+      const tb = (b[1].time||'').padStart(5,'0');
+      return ta.localeCompare(tb);
+    }).forEach(([k,v]) => {
       const statusColor = v.status ? 'var(--green)' : '#555';
       const extras = [v.runflat?'RF':'',v.low?'NP':'',v.valve?'W':''].filter(Boolean).join(' ');
       html.push(`<div onclick="showVisitDetail('${k}')" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${statusColor};border-radius:4px;padding:7px 10px;margin-bottom:4px;opacity:0.65;cursor:pointer">
