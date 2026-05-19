@@ -1297,8 +1297,26 @@ window.deleteZamowienie = async function(k) {
 
 window.setZamStatus = async function(k, status) {
   await update(ref(db, 'zamowienia_tmp/' + k), { status });
-  showToast('✔ Status zaktualizowany', 'var(--green)');
+  showToast('\u2714 Status zaktualizowany', 'var(--green)');
 };
+
+function findStorage(v) {
+  const norm = s => (s||'').toLowerCase().replace(/\s+/g,'');
+  const vPhone = (v.phone||'').replace(/\D/g,'');
+  const vName = norm(v.name);
+  const vCar = norm(v.car);
+  return Object.values(przechowalnia).filter(p => {
+    const pPhone = (p.phone||'').replace(/\D/g,'');
+    if (vPhone.length >= 9 && pPhone.length >= 9 && vPhone.slice(-9) === pPhone.slice(-9)) return true;
+    if (vName.length >= 4 && norm(p.name).length >= 4) {
+      const vParts = vName.split(' ');
+      const pParts = norm(p.name).split(' ');
+      if (vParts.some(vp => vp.length >= 3 && pParts.some(pp => pp.length >= 3 && (vp.includes(pp)||pp.includes(vp))))) return true;
+    }
+    if (vCar.length >= 3 && norm(p.size||'').length >= 3 && vCar.split(' ').some(w => w.length >= 3 && norm(p.size||'').includes(w))) return true;
+    return false;
+  });
+}
 
 window.renderPrzechowalnia = function renderPrzechowalnia() {
   const search = (document.getElementById('pr_search')?.value || '').toLowerCase();
@@ -2633,29 +2651,7 @@ window.renderList = function renderList() {
   });
   if (!entries.length) { box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-family:var(--mono);font-size:13px">Brak wyników</div>'; return; }
 
-  // Funkcja dopasowania do przechowalni
-  const findStorage = (v) => {
-    const norm = s => (s||'').toLowerCase().replace(/\s+/g,'');
-    const vPhone = (v.phone||'').replace(/\D/g,'');
-    const vName = norm(v.name);
-    const vCar = norm(v.car);
-    return Object.values(przechowalnia).filter(p => {
-      const pPhone = (p.phone||'').replace(/\D/g,'');
-      // telefon
-      if (vPhone.length >= 9 && pPhone.length >= 9 && vPhone.slice(-9) === pPhone.slice(-9)) return true;
-      // imię lub nazwisko
-      if (vName.length >= 4 && norm(p.name).length >= 4) {
-        const vParts = vName.split(' ');
-        const pParts = norm(p.name).split(' ');
-        if (vParts.some(vp => vp.length >= 3 && pParts.some(pp => pp.length >= 3 && (vp.includes(pp)||pp.includes(vp))))) return true;
-      }
-      // marka/model auta
-      if (vCar.length >= 3 && norm(p.size||'').length >= 3 && vCar.split(' ').some(w => w.length >= 3 && norm(p.size||'').includes(w))) return true;
-      return false;
-    });
-  };
-
-  entries.sort((a,b)=>(a[1].date+a[1].time).localeCompare(b[1].date+b[1].time));
+  // Funkcja dopasowania do przechowalni((a,b)=>(a[1].date+a[1].time).localeCompare(b[1].date+b[1].time));
 
   // Grupuj po dacie
   const grouped = {};
@@ -2730,7 +2726,7 @@ window.renderList = function renderList() {
             <button onclick="toggleVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${v.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
             <button onclick="applyVisitDiscount('${k}',-10)" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(251,191,36,0.12);color:#f59e0b;border:1px solid rgba(251,191,36,0.4)">−10</button>
             <button onclick="applyVisitDiscount('${k}',+10)" title="Dodaj +10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(74,222,128,0.1);color:var(--green);border:1px solid rgba(74,222,128,0.3)">+10</button>
-            <button onclick="openStorageModal('${k}')" title="Przechowalnia" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.4)">🗄</button>
+            <button onclick="window.openStorageModal('${k}')" title="Przechowalnia" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.4)">🗄</button>
             <button onclick="editVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
