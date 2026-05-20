@@ -632,13 +632,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <div class="section-label">Data przyjęcia</div>
 <input id="o_start_date" type="date"/>
 <div class="section-label">Termin realizacji</div>
-<select id="o_time">
-  <option disabled hidden selected value="">— Wybierz termin —</option>
-  <option value="dziś">Do końca dnia</option>
-  <option value="jutro">Na drugi dzień</option>
-  <option value="własny">Własny termin</option>
-</select>
-<input id="o_custom_date" style="display:none" type="date"/>
+<input id="o_time" type="date"/>
 
 <div id="orderValidation" class="validation-box">
   <div class="v-title">⚠ Brakujące pola:</div>
@@ -1691,10 +1685,7 @@ function initApp() {
     klimas = snap.val() || {};
     renderKlima();
   });
-  document.getElementById('o_time').onchange = function() {
-    document.getElementById('o_custom_date').style.display = this.value==='własny' ? 'block' : 'none';
-  };
-  setSyncStatus('syncing', '⟳ Łączenie z bazą...');
+  document.  setSyncStatus('syncing', '⟳ Łączenie z bazą...');
 }
 
 // Listenery DOM — dodane raz przy starcie modułu
@@ -3275,7 +3266,7 @@ window.addOrder = async function() {
   if (!type) { errors.push('⚙️ Wybierz typ felg'); document.getElementById('o_type').classList.add('field-error'); }
   const startDate = document.getElementById('o_start_date').value || formatDate(new Date());
   const time = document.getElementById('o_time').value;
-  if (!time) { errors.push('📅 Wybierz czas realizacji'); document.getElementById('o_time').classList.add('field-error'); }
+  if (!time) { errors.push('📅 Wybierz termin realizacji'); document.getElementById('o_time').classList.add('field-error'); }
   const custom = document.getElementById('o_custom_date').value;
   if (time==='własny'&&!custom) { errors.push('📆 Podaj własny termin'); document.getElementById('o_custom_date').classList.add('field-error'); }
   if (errors.length) { showOrderError(errors); return; }
@@ -3285,8 +3276,7 @@ window.addOrder = async function() {
   const valve = document.getElementById('o_valve').checked;
   const valveCount = valve ? parseInt(document.getElementById('o_valve_count').value)||4 : 0;
 
-  const today=new Date(), tomorrow=new Date();
-  tomorrow.setDate(today.getDate()+1);
+
   const o = {
     status:false, name:document.getElementById('o_name').value, phone:document.getElementById('o_phone').value,
     car:document.getElementById('o_car').value, diameter, wheels: document.getElementById('o_wheel_count').value || '4',
@@ -3294,7 +3284,7 @@ window.addOrder = async function() {
     service, type, time, custom,
     runflat, low, valve, valveCount,
     price:calcVisitPrice({service,wheel:type,tireSize:diameter,runflat,low,valve,valveCount}, true),
-    dateStamp: time==='dziś'?formatDate(today):time==='jutro'?formatDate(tomorrow):custom,
+    dateStamp: time,
     startDate
   };
 
@@ -3313,7 +3303,7 @@ window.addOrder = async function() {
 
 function resetOrderForm() {
   ['o_name','o_phone','o_car','o_note'].forEach(id=>document.getElementById(id).value='');
-  ['o_service','o_type','o_time'].forEach(id=>document.getElementById(id).selectedIndex=0);
+  ['o_service','o_type'].forEach(id=>document.getElementById(id).selectedIndex=0);
   document.getElementById('o_custom_date').value=''; document.getElementById('o_custom_date').style.display='none';
   document.getElementById('o_start_date').value='';
   document.getElementById('o_diameter').value='';
@@ -3485,7 +3475,7 @@ window.editOrder = function(k) {
   document.getElementById('o_car').value=o.car||''; document.getElementById('o_wheel_count').value=o.wheels||'4';
   document.getElementById('o_note').value=o.note||'';
   document.getElementById('o_service').value=o.service||''; document.getElementById('o_type').value=o.type||'';
-  document.getElementById('o_time').value=o.time||''; document.getElementById('o_custom_date').value=o.custom||'';
+  document.getElementById('o_time').value = o.dateStamp || o.time || '';
   document.getElementById('o_custom_date').style.display=o.time==='własny'?'block':'none';
   document.getElementById('o_start_date').value=o.startDate||'';
   document.getElementById('o_diameter').value=o.diameter||'';
