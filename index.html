@@ -3267,8 +3267,6 @@ window.addOrder = async function() {
   const startDate = document.getElementById('o_start_date').value || formatDate(new Date());
   const time = document.getElementById('o_time').value;
   if (!time) { errors.push('📅 Wybierz termin realizacji'); document.getElementById('o_time').classList.add('field-error'); }
-  const custom = document.getElementById('o_custom_date').value;
-  if (time==='własny'&&!custom) { errors.push('📆 Podaj własny termin'); document.getElementById('o_custom_date').classList.add('field-error'); }
   if (errors.length) { showOrderError(errors); return; }
 
   const runflat = document.getElementById('o_runflat').checked;
@@ -3281,7 +3279,7 @@ window.addOrder = async function() {
     status:false, name:document.getElementById('o_name').value, phone:document.getElementById('o_phone').value,
     car:document.getElementById('o_car').value, diameter, wheels: document.getElementById('o_wheel_count').value || '4',
     note:document.getElementById('o_note').value,
-    service, type, time, custom,
+    service, type, time,
     runflat, low, valve, valveCount,
     price:calcVisitPrice({service,wheel:type,tireSize:diameter,runflat,low,valve,valveCount}, true),
     dateStamp: time,
@@ -3304,7 +3302,7 @@ window.addOrder = async function() {
 function resetOrderForm() {
   ['o_name','o_phone','o_car','o_note'].forEach(id=>document.getElementById(id).value='');
   ['o_service','o_type'].forEach(id=>document.getElementById(id).selectedIndex=0);
-  document.getElementById('o_custom_date').value=''; document.getElementById('o_custom_date').style.display='none';
+  
   document.getElementById('o_start_date').value='';
   document.getElementById('o_diameter').value='';
   document.getElementById('o_runflat').checked=false;
@@ -3476,7 +3474,7 @@ window.editOrder = function(k) {
   document.getElementById('o_note').value=o.note||'';
   document.getElementById('o_service').value=o.service||''; document.getElementById('o_type').value=o.type||'';
   document.getElementById('o_time').value = o.dateStamp || o.time || '';
-  document.getElementById('o_custom_date').style.display=o.time==='własny'?'block':'none';
+  
   document.getElementById('o_start_date').value=o.startDate||'';
   document.getElementById('o_diameter').value=o.diameter||'';
   document.querySelectorAll('#o_diameterButtons button').forEach(b=>{b.classList.toggle('selected',b.innerText.trim()===o.diameter+'"');});
