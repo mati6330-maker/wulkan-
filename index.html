@@ -403,6 +403,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('archive',this)">Archiwum</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('pricing',this)">Cennik</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('uzytkowe',this)">Użytkowe</div>
+  <div class="tab admin-tab tab-locked" onclick="requireAdmin('firmy',this)">Firmy</div>
   <div class="tab admin-tab tab-locked" onclick="requireAdmin('przechowalnia',this)">Przechowalnia</div>
 </div>
 <div class="container">
@@ -487,6 +488,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <label><input type="checkbox" id="cb_runflat" class="custom-cb"> Run-flat</label>
   <label><input type="checkbox" id="cb_low" class="custom-cb"> Niski profil</label>
   <label><input type="checkbox" id="cb_valve" class="custom-cb"> Nowy wentyl</label>
+  <label><input type="checkbox" id="cb_bus" class="custom-cb"> Bus</label>
 </div>
 <div id="noteField" style="display:none">
 <div class="section-label">Notatka admina</div>
@@ -928,6 +930,20 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <div id="vinResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.8"></div>
   </div>
 </div>
+
+<!-- FIRMY -->
+<div class="section" id="firmy">
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🏢 DODAJ FIRMĘ</div>
+    <input id="firm_name" placeholder="Nazwa firmy" style="margin-bottom:6px"/>
+    <input id="firm_nip" placeholder="NIP" inputmode="numeric" style="margin-bottom:6px"/>
+    <input id="firm_address" placeholder="Adres" style="margin-bottom:10px"/>
+    <button id="firmBtn" onclick="window.addFirma()" style="width:100%;letter-spacing:2px">▶ DODAJ FIRMĘ</button>
+  </div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:6px">AKTYWNE FIRMY</div>
+  <div id="firmyList"></div>
+</div>
+
 <div class="section" id="przechowalnia">
 
   <!-- FORMULARZ PRZECHOWALNIA -->
@@ -1557,6 +1573,9 @@ function calcVisitPrice(v, isOrder = false) {
   // Wentyl doliczany PO podziale — cena za sztukę × ilość wentyli (lub kół jeśli nie podano osobno)
   if (v.valve) price += p.nw * (parseInt(v.valveCount) || wheelCount);
 
+  // Bus — 20 zł od koła
+  if (v.bus) price += 20 * wheelCount;
+
   // Rabat dla zleceń przy wymianie opon
   if (isOrder && v.service === "Wymiana opon") price -= p.zlecenie_discount;
 
@@ -1689,7 +1708,7 @@ function initApp() {
 }
 
 // Listenery DOM — dodane raz przy starcie modułu
-['service','wheel','cb_runflat','cb_low','cb_valve','tireSize'].forEach(id => {
+['service','wheel','cb_runflat','cb_low','cb_valve','cb_bus','tireSize'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('change', updateLivePrice);
 });
@@ -1706,8 +1725,9 @@ function updateLivePrice() {
   const runflat = document.getElementById('cb_runflat').checked;
   const low = document.getElementById('cb_low').checked;
   const valve = document.getElementById('cb_valve').checked;
+  const bus = document.getElementById('cb_bus').checked;
   const wheelCount = parseInt(document.getElementById('wheel_count').value)||4;
-  const price = calcVisitPrice({tireSize, service, wheel, runflat, low, valve, wheelCount});
+  const price = calcVisitPrice({service, wheel, tireSize, runflat, low, valve, bus, wheelCount});({tireSize, service, wheel, runflat, low, valve, wheelCount});
   const el = document.getElementById('livePriceDisplay');
   if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
@@ -2287,6 +2307,7 @@ window.save = async function() {
     low: document.getElementById('cb_low').checked,
     valve: document.getElementById('cb_valve').checked,
     valveCount: document.getElementById('cb_valve').checked ? 4 : 0,
+    bus: document.getElementById('cb_bus').checked,
     date: formatDate(selectedDate),
     time: selectedTime,
   };
@@ -2373,6 +2394,7 @@ function resetVisitForm() {
   document.getElementById('cb_runflat').checked=false;
   document.getElementById('cb_low').checked=false;
   document.getElementById('cb_valve').checked=false;
+  document.getElementById('cb_bus').checked=false;
   document.querySelectorAll('#tireSizeButtons button').forEach(b=>b.classList.remove('selected'));
   _visitWheelCount = '';
   [1,2,3,4].forEach(i=>{const b=document.getElementById('vwc_'+i);if(b){b.style.background='var(--surface2)';b.style.color='var(--text)';b.style.borderColor='var(--border)';}});
@@ -3238,6 +3260,7 @@ window.editVisit = function(k) {
   document.getElementById('cb_runflat').checked=!!v.runflat;
   document.getElementById('cb_low').checked=!!v.low;
   document.getElementById('cb_valve').checked=!!v.valve;
+  document.getElementById('cb_bus').checked=!!v.bus;
   document.querySelectorAll('#tireSizeButtons button').forEach(b=>{b.classList.toggle('selected',b.innerText.trim()===v.tireSize+'"');});
   const [yr,mo,dy] = v.date.split('-').map(Number);
   selectedDate = new Date(yr, mo-1, dy);
@@ -4575,6 +4598,193 @@ window.closeStorageModal = function() {
   _storageEntryKey = null;
 };
 
+// ── FIRMY ──
+let firmy = {};
+
+window.addFirma = async function() {
+  const name = document.getElementById('firm_name').value.trim();
+  const nip = document.getElementById('firm_nip').value.trim();
+  const address = document.getElementById('firm_address').value.trim();
+  if (!name) { showToast('⚠ Podaj nazwę firmy', '#f87171'); return; }
+  const key = window._editFirmaKey;
+  if (key) {
+    await update(ref(db, 'firmy/' + key), { name, nip, address });
+    window._editFirmaKey = null;
+    document.getElementById('firmBtn').textContent = '▶ DODAJ FIRMĘ';
+    showToast('✔ Zaktualizowano firmę', 'var(--green)');
+  } else {
+    await push(ref(db, 'firmy'), { name, nip, address, pozycje: {}, createdAt: Date.now() });
+    showToast('✔ Dodano firmę', 'var(--green)');
+  }
+  ['firm_name','firm_nip','firm_address'].forEach(id => document.getElementById(id).value = '');
+};
+
+window.editFirma = function(k) {
+  const f = firmy[k];
+  if (!f) return;
+  document.getElementById('firm_name').value = f.name || '';
+  document.getElementById('firm_nip').value = f.nip || '';
+  document.getElementById('firm_address').value = f.address || '';
+  document.getElementById('firmBtn').textContent = '✔ ZAPISZ ZMIANY';
+  window._editFirmaKey = k;
+  window.scrollTo(0,0);
+};
+
+window.deleteFirma = async function(k) {
+  if (!confirm('Usunąć firmę i wszystkie przypisane pozycje?')) return;
+  await remove(ref(db, 'firmy/' + k));
+  showToast('✔ Usunięto firmę', 'var(--green)');
+};
+
+window.fakturujFirma = async function(k) {
+  const f = firmy[k];
+  if (!f) return;
+  if (!confirm('Wystawić fakturę i przenieść pozycje do archiwum?')) return;
+  const arch = { ...f, archivedAt: Date.now() };
+  await push(ref(db, 'firmy_arch'), arch);
+  await update(ref(db, 'firmy/' + k), { pozycje: {} });
+  showToast('✔ Przeniesiono do archiwum', 'var(--green)');
+};
+
+window.openFirmaModal = function(k) {
+  window._firmaModalKey = k;
+  const f = firmy[k];
+  if (!f) return;
+  document.getElementById('firmaModalTitle').textContent = '🏢 ' + f.name + ' — przypisz pozycje';
+  renderFirmaModal(k);
+  document.getElementById('firmaModal').style.display = 'block';
+};
+
+window.closeFirmaModal = function() {
+  document.getElementById('firmaModal').style.display = 'none';
+};
+
+function renderFirmaModal(k) {
+  const f = firmy[k];
+  const pozycje = f.pozycje || {};
+  const today = getToday();
+
+  // Zbierz nieprzypisane pozycje (wizyty, zlecenia, klima z ostatnich 90 dni)
+  const allVisits = Object.entries(visits)
+    .filter(([vk, v]) => v.date >= today || v.date >= (new Date(Date.now()-90*864e5).toISOString().slice(0,10)))
+    .sort((a,b) => b[1].date.localeCompare(a[1].date));
+  const allOrders = Object.entries(orders)
+    .filter(([ok, o]) => !o.status)
+    .sort((a,b) => (b[1].dateStamp||'').localeCompare(a[1].dateStamp||''));
+  const allKlimas = Object.entries(klimas)
+    .filter(([kk, km]) => km && !km.status)
+    .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+  // Przypisane pozycje
+  const assignedHtml = Object.entries(pozycje).length
+    ? '<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:8px">PRZYPISANE POZYCJE</div>' +
+      Object.entries(pozycje).map(([pk, p]) => {
+        const price = p.price || 0;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;margin-bottom:4px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.2);border-radius:4px">
+          <div>
+            <div style="font-size:12px;font-weight:600">${p.car||p.name||'—'} ${p.date||p.dateStamp||''}</div>
+            <div style="font-size:11px;color:var(--muted)">${p.service||p.type||'klima'} · ${price} zł</div>
+          </div>
+          <button onclick="window.removePozycja('${k}','${pk}')" style="width:auto;padding:4px 8px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
+        </div>`;
+      }).join('') +
+      `<div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);margin:10px 0;text-align:right">
+        RAZEM: ${Object.values(pozycje).reduce((s,p) => s+(p.price||0), 0)} zł
+      </div>`
+    : '<div style="color:var(--muted);font-size:12px;margin-bottom:10px">Brak przypisanych pozycji</div>';
+
+  const makeRow = (id, label, car, date, service, price, type) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px;margin-bottom:3px;background:var(--surface2);border:1px solid var(--border);border-radius:4px">
+      <div>
+        <div style="font-size:12px;font-weight:600">${car} <span style="font-size:10px;color:var(--muted)">${date}</span></div>
+        <div style="font-size:11px;color:var(--muted)">${service} · <b>${price} zł</b></div>
+      </div>
+      <button onclick="window.addPozycja('${k}','${id}','${type}')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>
+    </div>`;
+
+  const visitRows = allVisits.map(([vk,v]) =>
+    makeRow(vk, 'wizyta', v.car||v.name||'—', v.date, v.service||'—', v.price||calcVisitPrice(v), 'visit')
+  ).join('') || '<div style="color:var(--muted);font-size:11px">Brak wizyt</div>';
+
+  const orderRows = allOrders.map(([ok,o]) =>
+    makeRow(ok, 'zlecenie', o.car||o.name||'—', o.dateStamp||'', o.service||'—', o.price||0, 'order')
+  ).join('') || '<div style="color:var(--muted);font-size:11px">Brak zleceń</div>';
+
+  const klimaRows = allKlimas.map(([kk,km]) =>
+    makeRow(kk, 'klima', km.car||'—', km.start||'', 'Klima', km.price||0, 'klima')
+  ).join('') || '<div style="color:var(--muted);font-size:11px">Brak serwisów klima</div>';
+
+  document.getElementById('firmaModalBody').innerHTML =
+    assignedHtml +
+    '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0"/>' +
+    '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:8px">WIZYTY</div>' + visitRows +
+    '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin:10px 0 8px">ZLECENIA</div>' + orderRows +
+    '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin:10px 0 8px">KLIMA</div>' + klimaRows;
+}
+
+window.addPozycja = async function(firmaKey, itemKey, type) {
+  let data = {};
+  if (type === 'visit') {
+    const v = visits[itemKey];
+    if (!v) return;
+    data = { type, car: v.car||v.name||'—', date: v.date, service: v.service||'—', price: v.price||calcVisitPrice(v) };
+  } else if (type === 'order') {
+    const o = orders[itemKey];
+    if (!o) return;
+    data = { type, car: o.car||o.name||'—', date: o.dateStamp||'', service: o.service||'—', price: o.price||0 };
+  } else if (type === 'klima') {
+    const km = klimas[itemKey];
+    if (!km) return;
+    data = { type, car: km.car||'—', date: km.start||'', service: 'Klima serwis', price: km.price||0 };
+  }
+  await update(ref(db, 'firmy/' + firmaKey + '/pozycje/' + itemKey), data);
+  showToast('✔ Dodano pozycję', 'var(--green)');
+  renderFirmaModal(firmaKey);
+};
+
+window.removePozycja = async function(firmaKey, itemKey) {
+  await remove(ref(db, 'firmy/' + firmaKey + '/pozycje/' + itemKey));
+  showToast('✔ Usunięto pozycję', 'var(--green)');
+  renderFirmaModal(firmaKey);
+};
+
+window.renderFirmy = function() {
+  const box = document.getElementById('firmyList');
+  if (!box) return;
+  const entries = Object.entries(firmy).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+  if (!entries.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:8px 0">Brak firm</div>';
+    return;
+  }
+  box.innerHTML = entries.map(([k, f]) => {
+    const pozycje = Object.values(f.pozycje || {});
+    const total = pozycje.reduce((s,p) => s+(p.price||0), 0);
+    const count = pozycje.length;
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text)">${f.name||'—'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">NIP: ${f.nip||'—'} · ${f.address||'—'}</div>
+          <div style="font-size:12px;color:var(--accent);margin-top:4px;font-family:var(--mono)">${count} pozycji · ${total} zł</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:space-between;align-items:center">
+          <div style="display:flex;gap:4px">
+            <button onclick="window.openFirmaModal('${k}')" style="width:auto;padding:5px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">📋 Pozycje</button>
+            <button onclick="window.fakturujFirma('${k}')" style="width:auto;padding:5px 10px;font-size:11px;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3)">🧾 Fakturuj</button>
+            <button onclick="window.editFirma('${k}')" style="width:auto;padding:5px 8px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
+            <button onclick="window.deleteFirma('${k}')" style="width:auto;padding:5px 8px;font-size:12px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+onValue(ref(db, 'firmy'), snap => {
+  firmy = snap.val() || {};
+  if (document.getElementById('firmyList')) window.renderFirmy();
+});
+
 window.goToMainSlot = function(date, time) {
   selectedDate = parseDate(date);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -5187,6 +5397,7 @@ window.showTab = function(id, el) {
   if (id==='pricing') window.renderPricing();
   if (id==='klima') window.renderKlima();
   if (id==='przechowalnia') { window.renderPrzechowalnia(); window.renderZamowienia(); }
+  if (id==='firmy') window.renderFirmy();
 };
 
 // ── BLOKOWANIE DNI ──
@@ -5777,6 +5988,15 @@ setInterval(updateClock,1000); updateClock();
       <button onclick="storageConfirmSwap()" style="width:100%;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.4)">✔ Zapisz zamiennik</button>
     </div>
     <button onclick="closeStorageModal()" style="width:100%;margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">Anuluj</button>
+  </div>
+</div>
+
+<!-- MODAL FIRMY - przypisz pozycje -->
+<div id="firmaModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:2001;overflow-y:auto">
+  <div style="background:var(--surface);margin:20px auto;max-width:520px;border-radius:8px;border:1px solid var(--border);padding:20px">
+    <div id="firmaModalTitle" style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:14px">🏢 PRZYPISZ POZYCJE DO FIRMY</div>
+    <div id="firmaModalBody" style="max-height:70vh;overflow-y:auto"></div>
+    <button onclick="window.closeFirmaModal()" style="width:100%;margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">Zamknij</button>
   </div>
 </div>
 
