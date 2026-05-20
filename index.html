@@ -1,4 +1,29 @@
 <!DOCTYPE html>
+<!--
+=================================================================
+  WULKANIZACJA MIELCZAREK — System rezerwacji
+  Wersja: 242
+=================================================================
+  HISTORIA WERSJI:
+  v242 - Komentarz z historią wersji, Bus w jednym wierszu (flex-wrap:nowrap)
+  v241 - Opcja "Bus" (+20 zł/koło) w dodatkach do wizyty
+  v240 - Formularz zleceń: daty ręczne jak w klimie, usunięto dziś/jutro
+  v239 - Naprawa zapisywania zleceń (usunięto referencje do o_custom_date)
+  v238 - Zakładka Firmy: zarządzanie firmami, przypisywanie pozycji, fakturowanie zbiorcze
+  v237 - Wyszukiwarka R134a: własne serwisy z Firebase obok bazy NRF
+  v236 - Naprawa addKlima (window. prefix), naprawa sortowania listy wizyt
+  v235 - Przycisk 🗄 przypisywania przechowalni do wizyty (modal z 3 scenariuszami)
+  v234 - Sortowanie listy wizyt: daty malejąco, godziny rosnąco w grupie dnia
+  v233 - Zakładka Przechowalnia: stała + tymczasowa, edycja, wydruk, statusy
+  v232 - Zakładka Firmy (szkielet), integracja przechowalni z listą wizyt (badge)
+  v231 - Baza klima z własnych serwisów Firebase w wyszukiwarce R134a
+  v230 - Zakładka Użytkowe: R134a, OEM, VIN decoder przeniesione z Klima/Zleceń
+  v229 - Baza R134a z NRF AC Filling Chart 2024 (709 wpisów)
+  v228 - Wydruk tygodnia (A4 portrait, 2 kolumny x 3 wiersze)
+  v227 - Przycisk drukuj do wizyt na liście, -10 czerwony
+  v226 - Układ kart: tekst pełna szerokość, przyciski pod tekstem (lista/zlecenia/klima)
+=================================================================
+-->
 <html lang="pl">
 <head>
 <meta charset="utf-8"/>
@@ -273,8 +298,8 @@ button:active{transform:translateY(0);box-shadow:none}
 #adminBar button{width:auto;padding:5px 12px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35);letter-spacing:1px;display:flex;align-items:center;justify-content:center;height:28px;}
 #adminBar button:hover{background:var(--red);color:#fff}
 #f-all,#f-notdone,#f-done{flex:1;padding:10px 6px;font-size:12px;letter-spacing:1px;margin:0 3px 0 0;}
-.check-group{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
-.check-group label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;letter-spacing:0.5px;cursor:pointer;color:var(--text);background:var(--surface2);border:1px solid #555;padding:10px 10px;border-radius:3px;transition:all 0.12s;flex:1;min-width:90px;}
+.check-group{display:flex;flex-wrap:nowrap;gap:6px;margin:8px 0;}
+.check-group label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;letter-spacing:0.5px;cursor:pointer;color:var(--text);background:var(--surface2);border:1px solid #555;padding:8px 6px;border-radius:3px;transition:all 0.12s;flex:1;}
 .check-group label:hover{border-color:var(--accent);color:var(--accent)}
 .check-group label:has(input:checked){border-color:var(--accent)!important;background:rgba(79,142,247,0.22)!important;color:var(--accent)!important;box-shadow:0 0 0 1px var(--accent);}
 .check-group input[type=checkbox]{width:18px;height:18px;margin:0;padding:0;flex-shrink:0;appearance:none;-webkit-appearance:none;background:var(--surface);border:2px solid var(--border);border-radius:3px;cursor:pointer;position:relative;transition:all 0.15s;}
