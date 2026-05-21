@@ -2901,9 +2901,16 @@ window.renderList = function renderList() {
             <button onclick="deleteVisit('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
             </div>
             <span style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
-              ${(()=>{const base=calcVisitPrice(v),curr=v.price!==undefined?v.price:base,disc=base>0?Math.round((1-curr/base)*100):0;return disc>0?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${disc}%</span>`:''})()}
-              <span id="price-${k}" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${v.price!==undefined?v.price:calcVisitPrice(v)} zł</span>
-            </span>
+              ${(()=>{
+                const base=calcVisitPrice(v);
+                const curr=v.price!==undefined?v.price:base;
+                const tmpPrice = v.storageRef && zamowienia_tmp[v.storageRef] ? (zamowienia_tmp[v.storageRef].price||0) : 0;
+                const total = curr + tmpPrice;
+                const disc=base>0?Math.round((1-curr/base)*100):0;
+                const discHtml = disc>0?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${disc}%</span>`:'';
+                const tmpHtml = tmpPrice?`<span style="font-size:10px;color:var(--muted)"> +${tmpPrice}zł</span>`:'';
+                return discHtml+`<span id="price-${k}" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${total} zł</span>`+tmpHtml;
+              })()}
           </div>
         </div>
         <div id="sizepicker-${k}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
@@ -3395,7 +3402,29 @@ window.setVisitWheel = async function(k, wheel) {
 };
 window.toggleVisit = async function(k) {
   if (!visits[k]) return;
-  await update(ref(db,'wizyty/'+k), {status: !visits[k].status});
+  const newStatus = !visits[k].status;
+  await update(ref(db,'wizyty/'+k), {status: newStatus});
+
+  const v = visits[k];
+  if (!v.storageRef) return;
+
+  if (newStatus) {
+    // Oznaczono jako wykonana — przenieś tymczasowe opony do archiwum
+    if (zamowienia_tmp[v.storageRef]) {
+      const entry = zamowienia_tmp[v.storageRef];
+      await push(ref(db, 'przechowalnia_arch'), { ...entry, status: 'odebrane', archivedAt: Date.now(), visitKey: k, _fromVisit: k });
+      await remove(ref(db, 'zamowienia_tmp/' + v.storageRef));
+    }
+  } else {
+    // Odznaczono — znajdź w archiwum i przywróć do zamowienia_tmp
+    const archEntries = Object.entries(przechowalnia_arch || {})
+      .filter(([ak, av]) => av._fromVisit === k || av.visitKey === k);
+    for (const [ak, av] of archEntries) {
+      const { _fromVisit, archivedAt, status, ...restored } = av;
+      await set(ref(db, 'zamowienia_tmp/' + v.storageRef), { ...restored, status: 'dostarczone' });
+      await remove(ref(db, 'przechowalnia_arch/' + ak));
+    }
+  }
 };
 window.editVisit = function(k) {
   const v = visits[k];
