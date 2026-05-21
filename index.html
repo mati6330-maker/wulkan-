@@ -3424,6 +3424,10 @@ window.toggleVisit = async function(k) {
       await set(ref(db, 'zamowienia_tmp/' + v.storageRef), { ...restored, status: 'dostarczone' });
       await remove(ref(db, 'przechowalnia_arch/' + ak));
     }
+    // Usuń storageNote z wizyty bo opony wróciły do przechowalni
+    if (archEntries.length > 0) {
+      await update(ref(db, 'wizyty/' + k), { storageNote: null });
+    }
   }
 };
 window.editVisit = function(k) {
