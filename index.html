@@ -4684,20 +4684,27 @@ window.closeFirmaModal = function() {
   document.getElementById('firmaModal').style.display = 'none';
 };
 
-function renderFirmaModal(k) {
+function renderFirmaModal(k, search) {
   const f = firmy[k];
   const pozycje = f.pozycje || {};
   const today = getToday();
+  const q = (search||'').toLowerCase().trim();
 
-  // Zbierz nieprzypisane pozycje (wizyty, zlecenia, klima z ostatnich 90 dni)
+  // Zbierz pozycje (wizyty, zlecenia, klima z ostatnich 90 dni)
+  const d90 = new Date(Date.now()-90*864e5).toISOString().slice(0,10);
+  const match = (car, name, service) =>
+    !q || (car||'').toLowerCase().includes(q) ||
+    (name||'').toLowerCase().includes(q) ||
+    (service||'').toLowerCase().includes(q);
+
   const allVisits = Object.entries(visits)
-    .filter(([vk, v]) => v.date >= today || v.date >= (new Date(Date.now()-90*864e5).toISOString().slice(0,10)))
+    .filter(([vk, v]) => (v.date >= d90) && match(v.car, v.name, v.service))
     .sort((a,b) => b[1].date.localeCompare(a[1].date));
   const allOrders = Object.entries(orders)
-    .filter(([ok, o]) => !o.status)
+    .filter(([ok, o]) => !o.status && match(o.car, o.name, o.service))
     .sort((a,b) => (b[1].dateStamp||'').localeCompare(a[1].dateStamp||''));
   const allKlimas = Object.entries(klimas)
-    .filter(([kk, km]) => km && !km.status)
+    .filter(([kk, km]) => km && !km.status && match(km.car, km.name, 'klima'))
     .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
 
   // Przypisane pozycje
@@ -4740,11 +4747,19 @@ function renderFirmaModal(k) {
   ).join('') || '<div style="color:var(--muted);font-size:11px">Brak serwisów klima</div>';
 
   document.getElementById('firmaModalBody').innerHTML =
+    `<input id="firmaSearch" placeholder="🔍 Szukaj po aucie, nazwisku, usłudze..." 
+      oninput="renderFirmaModal('${k}', this.value)"
+      style="margin-bottom:12px" value="${search||''}"/>` +
     assignedHtml +
     '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0"/>' +
     '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:8px">WIZYTY</div>' + visitRows +
     '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin:10px 0 8px">ZLECENIA</div>' + orderRows +
     '<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin:10px 0 8px">KLIMA</div>' + klimaRows;
+  // Przywróć focus na polu wyszukiwania
+  if (search !== undefined) {
+    const inp = document.getElementById('firmaSearch');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
 }
 
 window.addPozycja = async function(firmaKey, itemKey, type) {
