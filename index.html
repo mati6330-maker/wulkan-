@@ -4676,7 +4676,7 @@ window.openFirmaModal = function(k) {
   const f = firmy[k];
   if (!f) return;
   document.getElementById('firmaModalTitle').textContent = '🏢 ' + f.name + ' — przypisz pozycje';
-  renderFirmaModal(k);
+  window.renderFirmaModal(k);
   document.getElementById('firmaModal').style.display = 'block';
 };
 
@@ -4684,27 +4684,29 @@ window.closeFirmaModal = function() {
   document.getElementById('firmaModal').style.display = 'none';
 };
 
-function renderFirmaModal(k, search) {
+window.renderFirmaModal = function renderFirmaModal(k, search) {
   const f = firmy[k];
   const pozycje = f.pozycje || {};
   const today = getToday();
   const q = (search||'').toLowerCase().trim();
 
-  // Zbierz pozycje (wizyty, zlecenia, klima z ostatnich 90 dni)
   const d90 = new Date(Date.now()-90*864e5).toISOString().slice(0,10);
-  const match = (car, name, service) =>
-    !q || (car||'').toLowerCase().includes(q) ||
+  const match = (car, name, service, phone, date) =>
+    !q ||
+    (car||'').toLowerCase().includes(q) ||
     (name||'').toLowerCase().includes(q) ||
-    (service||'').toLowerCase().includes(q);
+    (service||'').toLowerCase().includes(q) ||
+    (phone||'').replace(/\s/g,'').includes(q.replace(/\s/g,'')) ||
+    (date||'').includes(q);oLowerCase().includes(q);
 
   const allVisits = Object.entries(visits)
-    .filter(([vk, v]) => (v.date >= d90) && match(v.car, v.name, v.service))
+    .filter(([vk, v]) => (v.date >= d90) && match(v.car, v.name, v.service, v.phone, v.date))
     .sort((a,b) => b[1].date.localeCompare(a[1].date));
   const allOrders = Object.entries(orders)
-    .filter(([ok, o]) => !o.status && match(o.car, o.name, o.service))
+    .filter(([ok, o]) => !o.status && match(o.car, o.name, o.service, o.phone, o.dateStamp))
     .sort((a,b) => (b[1].dateStamp||'').localeCompare(a[1].dateStamp||''));
   const allKlimas = Object.entries(klimas)
-    .filter(([kk, km]) => km && !km.status && match(km.car, km.name, 'klima'))
+    .filter(([kk, km]) => km && !km.status && match(km.car, km.name, 'klima', km.phone, km.start))
     .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
 
   // Przypisane pozycje
@@ -4751,7 +4753,7 @@ function renderFirmaModal(k, search) {
 
   document.getElementById('firmaModalBody').innerHTML =
     `<input id="firmaSearch" placeholder="🔍 Szukaj po aucie, nazwisku, usłudze..." 
-      oninput="renderFirmaModal('${k}', this.value)"
+      oninput="window.renderFirmaModal('${k}', this.value)"
       style="margin-bottom:12px" value="${search||''}"/>` +
     assignedHtml +
     '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0"/>' +
@@ -4783,13 +4785,13 @@ window.addPozycja = async function(firmaKey, itemKey, type, regNum) {
   if (regNum) data.regNum = regNum.toUpperCase();
   await update(ref(db, 'firmy/' + firmaKey + '/pozycje/' + itemKey), data);
   showToast('✔ Dodano pozycję', 'var(--green)');
-  renderFirmaModal(firmaKey);
+  window.renderFirmaModal(firmaKey);
 };
 
 window.removePozycja = async function(firmaKey, itemKey) {
   await remove(ref(db, 'firmy/' + firmaKey + '/pozycje/' + itemKey));
   showToast('✔ Usunięto pozycję', 'var(--green)');
-  renderFirmaModal(firmaKey);
+  window.renderFirmaModal(firmaKey);
 };
 
 window.renderFirmy = function() {
