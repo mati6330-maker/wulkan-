@@ -140,7 +140,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 }
 .tab-locked{display:none;}
 
-/* ── POPUP SZCZEGÓŁÓW ── */
+[data-tel]{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;color:inherit;}
+[data-tel]:hover{color:var(--accent);}
+
 #detailPopup{
   position:fixed;
   inset:0;
@@ -644,6 +646,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <label><input type="checkbox" id="o_runflat" class="custom-cb" onchange="updateOrderPrice()"> Run-flat</label>
   <label><input type="checkbox" id="o_low" class="custom-cb" onchange="updateOrderPrice()"> Niski profil</label>
   <label><input type="checkbox" id="o_valve" class="custom-cb" onchange="toggleOrderValveCount(this)"> Nowy wentyl</label>
+  <label><input type="checkbox" id="o_bus" class="custom-cb" onchange="updateOrderPrice()"> Bus</label>
 </div>
 <div id="o_valve_count_wrap" style="display:none;margin-bottom:6px">
   <div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">ILOŚĆ WENTYLI</div>
@@ -1207,7 +1210,7 @@ window.printPrzechowalnia = function(k) {
     <div class="sub">Przechowalnia opon · ${new Date().toLocaleDateString('pl-PL')}</div>
     <table>
       <tr><td>Klient</td><td>${v.name||'—'}</td></tr>
-      <tr><td>Telefon</td><td>${v.phone||'—'}</td></tr>
+      <tr><td>Telefon</td><td><span data-tel="<span data-tel="${v.phone||''}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span>"><span data-tel="${v.phone||''}">${v.phone||''}</span></span></td></tr>
       <tr><td>Przechowywane</td><td>${v.type||'—'}</td></tr>
       <tr><td>Rozmiar</td><td>${v.size||'—'}</td></tr>
       <tr><td>Miejsce</td><td>${v.location||'—'}</td></tr>
@@ -1287,7 +1290,7 @@ window.printZamowienie = function(k) {
     <div class="sub">Zamówienie tymczasowe · ${new Date().toLocaleDateString('pl-PL')}</div>
     <table>
       <tr><td>Klient</td><td>${v.name||'—'}</td></tr>
-      <tr><td>Telefon</td><td>${v.phone||'—'}</td></tr>
+      <tr><td>Telefon</td><td><span data-tel="<span data-tel="${v.phone||''}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span>"><span data-tel="${v.phone||''}">${v.phone||''}</span></span></td></tr>
       <tr><td>Zamówione</td><td>${v.type||'—'}</td></tr>
       <tr><td>Rozmiar</td><td>${v.size||'—'}</td></tr>
       <tr><td>Miejsce</td><td>${v.location||'—'}</td></tr>
@@ -1376,7 +1379,7 @@ window.renderPrzechowalnia = function renderPrzechowalnia() {
         <div>
           <div style="font-weight:700;font-size:14px;color:var(--text)">${v.name}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">
-            ${v.phone ? v.phone + ' · ' : ''}${v.type||'—'}${v.size ? ' · ' + v.size : ''}
+            ${v.phone ? `<span data-tel="${v.phone}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span> · ` : ''}${v.type||'—'}${v.size ? ' · ' + v.size : ''}
           </div>
           <div style="font-size:12px;color:var(--accent);margin-top:4px;font-family:var(--mono)">📍 ${v.location||'—'}</div>
           ${v.note ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">📝 ${v.note}</div>` : ''}
@@ -1424,7 +1427,7 @@ window.renderZamowienia = function renderZamowienia() {
             ${v.price ? `<div style="font-weight:700;font-size:14px;color:var(--accent);font-family:var(--mono)">${v.price} zł</div>` : ''}
           </div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">
-            ${v.phone ? v.phone + ' · ' : ''}${v.type||'—'}${v.size ? ' · ' + v.size : ''}
+            ${v.phone ? `<span data-tel="${v.phone}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span> · ` : ''}${v.type||'—'}${v.size ? ' · ' + v.size : ''}
           </div>
           ${v.location ? `<div style="font-size:12px;color:var(--accent);margin-top:4px;font-family:var(--mono)">📍 ${v.location}</div>` : ''}
           ${v.note ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">📝 ${v.note}</div>` : ''}
@@ -1732,7 +1735,14 @@ function initApp() {
   document.  setSyncStatus('syncing', '⟳ Łączenie z bazą...');
 }
 
-// Listenery DOM — dodane raz przy starcie modułu
+// Globalny handler kliknięcia na numer telefonu
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-tel]');
+  if (!el) return;
+  const num = el.dataset.tel.replace(/\s/g,'');
+  if (num) window.location.href = 'tel:' + num;
+});
+
 ['service','wheel','cb_runflat','cb_low','cb_valve','cb_bus','tireSize'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('change', updateLivePrice);
@@ -1764,8 +1774,9 @@ function updateOrderPrice() {
   const runflat = document.getElementById('o_runflat')?.checked || false;
   const low = document.getElementById('o_low')?.checked || false;
   const valve = document.getElementById('o_valve')?.checked || false;
+  const bus = document.getElementById('o_bus')?.checked || false;
   const valveCount = valve ? (parseInt(document.getElementById('o_valve_count')?.value)||4) : 0;
-  const price = calcVisitPrice({service, wheel, tireSize, wheelCount, runflat, low, valve, valveCount}, true);
+  const price = calcVisitPrice({service, wheel, tireSize, wheelCount, runflat, low, valve, valveCount, bus}, true);
   const el = document.getElementById('liveOrderPriceDisplay');
   if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
@@ -2498,7 +2509,7 @@ window.renderArchiveKlima = function() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:14px;color:var(--accent);font-family:var(--mono)">${o.car||'—'}${o.year?' ('+o.year+')':''}</div>
-          <div style="font-size:12px;color:var(--text);margin-top:2px">${o.name||'—'}${o.phone?' · '+o.phone:''}</div>
+          <div style="font-size:12px;color:var(--text);margin-top:2px">${o.name||'—'}${o.phone?` · <span data-tel="${o.phone}"><span data-tel="${o.phone||''}">${o.phone||''}</span></span>`:''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)">📥 ${o.start||'—'}${o.end?' → 📅 '+o.end:''}</div>
           ${extras?`<div style="font-size:11px;color:var(--muted);margin-top:2px">+ ${extras}</div>`:''}
         </div>
@@ -2566,7 +2577,7 @@ function renderArchiveVisits() {
       html.push(`<div onclick="showVisitDetail('${k}')" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${statusColor};border-radius:4px;padding:7px 10px;margin-bottom:4px;opacity:0.65;cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--muted)">${v.time} · ${v.name||'—'} <span style="font-size:11px;font-weight:400">${v.phone||''}</span></div>
+            <div style="font-size:13px;font-weight:700;color:var(--muted)">${v.time} · ${v.name||'—'} <span style="font-size:11px;font-weight:400"><span data-tel="<span data-tel="${v.phone||''}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span>"><span data-tel="${v.phone||''}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span></span></span></div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px">${v.service||'—'} · ${v.tireSize||'?'}" · ${v.wheel||'—'}${extras?' · '+extras:''}${v.note?' · 📝 '+v.note:''}</div>
           </div>
           <div style="font-family:var(--mono);font-size:11px;color:${statusColor}">${v.status?'✔':'○'}</div>
@@ -2646,7 +2657,7 @@ function renderArchiveOrders() {
       html.push(`<div onclick="showOrderDetail('${k}')" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${statusColor};border-radius:4px;padding:7px 10px;margin-bottom:4px;opacity:0.65;cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--muted)">${o.name||'—'} <span style="font-size:11px;font-weight:400">${o.phone||''}</span></div>
+            <div style="font-size:13px;font-weight:700;color:var(--muted)">${o.name||'—'} <span style="font-size:11px;font-weight:400"><span data-tel="<span data-tel="${o.phone||''}"><span data-tel="${o.phone||''}">${o.phone||''}</span></span>"><span data-tel="${o.phone||''}"><span data-tel="${o.phone||''}">${o.phone||''}</span></span></span></span></div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px">${o.service||'—'} · ${o.diameter||'?'}" · ${o.type||'—'}${o.car?' · '+o.car:''}</div>
           </div>
           <div style="font-family:var(--mono);font-size:11px;color:${statusColor}">${o.status?'✔':'○'}</div>
@@ -2753,7 +2764,7 @@ window.renderList = function renderList() {
         <div style="display:flex;flex-direction:column;gap:8px">
           <div>
             <div style="font-weight:700;font-size:13px;color:${isOverdue?'#888':'var(--text)'}">
-              ${v.time} &nbsp; ${v.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)">${v.phone||''}</span>${overdueLabel}
+              ${v.time} &nbsp; ${v.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)"><span data-tel="<span data-tel="${v.phone||''}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span>"><span data-tel="${v.phone||''}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span></span></span>${overdueLabel}
             </div>
             ${(()=>{
               if (v.storageNote) return `<div style="font-size:11px;color:#34d399;margin-top:3px;font-weight:600">🗄 ${v.storageNote}</div>`;
@@ -2883,7 +2894,7 @@ window.printVisit = function(k) {
     <div class="sub">Wizyta · ${v.date||'—'} ${v.time||''} · Wydrukowano: ${new Date().toLocaleDateString('pl-PL')}</div>
     <table>
       <tr><td>Klient</td><td>${v.name||'—'}</td></tr>
-      <tr><td>Telefon</td><td>${v.phone||'—'}</td></tr>
+      <tr><td>Telefon</td><td><span data-tel="<span data-tel="${v.phone||''}"><span data-tel="${v.phone||''}">${v.phone||''}</span></span>"><span data-tel="${v.phone||''}">${v.phone||''}</span></span></td></tr>
       <tr><td>Auto</td><td>${v.car||'—'}</td></tr>
       <tr><td>Usługa</td><td>${v.service||'—'}</td></tr>
       <tr><td>Rozmiar</td><td>${v.tireSize ? v.tireSize+'"' : '—'}</td></tr>
@@ -3328,7 +3339,7 @@ window.addOrder = async function() {
     car:document.getElementById('o_car').value, diameter, wheels: document.getElementById('o_wheel_count').value || '4',
     note:document.getElementById('o_note').value,
     service, type, time,
-    runflat, low, valve, valveCount,
+    runflat, low, valve, valveCount, bus,
     price:calcVisitPrice({service,wheel:type,tireSize:diameter,runflat,low,valve,valveCount}, true),
     dateStamp: time,
     startDate
@@ -3356,6 +3367,7 @@ function resetOrderForm() {
   document.getElementById('o_runflat').checked=false;
   document.getElementById('o_low').checked=false;
   document.getElementById('o_valve').checked=false;
+  document.getElementById('o_bus').checked=false;
   document.getElementById('o_valve_count').value='4';
   document.getElementById('o_valve_count_wrap').style.display='none';
   document.querySelectorAll('#o_diameterButtons button').forEach(b=>b.classList.remove('selected'));
@@ -3447,7 +3459,7 @@ window.renderOrders = function renderOrders() {
         <div style="display:flex;flex-direction:column;gap:8px">
           <div>
             <div style="font-weight:700;font-size:13px;color:${isOverdue?'#888':'var(--text)'}">
-              ${o.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)">${o.phone||''}</span>${overdueLabel}
+              ${o.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)"><span data-tel="<span data-tel="${o.phone||''}"><span data-tel="${o.phone||''}">${o.phone||''}</span></span>"><span data-tel="${o.phone||''}"><span data-tel="${o.phone||''}">${o.phone||''}</span></span></span></span>${overdueLabel}
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px">
               ${o.service||'—'} · ${o.diameter ? o.diameter+'"' : '<span style="color:var(--red)">brak rozmiaru</span>'} · ${o.type||'—'}${o.car?' · '+o.car:''}${o.wheels?' · '+o.wheels+' kół':''}
@@ -3529,6 +3541,7 @@ window.editOrder = function(k) {
   document.getElementById('o_runflat').checked=o.runflat||false;
   document.getElementById('o_low').checked=o.low||false;
   document.getElementById('o_valve').checked=o.valve||false;
+  document.getElementById('o_bus').checked=o.bus||false;
   document.getElementById('o_valve_count_wrap').style.display=o.valve?'block':'none';
   if (o.valve && o.valveCount) {
     document.getElementById('o_valve_count').value=o.valveCount;
@@ -4205,7 +4218,7 @@ window.renderKlima = function() {
       <div style="display:flex;flex-direction:column;gap:8px">
         <div>
           <div style="font-weight:700;font-size:14px;color:var(--accent);font-family:var(--mono)">${o.car||'—'}${o.year?' ('+o.year+')':''}</div>
-          <div style="font-size:12px;color:var(--text);margin-top:2px">${o.name||'—'}${o.phone?' · '+o.phone:''}</div>
+          <div style="font-size:12px;color:var(--text);margin-top:2px">${o.name||'—'}${o.phone?` · <span data-tel="${o.phone}"><span data-tel="${o.phone||''}">${o.phone||''}</span></span>`:''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)">📥 ${o.start||'—'}${o.end?' → 📅 '+o.end:''}</div>
           ${todo?`<div style="font-size:12px;color:var(--accent);margin-top:4px;font-weight:600">${todo}</div>`:''}
           ${extras?`<div style="font-size:11px;color:var(--muted);margin-top:2px">+ ${extras}</div>`:''}
@@ -5531,7 +5544,7 @@ window.printOrder = function(k) {
   if (!o) return;
   const win = window.open('', '_blank');
   if (!win) { alert('⚠ Zezwól na wyskakujące okna'); return; }
-  const extras = [o.runflat?'Run-flat':'', o.low?'Niski profil':'', o.valve?`Nowy wentyl ×${o.valveCount||4}`:''].filter(Boolean).join(', ');
+  const extras = [o.runflat?'Run-flat':'', o.low?'Niski profil':'', o.valve?`Nowy wentyl ×${o.valveCount||4}`:'', o.bus?'Bus':''].filter(Boolean).join(', ');
   const realizationDate = o.dateStamp || o.startDate || '—';
   const content = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
     'body{font-family:Arial,sans-serif;padding:24px;font-size:13px;color:#111;max-width:600px;margin:0 auto}' +
