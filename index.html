@@ -1757,7 +1757,15 @@ function initApp() {
     klimas = snap.val() || {};
     renderKlima();
   });
-  document.  setSyncStatus('syncing', '⟳ Łączenie z bazą...');
+  onValue(ref(db, 'firmy'), snap => {
+    firmy = snap.val() || {};
+    if (document.getElementById('firmyList')) window.renderFirmy();
+  });
+  onValue(ref(db, 'firmy_arch'), snap => {
+    firmy_arch = snap.val() || {};
+    if (document.getElementById('archFirmyBox')) window.renderArchiveFirmy();
+  });
+  setSyncStatus('syncing', '⟳ Łączenie z bazą...');
 }
 
 // Globalny handler kliknięcia na numer telefonu
@@ -2576,11 +2584,6 @@ window.renderArchiveFirmy = function() {
     </div>`;
   }).join('');
 };
-
-onValue(ref(db, 'firmy_arch'), snap => {
-  firmy_arch = snap.val() || {};
-  if (document.getElementById('archFirmyBox')) window.renderArchiveFirmy();
-});
 
 window.switchArchiveTab = function(tab) {
   archiveTab = tab;
@@ -5065,11 +5068,6 @@ window.renderFirmy = function() {
     </div>`;
   }).join('');
 };
-
-onValue(ref(db, 'firmy'), snap => {
-  firmy = snap.val() || {};
-  if (document.getElementById('firmyList')) window.renderFirmy();
-});
 
 window.goToMainSlot = function(date, time) {
   selectedDate = parseDate(date);
