@@ -2,26 +2,28 @@
 <!--
 =================================================================
   WULKANIZACJA MIELCZAREK — System rezerwacji
-  Wersja: 242
+  Wersja: 260
 =================================================================
   HISTORIA WERSJI:
-  v242 - Komentarz z historią wersji, Bus w jednym wierszu (flex-wrap:nowrap)
-  v241 - Opcja "Bus" (+20 zł/koło) w dodatkach do wizyty
-  v240 - Formularz zleceń: daty ręczne jak w klimie, usunięto dziś/jutro
-  v239 - Naprawa zapisywania zleceń (usunięto referencje do o_custom_date)
-  v238 - Zakładka Firmy: zarządzanie firmami, przypisywanie pozycji, fakturowanie zbiorcze
-  v237 - Wyszukiwarka R134a: własne serwisy z Firebase obok bazy NRF
-  v236 - Naprawa addKlima (window. prefix), naprawa sortowania listy wizyt
-  v235 - Przycisk 🗄 przypisywania przechowalni do wizyty (modal z 3 scenariuszami)
-  v234 - Sortowanie listy wizyt: daty malejąco, godziny rosnąco w grupie dnia
-  v233 - Zakładka Przechowalnia: stała + tymczasowa, edycja, wydruk, statusy
-  v232 - Zakładka Firmy (szkielet), integracja przechowalni z listą wizyt (badge)
-  v231 - Baza klima z własnych serwisów Firebase w wyszukiwarce R134a
-  v230 - Zakładka Użytkowe: R134a, OEM, VIN decoder przeniesione z Klima/Zleceń
-  v229 - Baza R134a z NRF AC Filling Chart 2024 (709 wpisów)
-  v228 - Wydruk tygodnia (A4 portrait, 2 kolumny x 3 wiersze)
-  v227 - Przycisk drukuj do wizyt na liście, -10 czerwony
-  v226 - Układ kart: tekst pełna szerokość, przyciski pod tekstem (lista/zlecenia/klima)
+  v260 - Naprawa data-tel, kolejność zakładek, archiwum przechowalni, klima pełne info
+  v259 - Klikalne numery telefonów (data-tel) we wszystkich zakładkach
+  v258 - Bus w zleceniach, filtrowanie pozycji faktur, nr rejestracyjny przy pozycji
+  v257 - Firmy: wyszukiwarka pozycji w modalu po aucie/nazwisku/telefonie/dacie
+  v256 - Zakładka Firmy: zarządzanie firmami, przypisywanie, fakturowanie zbiorcze
+  v255 - Toyota C-HR dodana do klima.js
+  v254 - Opcja "Bus" (+20 zł/koło) w wizytach i zleceniach, jeden wiersz checkboxów
+  v253 - Formularz zleceń: daty ręczne jak w klimie, usunięto dziś/jutro/własny
+  v252 - Wyszukiwarka R134a: własne serwisy z Firebase obok bazy NRF
+  v251 - Naprawa addKlima (window. prefix), naprawa sortowania listy wizyt
+  v250 - Przechowalnia zintegrowana z listą wizyt (modal 3 scenariusze)
+  v249 - Sortowanie listy wizyt: daty malejąco, godziny rosnąco
+  v248 - Zakładka Przechowalnia: stała + tymczasowa, edycja, wydruk, statusy
+  v247 - Zakładka Użytkowe: R134a, OEM, VIN decoder
+  v246 - Baza R134a z NRF AC Filling Chart 2024 (712 wpisów)
+  v245 - Wydruk tygodnia A4 portrait, przyciski druku w liście wizyt
+  v244 - Układ kart: tekst pełna szerokość, przyciski pod spodem
+  v243 - Komentarz z historią wersji
+  v242 - (baza stabilna)
 =================================================================
 -->
 <html lang="pl">
@@ -3526,6 +3528,7 @@ window.renderOrders = function renderOrders() {
             <button onclick="toggleOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:${o.status?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)'};color:${statusColor};border:1px solid ${statusColor}">${statusIcon}</button>
             <button onclick="applyOrderDiscount('${k}',-10)" title="Rabat −10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.4)">−10</button>
             <button onclick="applyOrderDiscount('${k}',+10)" title="Dodaj +10 zł" style="width:auto;padding:5px 8px;font-size:11px;letter-spacing:0;background:rgba(74,222,128,0.1);color:var(--green);border:1px solid rgba(74,222,128,0.3)">+10</button>
+            <button onclick="window.openStorageModal('${k}')" title="Przechowalnia" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.4)">🗄</button>
             <button onclick="printOrder('${k}')" title="Drukuj zlecenie" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.5)">🖨</button>
             <button onclick="editOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
             <button onclick="deleteOrder('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
@@ -3551,7 +3554,9 @@ window.renderOrders = function renderOrders() {
         <button onclick="event.stopPropagation();toggleOrderSizePicker('${k}')" style="width:100%;margin-top:5px;padding:4px;font-size:10px;letter-spacing:1px;background:transparent;color:${o.diameter?'var(--muted)':'#4f8ef7'};border:1px solid ${o.diameter?'var(--border)':'#4f8ef7'}">
           🛞 ${o.diameter ? 'Zmień ('+o.diameter+'")' : '⚠ Ustaw rozmiar'}
         </button>
-      </div>`);
+      </div>
+    </div>
+  </div>`);
     });
 
     html.push('</div></div>');
