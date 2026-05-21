@@ -1787,7 +1787,7 @@ function updateLivePrice() {
   const valve = document.getElementById('cb_valve').checked;
   const bus = document.getElementById('cb_bus').checked;
   const wheelCount = parseInt(document.getElementById('wheel_count').value)||4;
-  const price = calcVisitPrice({service, wheel, tireSize, runflat, low, valve, bus, wheelCount});({tireSize, service, wheel, runflat, low, valve, wheelCount});
+  const price = calcVisitPrice({service, wheel, tireSize, runflat, low, valve, bus, wheelCount});
   const el = document.getElementById('livePriceDisplay');
   if (el) el.textContent = price > 0 ? price + ' zł' : '';
 }
