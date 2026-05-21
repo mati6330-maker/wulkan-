@@ -769,6 +769,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <button id="arch-tab-orders" onclick="switchArchiveTab('orders')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">ZLECENIA</button>
   <button id="arch-tab-klima" onclick="switchArchiveTab('klima')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">KLIMA</button>
   <button id="arch-tab-prz" onclick="switchArchiveTab('prz')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">PRZECHOWALNIA</button>
+  <button id="arch-tab-firmy" onclick="switchArchiveTab('firmy')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">FIRMY</button>
 </div>
 
 <!-- Panel wizyt -->
@@ -808,6 +809,12 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <div id="arch-panel-prz" style="display:none">
   <input id="archPrzSearchBox" placeholder="🔍 Szukaj..." oninput="window.renderArchivePrz()" style="margin-bottom:6px"/>
   <div id="archPrzBox"></div>
+</div>
+
+<!-- Panel firmy -->
+<div id="arch-panel-firmy" style="display:none">
+  <input id="archFirmySearchBox" placeholder="🔍 Szukaj..." oninput="window.renderArchiveFirmy()" style="margin-bottom:6px"/>
+  <div id="archFirmyBox"></div>
 </div>
 
 </div>
@@ -1343,8 +1350,17 @@ window.deleteZamowienie = async function(k) {
 };
 
 window.setZamStatus = async function(k, status) {
+  if (status === 'odebrane') {
+    const entry = zamowienia_tmp[k];
+    if (entry) {
+      await push(ref(db, 'przechowalnia_arch'), { ...entry, status: 'odebrane', archivedAt: Date.now() });
+      await remove(ref(db, 'zamowienia_tmp/' + k));
+      showToast('✔ Przeniesiono do archiwum', 'var(--green)');
+      return;
+    }
+  }
   await update(ref(db, 'zamowienia_tmp/' + k), { status });
-  showToast('\u2714 Status zaktualizowany', 'var(--green)');
+  showToast('✔ Status zaktualizowany', 'var(--green)');
 };
 
 function findStorage(v) {
@@ -2522,18 +2538,63 @@ onValue(ref(db, 'przechowalnia_arch'), snap => {
   if (document.getElementById('archPrzBox')) window.renderArchivePrz();
 });
 
+// ── ARCHIWUM FIRM ──
+let firmy_arch = {};
+
+window.renderArchiveFirmy = function() {
+  const box = document.getElementById('archFirmyBox');
+  if (!box) return;
+  const search = (document.getElementById('archFirmySearchBox')?.value||'').toLowerCase();
+  const entries = Object.entries(firmy_arch)
+    .sort((a,b) => (b[1].archivedAt||0) - (a[1].archivedAt||0))
+    .filter(([k,f]) => !search ||
+      (f.name||'').toLowerCase().includes(search) ||
+      (f.nip||'').includes(search));
+
+  if (!entries.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:8px 0">Brak zafakturowanych pozycji</div>';
+    return;
+  }
+
+  box.innerHTML = entries.map(([k,f]) => {
+    const pozycje = Object.values(f.pozycje || {});
+    const netto = pozycje.reduce((s,p) => s+(p.price||0), 0);
+    const total = Math.round(netto * 1.23 * 100) / 100;
+    const date = f.archivedAt ? new Date(f.archivedAt).toLocaleDateString('pl-PL') : '—';
+    const items = pozycje.map(p =>
+      `<div style="font-size:11px;color:var(--muted);padding:2px 0;border-bottom:1px solid var(--border)">
+        ${p.service||'—'} · ${p.car||'—'}${p.regNum?' · <b>'+p.regNum+'</b>':''} · <b>${p.price||0} zł</b>
+      </div>`
+    ).join('');
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="font-weight:700;font-size:14px">${f.name||'—'}</div>
+      <div style="font-size:11px;color:var(--muted)">NIP: ${f.nip||'—'} · ${date}</div>
+      <div style="margin:6px 0">${items}</div>
+      <div style="font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:4px">
+        Brutto: <b>${total} zł</b> · Netto: <b>${netto.toFixed(2).replace('.',',')} zł</b>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+onValue(ref(db, 'firmy_arch'), snap => {
+  firmy_arch = snap.val() || {};
+  if (document.getElementById('archFirmyBox')) window.renderArchiveFirmy();
+});
+
 window.switchArchiveTab = function(tab) {
   archiveTab = tab;
-  document.getElementById('arch-panel-visits').style.display = tab==='visits' ? 'block' : 'none';
-  document.getElementById('arch-panel-orders').style.display = tab==='orders' ? 'block' : 'none';
-  document.getElementById('arch-panel-klima').style.display = tab==='klima' ? 'block' : 'none';
-  document.getElementById('arch-panel-prz').style.display = tab==='prz' ? 'block' : 'none';
-  ['visits','orders','klima','prz'].forEach(t => {
+  ['visits','orders','klima','prz','firmy'].forEach(t => {
+    const panel = document.getElementById('arch-panel-'+t);
     const btn = document.getElementById('arch-tab-'+t);
-    if (!btn) return;
-    btn.style.background = tab===t ? '#4f8ef7' : 'transparent';
-    btn.style.color = tab===t ? '#000' : 'var(--muted)';
+    if (panel) panel.style.display = tab===t ? 'block' : 'none';
+    if (btn) {
+      btn.style.background = tab===t ? '#4f8ef7' : 'transparent';
+      btn.style.color = tab===t ? '#000' : 'var(--muted)';
+    }
   });
+  if (tab==='firmy') window.renderArchiveFirmy();
+  if (tab==='prz') window.renderArchivePrz();
   if (tab==='klima') renderArchiveKlima();
   else renderArchive();
 };
@@ -3779,6 +3840,7 @@ function renderReport(title, list, sum) {
 
   <div class="footer">Liczba pozycji: ${list.length}</div>
   
+
 </body></html>`;
 
   w.document.write(content);
@@ -4736,11 +4798,84 @@ window.deleteFirma = async function(k) {
 window.fakturujFirma = async function(k) {
   const f = firmy[k];
   if (!f) return;
+  const pozycje = Object.values(f.pozycje || {});
+  if (!pozycje.length) { showToast('⚠ Brak pozycji do fakturowania', '#f87171'); return; }
   if (!confirm('Wystawić fakturę i przenieść pozycje do archiwum?')) return;
+
+  // Generuj raport przed archiwizacją
+  const vat = 0.23;
+  const totalNetto = pozycje.reduce((s,p) => s+(p.price||0), 0);
+  const totalVat = Math.round(totalNetto * vat * 100) / 100;
+  const totalBrutto = Math.round((totalNetto + totalVat) * 100) / 100;
+
+  const rows = pozycje.map((p,i) => {
+    const netto = p.price || 0;
+    const vatAmt = Math.round(netto * vat * 100) / 100;
+    const brutto = Math.round((netto + vatAmt) * 100) / 100;
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${p.service||'—'}</td>
+      <td>${p.car||'—'}${p.regNum ? ' <b style="color:#2563eb">'+p.regNum+'</b>' : ''}</td>
+      <td>${p.date||'—'}</td>
+      <td style="text-align:right">${netto.toFixed(2).replace('.',',')} zł</td>
+      <td style="text-align:right">23%</td>
+      <td style="text-align:right">${vatAmt.toFixed(2).replace('.',',')} zł</td>
+      <td style="text-align:right;font-weight:700">${brutto.toFixed(2).replace('.',',')} zł</td>
+    </tr>`;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      body{font-family:Arial,sans-serif;padding:24px;font-size:12px;color:#111;max-width:800px;margin:0 auto}
+      h1{font-size:18px;font-weight:900;margin-bottom:2px}
+      .sub{color:#666;font-size:11px;margin-bottom:16px}
+      .firma{background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:10px 14px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse;font-size:11px}
+      th{background:#111;color:#fff;padding:5px 8px;text-align:left}
+      td{padding:5px 8px;border-bottom:1px solid #e2e8f0}
+      tr:nth-child(even) td{background:#f8fafc}
+      .total-row td{background:#f0f9ff;font-weight:700;border-top:2px solid #111}
+      .summary{margin-top:16px;text-align:right;font-size:13px}
+      .summary b{font-size:16px}
+      @media print{@page{margin:10mm}}
+    </style></head><body>
+    <h1>Wulkanizacja Mielczarek</h1>
+    <div class="sub">Zestawienie do faktury · ${new Date().toLocaleDateString('pl-PL')}</div>
+    <div class="firma">
+      <b>${f.name||'—'}</b><br>
+      NIP: ${f.nip||'—'}<br>
+      ${f.address||''}
+    </div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>Usługa</th><th>Auto / Nr rej.</th><th>Data</th>
+        <th style="text-align:right">Netto</th>
+        <th style="text-align:right">VAT</th>
+        <th style="text-align:right">Kwota VAT</th>
+        <th style="text-align:right">Brutto</th>
+      </tr></thead>
+      <tbody>${rows}
+      <tr class="total-row">
+        <td colspan="4">RAZEM</td>
+        <td style="text-align:right">${totalNetto.toFixed(2).replace('.',',')} zł</td>
+        <td></td>
+        <td style="text-align:right">${totalVat.toFixed(2).replace('.',',')} zł</td>
+        <td style="text-align:right">${totalBrutto.toFixed(2).replace('.',',')} zł</td>
+      </tr></tbody>
+    </table>
+    <div class="summary">Do zapłaty: <b>${totalBrutto.toFixed(2).replace('.',',')} zł brutto</b>
+    (${totalNetto.toFixed(2).replace('.',',')} zł netto + ${totalVat.toFixed(2).replace('.',',')} zł VAT 23%)</div>
+    </body></html>`);
+    win.document.close();
+    win.print();
+  }
+
+  // Archiwizuj
   const arch = { ...f, archivedAt: Date.now() };
   await push(ref(db, 'firmy_arch'), arch);
   await update(ref(db, 'firmy/' + k), { pozycje: {} });
-  showToast('✔ Przeniesiono do archiwum', 'var(--green)');
+  showToast('✔ Faktura wygenerowana, pozycje przeniesione do archiwum', 'var(--green)');
 };
 
 window.openFirmaModal = function(k) {
