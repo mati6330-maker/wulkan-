@@ -4625,7 +4625,7 @@ window.openStorageModal = function(visitKey) {
 
   // Buduj listę — dopasowane na górze, reszta poniżej
   const prEntries = Object.entries(przechowalnia);
-  const zamEntries = Object.entries(zamowienia_tmp).filter(([k,v]) => v.status !== 'odebrane');
+  const zamEntries = Object.entries(zamowienia_tmp).filter(([k,v]) => v.status === 'dostarczone');
 
   let html = '';
   if (prEntries.length === 0 && zamEntries.length === 0) {
