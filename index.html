@@ -977,12 +977,9 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 
 <!-- FIRMY -->
 <div class="section" id="firmy">
-  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
-    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🏢 DODAJ FIRMĘ</div>
-    <input id="firm_name" placeholder="Nazwa firmy" style="margin-bottom:6px"/>
-    <input id="firm_nip" placeholder="NIP" inputmode="numeric" style="margin-bottom:6px"/>
-    <input id="firm_address" placeholder="Adres" style="margin-bottom:10px"/>
-    <button id="firmBtn" onclick="window.addFirma()" style="width:100%;letter-spacing:2px">▶ DODAJ FIRMĘ</button>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <button onclick="window.openAddFirmaModal()" style="flex:1;letter-spacing:1px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">🏢 DODAJ FIRMĘ</button>
+    <button onclick="window.openFirmyListModal()" style="flex:1;letter-spacing:1px;background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.3)">🔍 SZUKAJ FIRMY</button>
   </div>
   <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:6px">AKTYWNE FIRMY</div>
   <div id="firmyList"></div>
@@ -3496,6 +3493,7 @@ window.addOrder = async function() {
   const runflat = document.getElementById('o_runflat').checked;
   const low = document.getElementById('o_low').checked;
   const valve = document.getElementById('o_valve').checked;
+  const bus = document.getElementById('o_bus').checked;
   const valveCount = valve ? parseInt(document.getElementById('o_valve_count').value)||4 : 0;
 
 
@@ -3528,6 +3526,7 @@ function resetOrderForm() {
   ['o_service','o_type'].forEach(id=>document.getElementById(id).selectedIndex=0);
   
   document.getElementById('o_start_date').value='';
+  document.getElementById('o_time').value='';
   document.getElementById('o_diameter').value='';
   document.getElementById('o_runflat').checked=false;
   document.getElementById('o_low').checked=false;
@@ -4810,6 +4809,51 @@ window.closeStorageModal = function() {
 // ── FIRMY ──
 let firmy = {};
 
+window.openAddFirmaModal = function() {
+  document.getElementById('addFirmaModal').style.display = 'block';
+};
+window.closeAddFirmaModal = function() {
+  document.getElementById('addFirmaModal').style.display = 'none';
+};
+window.openFirmyListModal = function() {
+  document.getElementById('firmyListModal').style.display = 'block';
+  document.getElementById('firmySearchInput').value = '';
+  window.renderFirmyModal();
+  setTimeout(() => document.getElementById('firmySearchInput').focus(), 100);
+};
+window.closeFirmyListModal = function() {
+  document.getElementById('firmyListModal').style.display = 'none';
+};
+window.renderFirmyModal = function() {
+  const q = (document.getElementById('firmySearchInput')?.value||'').toLowerCase().trim();
+  const box = document.getElementById('firmyModalList');
+  if (!box) return;
+  const entries = Object.entries(firmy).filter(([k,f]) => {
+    if (!q) return true;
+    return q.split(/\s+/).every(w => (f.name||'').toLowerCase().includes(w) || (f.nip||'').includes(w));
+  }).sort((a,b) => (a[1].name||'').localeCompare(b[1].name||''));
+  if (!entries.length) { box.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Brak wyników</div>'; return; }
+  box.innerHTML = entries.map(([k,f]) => {
+    const pozycje = Object.values(f.pozycje||{});
+    const total = pozycje.reduce((s,p) => s+(p.price||0), 0);
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="font-weight:700;font-size:14px">${f.name||'—'}</div>
+      <div style="font-size:12px;color:var(--muted)">NIP: ${f.nip||'—'} · ${f.address||'—'}</div>
+      <div style="font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:4px">${pozycje.length} pozycji · ${total} zł</div>
+      <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">
+        <button onclick="window.closeFirmyListModal();window.openFirmaModal('${k}')" style="width:auto;padding:5px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">📋 Pozycje</button>
+        <button onclick="window.fakturujFirma('${k}')" style="width:auto;padding:5px 10px;font-size:11px;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3)">🧾 Fakturuj</button>
+        <button onclick="window.closeFirmyListModal();window.editFirmaFromModal('${k}')" style="width:auto;padding:5px 8px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
+        <button onclick="window.deleteFirma('${k}')" style="width:auto;padding:5px 8px;font-size:12px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+window.editFirmaFromModal = function(k) {
+  window.editFirma(k);
+  window.openAddFirmaModal();
+};
+
 window.addFirma = async function() {
   const name = document.getElementById('firm_name').value.trim();
   const nip = document.getElementById('firm_nip').value.trim();
@@ -4826,6 +4870,7 @@ window.addFirma = async function() {
     showToast('✔ Dodano firmę', 'var(--green)');
   }
   ['firm_name','firm_nip','firm_address'].forEach(id => document.getElementById(id).value = '');
+  window.closeAddFirmaModal();
 };
 
 window.editFirma = function(k) {
@@ -6355,6 +6400,29 @@ setInterval(updateClock,1000); updateClock();
       <button onclick="storageConfirmSwap()" style="width:100%;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.4)">✔ Zapisz zamiennik</button>
     </div>
     <button onclick="closeStorageModal()" style="width:100%;margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">Anuluj</button>
+  </div>
+</div>
+
+<!-- MODAL DODAJ FIRMĘ -->
+<div id="addFirmaModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2002;overflow-y:auto">
+  <div style="background:var(--surface);margin:40px auto;max-width:460px;border-radius:8px;border:1px solid var(--border);padding:20px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:14px">🏢 DODAJ / EDYTUJ FIRMĘ</div>
+    <input id="firm_name" placeholder="Nazwa firmy" style="margin-bottom:6px"/>
+    <input id="firm_nip" placeholder="NIP" inputmode="numeric" style="margin-bottom:6px"/>
+    <input id="firm_address" placeholder="Adres" style="margin-bottom:12px"/>
+    <button id="firmBtn" onclick="window.addFirma()" style="width:100%;letter-spacing:2px">▶ DODAJ FIRMĘ</button>
+    <button id="cancelFirmaBtn" style="display:none;width:100%;margin-top:6px;background:transparent;color:var(--muted);border:1px solid var(--border)" onclick="window.cancelFirmaEdit()">✕ Anuluj edycję</button>
+    <button onclick="window.closeAddFirmaModal()" style="width:100%;margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border)">Zamknij</button>
+  </div>
+</div>
+
+<!-- MODAL SZUKAJ FIRMY -->
+<div id="firmyListModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2002;overflow-y:auto">
+  <div style="background:var(--surface);margin:20px auto;max-width:500px;border-radius:8px;border:1px solid var(--border);padding:20px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">🔍 SZUKAJ FIRMY</div>
+    <input id="firmySearchInput" placeholder="Nazwa lub NIP..." oninput="window.renderFirmyModal()" style="margin-bottom:12px"/>
+    <div id="firmyModalList"></div>
+    <button onclick="window.closeFirmyListModal()" style="width:100%;margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">Zamknij</button>
   </div>
 </div>
 
