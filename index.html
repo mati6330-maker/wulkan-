@@ -4940,7 +4940,7 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
     (name||'').toLowerCase().includes(q) ||
     (service||'').toLowerCase().includes(q) ||
     (phone||'').replace(/\s/g,'').includes(q.replace(/\s/g,'')) ||
-    (date||'').includes(q);oLowerCase().includes(q);
+    (date||'').includes(q);
 
   const allVisits = Object.entries(visits)
     .filter(([vk, v]) => (v.date >= d90) && match(v.car, v.name, v.service, v.phone, v.date))
