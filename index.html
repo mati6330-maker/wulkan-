@@ -4835,13 +4835,15 @@ window.lookupNIP = async function() {
     document.getElementById('firm_nip').value = raw;
     document.getElementById('firm_address').value = addr;
     result.style.cssText = 'display:block;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);color:var(--text);padding:8px;border-radius:4px;font-size:11px;margin-bottom:10px';
-    result.innerHTML = `✔ <b>${name}</b><br>${addr}${regon?'<br>REGON: '+regon:''}<br><span style="color:#34d399">Dane wypełnione ↓</span><br><br><a href="https://rejestr.io/nip/${raw}" target="_blank" style="color:var(--accent);text-decoration:underline">🔗 Sprawdź pełne dane na rejestr.io</a>`;
+    result.innerHTML = `✔ <b>${name}</b><br>${addr}${regon?'<br>REGON: '+regon:''}<br><span style="color:#34d399">Dane wypełnione ↓</span><br><br>
+      <button onclick="navigator.clipboard.writeText('${raw}');this.textContent='✔ Skopiowano!';setTimeout(()=>this.textContent='📋 Kopiuj NIP i otwórz biznes.gov.pl',2000);window.open('https://www.biznes.gov.pl/pl/wyszukiwarka-firm','_blank')"
+        style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">📋 Kopiuj NIP i otwórz biznes.gov.pl</button>`;
   } catch(e) {
     result.style.cssText = 'display:block;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:var(--red);padding:8px;border-radius:4px;font-size:11px;margin-bottom:10px';
     result.innerHTML = `✗ ${e.message}<br><br>
-      <span style="color:var(--muted)">Firma może nie być płatnikiem VAT. Sprawdź ręcznie:</span><br>
-      <a href="https://rejestr.io/nip/${raw}" target="_blank"
-        style="color:var(--accent);text-decoration:underline">🔗 Szukaj NIP ${raw} na biznes.gov.pl</a>`;
+      <span style="color:var(--muted)">Firma może nie być płatnikiem VAT.</span><br>
+      <button onclick="navigator.clipboard.writeText('${raw}');this.textContent='✔ Skopiowano!';setTimeout(()=>this.textContent='📋 Kopiuj NIP i otwórz biznes.gov.pl',2000);window.open('https://www.biznes.gov.pl/pl/wyszukiwarka-firm','_blank')"
+        style="width:auto;margin-top:4px;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">📋 Kopiuj NIP i otwórz biznes.gov.pl</button>`;
   }
 };
 
