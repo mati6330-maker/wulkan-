@@ -4977,9 +4977,9 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
           <div style="font-size:12px;font-weight:600">${car} <span style="font-size:10px;color:var(--muted)">${date}</span></div>
           <div style="font-size:11px;color:var(--muted)">${service} · <b>${price} zł</b></div>
         </div>
-        <button onclick="window.addPozycja('${k}','${id}','${type}',document.getElementById('reg_${id}')?.value||'')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>
+        <button onclick="window.addPozycja('${k}','${id}','${type}',this.closest('div[style]').querySelector('input.reg-input')?.value||'')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>
       </div>
-      <input id="reg_${id}" placeholder="Nr rejestracyjny (opcjonalnie)" style="margin-top:5px;font-size:12px;padding:5px 8px"/>
+      <input class="reg-input" placeholder="Nr rejestracyjny (opcjonalnie)" style="margin-top:5px;font-size:12px;padding:5px 8px"/>
     </div>`;
 
   const visitRows = allVisits.map(([vk,v]) =>
