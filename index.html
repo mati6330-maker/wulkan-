@@ -4985,17 +4985,43 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
     </div>`;
   };
 
-  const visitRows = allVisits.map(([vk,v]) =>
-    makeRow(vk, 'wizyta', v.car||v.name||'—', v.date, v.service||'—', v.price||calcVisitPrice(v), 'visit')
-  ).join('') || '<div style="color:var(--muted);font-size:11px">Brak wizyt</div>';
+  // Grupuj po dacie z rozwijaniem
+  const groupByDate = (entries, getDate, rowFn) => {
+    if (!entries.length) return '<div style="color:var(--muted);font-size:11px;padding:4px 0">Brak wyników</div>';
+    const groups = {};
+    entries.forEach(entry => {
+      const d = getDate(entry) || 'Brak daty';
+      if (!groups[d]) groups[d] = [];
+      groups[d].push(entry);
+    });
+    return Object.keys(groups).sort().reverse().map(date => {
+      const gid = 'fg_' + date.replace(/[^a-z0-9]/gi,'_') + '_' + Math.random().toString(36).slice(2,6);
+      const items = groups[date].map(rowFn).join('');
+      const count = groups[date].length;
+      return `<div style="margin-bottom:4px">
+        <div onclick="(function(el){const b=el.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';el.querySelector('span.arr').textContent=b.style.display==='none'?'▶':'▼';})(this)"
+          style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;cursor:pointer;user-select:none">
+          <span style="font-size:12px;font-weight:600;font-family:var(--mono)">${date}</span>
+          <span style="font-size:11px;color:var(--muted)">${count} poz. <span class="arr">▼</span></span>
+        </div>
+        <div style="padding:4px 0">${items}</div>
+      </div>`;
+    }).join('');
+  };
 
-  const orderRows = allOrders.map(([ok,o]) =>
-    makeRow(ok, 'zlecenie', o.car||o.name||'—', o.dateStamp||'', o.service||'—', o.price||0, 'order')
-  ).join('') || '<div style="color:var(--muted);font-size:11px">Brak zleceń</div>';
+  const visitRows = groupByDate(
+    allVisits, ([vk,v]) => v.date,
+    ([vk,v]) => makeRow(vk, 'wizyta', v.car||v.name||'—', v.date, v.service||'—', v.price||calcVisitPrice(v), 'visit')
+  );
+  const orderRows = groupByDate(
+    allOrders, ([ok,o]) => o.dateStamp||o.startDate||'',
+    ([ok,o]) => makeRow(ok, 'zlecenie', o.car||o.name||'—', o.dateStamp||'', o.service||'—', o.price||0, 'order')
+  );
+  const klimaRows = groupByDate(
+    allKlimas, ([kk,km]) => km.start||'',
+    ([kk,km]) => makeRow(kk, 'klima', km.car||'—', km.start||'', 'Klima serwis', km.price||0, 'klima')
+  );
 
-  const klimaRows = allKlimas.map(([kk,km]) =>
-    makeRow(kk, 'klima', km.car||'—', km.start||'', 'Klima', km.price||0, 'klima')
-  ).join('') || '<div style="color:var(--muted);font-size:11px">Brak serwisów klima</div>';
 
   document.getElementById('firmaModalBody').innerHTML =
     `<input id="firmaSearch" placeholder="🔍 Szukaj po aucie, nazwisku, usłudze..." 
