@@ -572,15 +572,15 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     </div>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px">
-    <button id="qvPrevBtn" onclick="qvChangePeriod(-1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">◀</button>
+    <button id="qvPrevBtn" onclick="window.qvChangePeriod(-1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">◀</button>
     <div style="text-align:center;flex:1">
       <div id="qvDayLabel" style="font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:2px;text-transform:uppercase"></div>
     </div>
     <div style="display:flex;gap:4px">
-      <button id="qvModeDay" onclick="setQvMode('day')" style="width:auto;padding:6px 12px;font-size:11px;letter-spacing:1px;background:var(--accent);color:#000;border:1px solid var(--accent)">DZIEŃ</button>
-      <button id="qvModeWeek" onclick="setQvMode('week')" style="width:auto;padding:6px 12px;font-size:11px;letter-spacing:1px;background:transparent;color:var(--muted);border:1px solid var(--border)">TYDZIEŃ</button>
+      <button id="qvModeDay" onclick="window.setQvMode('day')" style="width:auto;padding:6px 12px;font-size:11px;letter-spacing:1px;background:var(--accent);color:#000;border:1px solid var(--accent)">DZIEŃ</button>
+      <button id="qvModeWeek" onclick="window.setQvMode('week')" style="width:auto;padding:6px 12px;font-size:11px;letter-spacing:1px;background:transparent;color:var(--muted);border:1px solid var(--border)">TYDZIEŃ</button>
     </div>
-    <button id="qvNextBtn" onclick="qvChangePeriod(1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">▶</button>
+    <button id="qvNextBtn" onclick="window.qvChangePeriod(1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">▶</button>
   </div>
   <div id="qvGrid"></div>
 </div>
@@ -591,12 +591,12 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <div style="display:flex;gap:6px;margin:6px 0;align-items:center">
   <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
   <input type="date" id="dateFilter" onchange="renderList()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
-  <button onclick="clearDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+  <button onclick="window.clearDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
 </div>
 <div style="display:flex;gap:6px;margin:6px 0">
-  <button onclick="setFilter('all')" id="f-all" style="flex:1;font-size:12px;letter-spacing:1px">WSZYSTKIE</button>
-  <button onclick="setFilter('notdone')" id="f-notdone" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">OCZEKUJĄCE</button>
-  <button onclick="setFilter('done')" id="f-done" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">ZROBIONE</button>
+  <button onclick="window.setFilter('all')" id="f-all" style="flex:1;font-size:12px;letter-spacing:1px">WSZYSTKIE</button>
+  <button onclick="window.setFilter('notdone')" id="f-notdone" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">OCZEKUJĄCE</button>
+  <button onclick="window.setFilter('done')" id="f-done" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">ZROBIONE</button>
 </div>
 <div id="listBox"></div>
 </div>
@@ -611,28 +611,28 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <input id="o_car" placeholder="Auto — marka / model (opcjonalne)">
 <div class="section-label">Średnica felg</div>
 <div id="o_diameterButtons">
-  <button type="button" onclick="setOrderSize(12,this)">12"</button>
-  <button type="button" onclick="setOrderSize(13,this)">13"</button>
-  <button type="button" onclick="setOrderSize(14,this)">14"</button>
-  <button type="button" onclick="setOrderSize(15,this)">15"</button>
-  <button type="button" onclick="setOrderSize(16,this)">16"</button>
-  <button type="button" onclick="setOrderSize(17,this)">17"</button>
-  <button type="button" onclick="setOrderSize(18,this)">18"</button>
-  <button type="button" onclick="setOrderSize(19,this)">19"</button>
-  <button type="button" onclick="setOrderSize(20,this)">20"</button>
-  <button type="button" onclick="setOrderSize(21,this)">21"</button>
-  <button type="button" onclick="setOrderSize(22,this)">22"</button>
-  <button type="button" onclick="setOrderSize(23,this)">23"</button>
-  <button type="button" onclick="setOrderSize(24,this)">24"</button>
+  <button type="button" onclick="window.setOrderSize(12,this)">12"</button>
+  <button type="button" onclick="window.setOrderSize(13,this)">13"</button>
+  <button type="button" onclick="window.setOrderSize(14,this)">14"</button>
+  <button type="button" onclick="window.setOrderSize(15,this)">15"</button>
+  <button type="button" onclick="window.setOrderSize(16,this)">16"</button>
+  <button type="button" onclick="window.setOrderSize(17,this)">17"</button>
+  <button type="button" onclick="window.setOrderSize(18,this)">18"</button>
+  <button type="button" onclick="window.setOrderSize(19,this)">19"</button>
+  <button type="button" onclick="window.setOrderSize(20,this)">20"</button>
+  <button type="button" onclick="window.setOrderSize(21,this)">21"</button>
+  <button type="button" onclick="window.setOrderSize(22,this)">22"</button>
+  <button type="button" onclick="window.setOrderSize(23,this)">23"</button>
+  <button type="button" onclick="window.setOrderSize(24,this)">24"</button>
 </div>
 <input id="o_diameter" type="hidden">
 <div class="section-label">Usługa i typ felg</div>
 <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ILOŚĆ KÓŁ</div>
 <div style="display:flex;gap:6px;margin-bottom:10px" id="o_wheelCountWrap">
-  <button type="button" onclick="setOrderWheelCount(1,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">1</button>
-  <button type="button" onclick="setOrderWheelCount(2,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">2</button>
-  <button type="button" onclick="setOrderWheelCount(3,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">3</button>
-  <button type="button" onclick="setOrderWheelCount(4,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">4</button>
+  <button type="button" onclick="window.setOrderWheelCount(1,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">1</button>
+  <button type="button" onclick="window.setOrderWheelCount(2,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">2</button>
+  <button type="button" onclick="window.setOrderWheelCount(3,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">3</button>
+  <button type="button" onclick="window.setOrderWheelCount(4,this)" style="width:auto;padding:8px 18px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">4</button>
   <span style="font-size:11px;color:var(--muted);align-self:center;padding-left:4px">(brak = komplet 4)</span>
 </div>
 <input id="o_wheel_count" type="hidden" value=""/>
@@ -653,10 +653,10 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <div id="o_valve_count_wrap" style="display:none;margin-bottom:6px">
   <div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">ILOŚĆ WENTYLI</div>
   <div style="display:flex;gap:6px">
-    <button type="button" onclick="setOrderValveCount(1,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">1</button>
-    <button type="button" onclick="setOrderValveCount(2,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">2</button>
-    <button type="button" onclick="setOrderValveCount(3,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">3</button>
-    <button type="button" onclick="setOrderValveCount(4,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">4</button>
+    <button type="button" onclick="window.setOrderValveCount(1,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">1</button>
+    <button type="button" onclick="window.setOrderValveCount(2,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">2</button>
+    <button type="button" onclick="window.setOrderValveCount(3,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">3</button>
+    <button type="button" onclick="window.setOrderValveCount(4,this)" style="width:auto;padding:8px 16px;font-size:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">4</button>
   </div>
   <input id="o_valve_count" type="hidden" value="4"/>
 </div>
@@ -670,21 +670,21 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div class="v-title">⚠ Brakujące pola:</div>
   <div id="orderValidationList"></div>
 </div>
-<button id="orderBtn" onclick="addOrder()">▶ Dodaj zlecenie</button>
+<button id="orderBtn" onclick="window.addOrder()">▶ Dodaj zlecenie</button>
 <div id="liveOrderPriceDisplay" style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);margin:4px 0;min-height:24px"></div>
-<button id="cancelOrderBtn" onclick="cancelOrderEdit()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);display:none">✕ Anuluj edycję</button>
+<button id="cancelOrderBtn" onclick="window.cancelOrderEdit()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);display:none">✕ Anuluj edycję</button>
 
 <div style="margin-top:16px">
   <input id="orderSearchBox" placeholder="🔍 Szukaj po imieniu, telefonie lub aucie..." oninput="renderOrders()"/>
   <div style="display:flex;gap:6px;margin:6px 0;align-items:center">
     <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
     <input type="date" id="orderDateFilter" onchange="renderOrders()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
-    <button onclick="clearOrderDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+    <button onclick="window.clearOrderDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
   </div>
   <div style="display:flex;gap:6px;margin:6px 0">
-    <button onclick="setOrderFilter('all')" id="of-all" style="flex:1;font-size:12px;letter-spacing:1px">WSZYSTKIE</button>
-    <button onclick="setOrderFilter('notdone')" id="of-notdone" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">OCZEKUJĄCE</button>
-    <button onclick="setOrderFilter('done')" id="of-done" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">ZROBIONE</button>
+    <button onclick="window.setOrderFilter('all')" id="of-all" style="flex:1;font-size:12px;letter-spacing:1px">WSZYSTKIE</button>
+    <button onclick="window.setOrderFilter('notdone')" id="of-notdone" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">OCZEKUJĄCE</button>
+    <button onclick="window.setOrderFilter('done')" id="of-done" style="flex:1;font-size:12px;letter-spacing:1px;background:#1a1a1a;color:#888;border:1px solid #333">ZROBIONE</button>
   </div>
 </div>
 <div id="ordersBox"></div>
@@ -706,21 +706,21 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">KOLEJNA</div>
       <div id="nextInvoiceDisplay" style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">—</div>
     </div>
-    <button onclick="saveInvoice()" id="invoiceSaveBtn" style="margin-left:auto;width:auto;padding:10px 16px;font-size:13px;letter-spacing:0;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">✔ Zapisz wystawioną fakturę</button>
+    <button onclick="window.saveInvoice()" id="invoiceSaveBtn" style="margin-left:auto;width:auto;padding:10px 16px;font-size:13px;letter-spacing:0;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">✔ Zapisz wystawioną fakturę</button>
   </div>
 </div>
 
 <div id="cashBox"></div>
-<button onclick="calculateCash()" style="margin-top:8px">↻ Odśwież</button>
+<button onclick="window.calculateCash()" style="margin-top:8px">↻ Odśwież</button>
 
 <!-- LICZNIK R134a -->
 <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-top:14px">
   <div style="font-family:var(--mono);font-size:11px;color:#06b6d4;letter-spacing:2px;margin-bottom:12px">❄ ZUŻYCIE R134a</div>
   <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-    <button onclick="calcR134a('all')" id="r134aBtn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:#06b6d4;color:#000;border:1px solid #06b6d4">Całość</button>
-    <button onclick="calcR134a('month')" id="r134aBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten miesiąc</button>
-    <button onclick="calcR134a('week')" id="r134aBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten tydzień</button>
-    <button onclick="calcR134a('year')" id="r134aBtn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten rok</button>
+    <button onclick="window.calcR134a('all')" id="r134aBtn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:#06b6d4;color:#000;border:1px solid #06b6d4">Całość</button>
+    <button onclick="window.calcR134a('month')" id="r134aBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten miesiąc</button>
+    <button onclick="window.calcR134a('week')" id="r134aBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten tydzień</button>
+    <button onclick="window.calcR134a('year')" id="r134aBtn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten rok</button>
   </div>
   <div id="r134aResult" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
@@ -742,34 +742,34 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div id="r134aDetails" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono)"></div>
   <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <div id="r134aResetInfo" style="font-size:11px;color:var(--muted);flex:1">Ostatnie uzupełnienie zapasów: <span id="r134aResetDate" style="color:var(--text)">—</span></div>
-    <button onclick="resetR134aCounter()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">❄ Uzupełniłem zapasy — resetuj licznik</button>
+    <button onclick="window.resetR134aCounter()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">❄ Uzupełniłem zapasy — resetuj licznik</button>
   </div>
 </div>
 <div class="section-label" style="margin-top:16px">Raporty</div>
-<button onclick="printDailyFullReport()">▶ Raport dzienny</button>
+<button onclick="window.printDailyFullReport()">▶ Raport dzienny</button>
 <label style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#888;letter-spacing:1px;display:block;margin-top:10px;margin-bottom:2px">TYDZIEŃ</label>
 <input type="date" id="cashWeek">
-<button onclick="printWeekFullReport()">▶ Raport tygodniowy</button>
+<button onclick="window.printWeekFullReport()">▶ Raport tygodniowy</button>
 <label style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#888;letter-spacing:1px;display:block;margin-top:10px;margin-bottom:2px">MIESIĄC</label>
 <input type="month" id="cashMonth">
-<button onclick="printMonthFullReport()">▶ Raport miesięczny</button>
+<button onclick="window.printMonthFullReport()">▶ Raport miesięczny</button>
 
 <div class="section-label" style="margin-top:16px">Dane</div>
-<button onclick="exportAllData()" style="background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.4)">⬇ Eksportuj wszystkie dane (JSON)</button>
-<button onclick="exportAllDataCSV()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (CSV)</button>
-<button onclick="exportAllDataPDF()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (PDF)</button>
-<button onclick="cleanOldData()" style="margin-top:6px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń dane archiwalne (zostaw przyszłe wizyty)</button>
+<button onclick="window.exportAllData()" style="background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.4)">⬇ Eksportuj wszystkie dane (JSON)</button>
+<button onclick="window.exportAllDataCSV()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (CSV)</button>
+<button onclick="window.exportAllDataPDF()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (PDF)</button>
+<button onclick="window.cleanOldData()" style="margin-top:6px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń dane archiwalne (zostaw przyszłe wizyty)</button>
 </div>
 
 <div class="section" id="archive">
 <h3>Archiwum</h3>
 
 <div style="display:flex;gap:0;margin-bottom:12px;border-bottom:2px solid var(--border)">
-  <button id="arch-tab-visits" onclick="switchArchiveTab('visits')" style="flex:1;background:var(--accent);color:#000;border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">WIZYTY</button>
-  <button id="arch-tab-orders" onclick="switchArchiveTab('orders')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">ZLECENIA</button>
-  <button id="arch-tab-klima" onclick="switchArchiveTab('klima')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">KLIMA</button>
-  <button id="arch-tab-prz" onclick="switchArchiveTab('prz')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">PRZECHOWALNIA</button>
-  <button id="arch-tab-firmy" onclick="switchArchiveTab('firmy')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">FIRMY</button>
+  <button id="arch-tab-visits" onclick="window.switchArchiveTab('visits')" style="flex:1;background:var(--accent);color:#000;border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">WIZYTY</button>
+  <button id="arch-tab-orders" onclick="window.switchArchiveTab('orders')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">ZLECENIA</button>
+  <button id="arch-tab-klima" onclick="window.switchArchiveTab('klima')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">KLIMA</button>
+  <button id="arch-tab-prz" onclick="window.switchArchiveTab('prz')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">PRZECHOWALNIA</button>
+  <button id="arch-tab-firmy" onclick="window.switchArchiveTab('firmy')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">FIRMY</button>
 </div>
 
 <!-- Panel wizyt -->
@@ -778,7 +778,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div style="display:flex;gap:6px;margin:6px 0;align-items:center">
     <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
     <input type="date" id="archiveDateFilter" onchange="renderArchive()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
-    <button onclick="clearArchiveDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+    <button onclick="window.clearArchiveDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
   </div>
   <div id="archiveVisitsBox"></div>
 </div>
@@ -789,7 +789,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div style="display:flex;gap:6px;margin:6px 0;align-items:center">
     <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap">FILTR DATY</div>
     <input type="date" id="archiveOrderDateFilter" onchange="renderArchive()" style="flex:1;margin:0;font-size:12px;padding:8px"/>
-    <button onclick="clearArchiveOrderDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
+    <button onclick="window.clearArchiveOrderDateFilter()" style="width:auto;padding:8px 12px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕</button>
   </div>
   <div id="archiveOrdersBox"></div>
 </div>
@@ -830,7 +830,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
           style="width:52px;margin:0;padding:4px 6px;font-size:13px;font-family:var(--mono);text-align:center;background:transparent;border:none;color:var(--accent)"
           oninput="saveKlimaRate(this.value)"/>
       </div>
-      <button onclick="openKlimaCalc()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:1px;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">🧮 Kalkulator</button>
+      <button onclick="window.openKlimaCalc()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:1px;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">🧮 Kalkulator</button>
     </div>
   </div>
   <input id="k_name" placeholder="Imię (opcjonalne)"/>
@@ -855,7 +855,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   </div>
   <div id="klimaValidation" style="display:none;margin:8px 0;padding:10px;background:rgba(248,113,113,0.1);border:1px solid var(--red);border-radius:4px;font-size:13px;color:var(--red)"></div>
   <button onclick="window.addKlima()" id="klimaBtn" style="margin-top:10px">▶ Dodaj zlecenie klima</button>
-  <button id="cancelKlimaBtn" onclick="cancelKlimaEdit()" style="display:none;margin-top:6px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj edycję</button>
+  <button id="cancelKlimaBtn" onclick="window.cancelKlimaEdit()" style="display:none;margin-top:6px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj edycję</button>
   <div class="section-label" style="margin-top:18px">Zlecenia klima</div>
   <input id="k_search" placeholder="🔍 Szukaj..." oninput="renderKlima()"/>
   <div id="klimaBox" style="margin-top:8px"></div>
@@ -879,8 +879,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       </label>
     </div>
     <div id="klimaPriceResult" style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent);text-align:center;padding:12px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.3);border-radius:4px;margin-bottom:14px">— zł</div>
-    <button id="klimaSaveBtn" onclick="saveKlimaPrice()" style="background:var(--accent)">✔ Zapisz cenę</button>
-    <button onclick="closeKlimaPriceModal()" style="margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
+    <button id="klimaSaveBtn" onclick="window.saveKlimaPrice()" style="background:var(--accent)">✔ Zapisz cenę</button>
+    <button onclick="window.closeKlimaPriceModal()" style="margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
   </div>
 </div>
 <div class="section" id="pricing">
@@ -925,12 +925,12 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Nowy wentyl</div><input type="number" id="p_nw" style="margin:0"/></div>
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Rabat zlecenie (−)</div><input type="number" id="p_zlecenie_discount" style="margin:0"/></div>
   </div>
-  <button onclick="savePrices()" style="margin-top:12px">▶ Zapisz ceny</button>
-  <button onclick="cancelPriceEdit()" style="background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
+  <button onclick="window.savePrices()" style="margin-top:12px">▶ Zapisz ceny</button>
+  <button onclick="window.cancelPriceEdit()" style="background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Anuluj</button>
 </div>
 </div><!-- /pricing section -->
 
-<div id="siteFooter" style="text-align:center;padding:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:8px"><span onclick="showPrivacyPolicy()" style="cursor:pointer;text-decoration:underline;color:var(--muted)">Polityka prywatności</span> &nbsp;·&nbsp; Wulkanizacja Mielczarek © 2026</div>
+<div id="siteFooter" style="text-align:center;padding:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:8px"><span onclick="window.showPrivacyPolicy()" style="cursor:pointer;text-decoration:underline;color:var(--muted)">Polityka prywatności</span> &nbsp;·&nbsp; Wulkanizacja Mielczarek © 2026</div>
 
 <div class="section" id="uzytkowe">
   <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">🛠 NARZĘDZIA UŻYTKOWE</div>
@@ -945,7 +945,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     </div>
     <input id="r134a_engine" placeholder="Silnik (opcjonalnie, np. 1.6 TDI)" style="margin-bottom:6px"/>
     <input id="r134a_kw" placeholder="Moc (opcjonalnie, np. 105 kW)" inputmode="numeric" style="margin-bottom:8px"/>
-    <button onclick="searchR134a()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
+    <button onclick="window.searchR134a()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
     <div id="klimaSearchResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
   </div>
 
@@ -958,7 +958,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       <input id="tire_year" placeholder="Rok" inputmode="numeric" style="width:80px"/>
     </div>
     <input id="tire_engine" placeholder="Silnik (opcjonalnie, np. 2.0d)" style="margin-bottom:8px"/>
-    <button onclick="searchTires()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj rozmiarów</button>
+    <button onclick="window.searchTires()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj rozmiarów</button>
     <div id="tireResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
   </div>
 
@@ -969,7 +969,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       <input id="vin_input" placeholder="Wpisz numer VIN (17 znaków)" maxlength="17"
         style="flex:1;font-family:var(--mono);text-transform:uppercase;letter-spacing:2px"
         oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')decodeVin()"/>
-      <button onclick="decodeVin()" style="width:auto;padding:8px 16px;font-size:12px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Dekoduj</button>
+      <button onclick="window.decodeVin()" style="width:auto;padding:8px 16px;font-size:12px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Dekoduj</button>
     </div>
     <div id="vinResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.8"></div>
   </div>
@@ -1003,7 +1003,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <input id="pr_size" placeholder="Rozmiar (np. 205/55 R16)" style="margin-bottom:6px"/>
     <input id="pr_location" placeholder="Miejsce (np. regał 3, półka 2)" style="margin-bottom:6px"/>
     <input id="pr_note" placeholder="Notatka (opcjonalnie)" style="margin-bottom:10px"/>
-    <button onclick="addPrzechowalnia()" style="width:100%;letter-spacing:2px">▶ DODAJ DO PRZECHOWALNI</button>
+    <button onclick="window.addPrzechowalnia()" style="width:100%;letter-spacing:2px">▶ DODAJ DO PRZECHOWALNI</button>
   </div>
 
   <!-- FORMULARZ ZAMÓWIEŃ TYMCZASOWYCH -->
@@ -1020,7 +1020,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <input id="zam_location" placeholder="Miejsce przechowania" style="margin-bottom:6px"/>
     <input id="zam_price" placeholder="Cena do zapłaty (zł)" inputmode="numeric" style="margin-bottom:6px"/>
     <input id="zam_note" placeholder="Notatka (opcjonalnie)" style="margin-bottom:10px"/>
-    <button onclick="addZamowienie()" style="width:100%;letter-spacing:2px;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.4)">▶ DODAJ ZAMÓWIENIE</button>
+    <button onclick="window.addZamowienie()" style="width:100%;letter-spacing:2px;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.4)">▶ DODAJ ZAMÓWIENIE</button>
   </div>
 
   <!-- LISTA PRZECHOWALNIA -->
@@ -1046,8 +1046,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <input id="blockReasonInput" placeholder="Powód (opcjonalnie, np. Urlop)" style="margin-top:8px"/>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:12px 0 6px">GODZINY DO ZABLOKOWANIA <span style="color:var(--accent)">(opcjonalnie — brak wyboru = cały dzień)</span></div>
     <div style="display:flex;gap:6px;margin-bottom:6px">
-      <button onclick="selectAllSlots(true)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35)">Zaznacz wszystkie</button>
-      <button onclick="selectAllSlots(false)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Odznacz</button>
+      <button onclick="window.selectAllSlots(true)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35)">Zaznacz wszystkie</button>
+      <button onclick="window.selectAllSlots(false)" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Odznacz</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;margin-bottom:10px">
 <label class="slot-cb-label" id="slot-label-08_00"><input type="checkbox" class="slot-cb custom-cb" data-time="08:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>08:00</label>
@@ -1071,14 +1071,14 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <label class="slot-cb-label" id="slot-label-18_00"><input type="checkbox" class="slot-cb custom-cb" data-time="18:00" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>18:00</label>
 <label class="slot-cb-label" id="slot-label-18_30"><input type="checkbox" class="slot-cb custom-cb" data-time="18:30" onchange="toggleSlotLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red);flex-shrink:0"/>18:30</label>
 </div>
-    <button onclick="blockDay()" style="margin-top:2px;background:var(--red)">🔒 Zablokuj</button>
+    <button onclick="window.blockDay()" style="margin-top:2px;background:var(--red)">🔒 Zablokuj</button>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:14px 0 6px">ZABLOKOWANE DNI</div>
     <div id="blockedList" style="max-height:180px;overflow-y:auto"></div>
-    <button onclick="closeBlockModal()" style="margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Zamknij</button>
+    <button onclick="window.closeBlockModal()" style="margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Zamknij</button>
   </div>
 </div>
 
-<div id="detailPopup" onclick="closeDetailPopup(event)">
+<div id="detailPopup" onclick="window.closeDetailPopup(event)">
   <div id="detailPopupBox">
     <div id="detailPopupContent"></div>
   </div>
@@ -1106,8 +1106,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       ✉ Potwierdzenie zostało wysłane na Twój email
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px">
-      <button onclick="printConfirmation()" style="background:transparent;color:var(--accent);border:1px solid var(--accent)">⎙ Drukuj</button>
-      <button onclick="closeConfirmScreen()">✕ Zamknij</button>
+      <button onclick="window.printConfirmation()" style="background:transparent;color:var(--accent);border:1px solid var(--accent)">⎙ Drukuj</button>
+      <button onclick="window.closeConfirmScreen()">✕ Zamknij</button>
     </div>
   </div>
 </div>
@@ -1184,7 +1184,7 @@ window.editPrzechowalnia = function(k) {
   document.getElementById('pr_location').value = v.location || '';
   document.getElementById('pr_note').value = v.note || '';
   // Zmień przycisk na "zapisz"
-  const btn = document.querySelector('[onclick="addPrzechowalnia()"]');
+  const btn = document.querySelector('[onclick="window.addPrzechowalnia()"]');
   if (btn) { btn.textContent = '✔ ZAPISZ ZMIANY'; btn.onclick = () => savePrzechowalnia(k); }
   window.scrollTo(0, 0);
 };
@@ -1265,7 +1265,7 @@ window.editZamowienie = function(k) {
   document.getElementById('zam_location').value = v.location || '';
   document.getElementById('zam_price').value = v.price || '';
   document.getElementById('zam_note').value = v.note || '';
-  const btn = document.querySelector('[onclick="addZamowienie()"]');
+  const btn = document.querySelector('[onclick="window.addZamowienie()"]');
   if (btn) { btn.textContent = '✔ ZAPISZ ZMIANY'; btn.onclick = () => saveZamowienie(k); }
   window.scrollTo(0, 0);
 };
@@ -2885,7 +2885,14 @@ window.renderList = function renderList() {
               ${v.time} &nbsp; ${v.name||'—'} <span style="font-weight:400;font-size:11px;color:var(--muted)"><span data-tel="${v.phone}"><span data-tel="${v.phone}">${v.phone||''}</span></span></span>${overdueLabel}
             </div>
             ${(()=>{
-              if (v.storageNote) return `<div style="font-size:11px;color:#34d399;margin-top:3px;font-weight:600">🗄 ${v.storageNote}</div>`;
+              if (v.storageNote) {
+                const tmpPrice = v.storageRef && zamowienia_tmp[v.storageRef] ? (zamowienia_tmp[v.storageRef].price||0) : 0;
+                const priceInfo = tmpPrice ? ` · <span style="color:var(--accent)">${tmpPrice} zł</span>` : '';
+                return `<div style="font-size:11px;color:#34d399;margin-top:3px;font-weight:600;display:flex;justify-content:space-between;align-items:center">
+                  <span>🗄 ${v.storageNote}${priceInfo}</span>
+                  <button onclick="window.detachStorage('${k}')" title="Usuń przypisanie" style="width:auto;padding:2px 6px;font-size:10px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3);margin-left:6px">✕</button>
+                </div>`;
+              }
               const s=findStorage(v);
               return s.length?`<div style="font-size:11px;color:#34d399;margin-top:3px;font-weight:600">🗄 Przechowalnia: ${s.map(p=>(p.type||'')+(p.location?' · '+p.location:'')).join(' | ')}</div>`:'';
             })()}
@@ -3035,6 +3042,13 @@ window.printVisit = function(k) {
   win.document.write(content);
   win.document.close();
   win.print();
+};
+
+window.detachStorage = async function(k) {
+  if (!visits[k]) return;
+  if (!confirm('Usunąć przypisanie opon z tej wizyty?')) return;
+  await update(ref(db, 'wizyty/' + k), { storageRef: null, storageNote: null });
+  showToast('✔ Przypisanie usunięte', 'var(--green)');
 };
 
 window.applyVisitDiscount = async function(k, delta) {
