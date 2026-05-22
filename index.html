@@ -5065,7 +5065,11 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
   // Przypisane pozycje
   const assignedHtml = Object.entries(pozycje).length
     ? '<div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:8px">PRZYPISANE POZYCJE</div>' +
-      Object.entries(pozycje).map(([pk, p]) => {
+      Object.entries(pozycje).sort((a,b) => {
+        const da = (a[1].date||'') + (a[1].time||'').padStart(5,'0');
+        const db = (b[1].date||'') + (b[1].time||'').padStart(5,'0');
+        return da.localeCompare(db);
+      }).map(([pk, p]) => {
         const price = p.price || 0;
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;margin-bottom:4px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.2);border-radius:4px">
           <div>
