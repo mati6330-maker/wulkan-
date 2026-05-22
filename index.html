@@ -4809,6 +4809,39 @@ window.closeStorageModal = function() {
 // ── FIRMY ──
 let firmy = {};
 
+window.lookupNIP = async function() {
+  const raw = (document.getElementById('nip_lookup').value||'').replace(/[\s\-]/g,'');
+  const result = document.getElementById('nipLookupResult');
+  result.style.display = 'block';
+  if (!/^\d{10}$/.test(raw)) {
+    result.style.cssText = 'display:block;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:var(--red);padding:8px;border-radius:4px;font-size:11px;margin-bottom:10px';
+    result.textContent = '⚠ NIP musi mieć dokładnie 10 cyfr';
+    return;
+  }
+  result.style.cssText = 'display:block;background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:8px;border-radius:4px;font-size:11px;margin-bottom:10px';
+  result.textContent = '⟳ Pobieranie danych...';
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const resp = await fetch(`https://wl-api.mf.gov.pl/api/search/nip/${raw}?date=${today}`);
+    if (!resp.ok) throw new Error('Nie znaleziono (status ' + resp.status + ')');
+    const data = await resp.json();
+    const s = data.result?.subject;
+    if (!s) throw new Error('Brak danych w odpowiedzi');
+    const name = s.name || '';
+    const addr = typeof s.workingAddress === 'string' ? s.workingAddress :
+                 typeof s.residenceAddress === 'string' ? s.residenceAddress : '';
+    const regon = s.regon || '';
+    document.getElementById('firm_name').value = name;
+    document.getElementById('firm_nip').value = raw;
+    document.getElementById('firm_address').value = addr;
+    result.style.cssText = 'display:block;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);color:var(--text);padding:8px;border-radius:4px;font-size:11px;margin-bottom:10px';
+    result.innerHTML = `✔ <b>${name}</b><br>${addr}${regon?'<br>REGON: '+regon:''}<br><span style="color:#34d399">Dane wypełnione ↓</span>`;
+  } catch(e) {
+    result.style.cssText = 'display:block;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:var(--red);padding:8px;border-radius:4px;font-size:11px;margin-bottom:10px';
+    result.textContent = '✗ ' + e.message;
+  }
+};
+
 window.openAddFirmaModal = function() {
   document.getElementById('addFirmaModal').style.display = 'block';
 };
@@ -6407,6 +6440,13 @@ setInterval(updateClock,1000); updateClock();
 <div id="addFirmaModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2002;overflow-y:auto">
   <div style="background:var(--surface);margin:40px auto;max-width:460px;border-radius:8px;border:1px solid var(--border);padding:20px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:14px">🏢 DODAJ / EDYTUJ FIRMĘ</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input id="nip_lookup" placeholder="Wpisz NIP i pobierz dane →" inputmode="numeric" maxlength="13"
+        style="flex:1;font-family:var(--mono)"
+        onkeydown="if(event.key==='Enter')window.lookupNIP()"/>
+      <button onclick="window.lookupNIP()" style="width:auto;padding:8px 12px;font-size:12px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">🔍</button>
+    </div>
+    <div id="nipLookupResult" style="display:none;font-size:11px;padding:8px;border-radius:4px;margin-bottom:10px"></div>
     <input id="firm_name" placeholder="Nazwa firmy" style="margin-bottom:6px"/>
     <input id="firm_nip" placeholder="NIP" inputmode="numeric" style="margin-bottom:6px"/>
     <input id="firm_address" placeholder="Adres" style="margin-bottom:12px"/>
