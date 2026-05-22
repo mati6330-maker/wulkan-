@@ -4970,17 +4970,20 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
       </div>`
     : '<div style="color:var(--muted);font-size:12px;margin-bottom:10px">Brak przypisanych pozycji</div>';
 
-  const makeRow = (id, label, car, date, service, price, type) =>
-    `<div style="padding:7px;margin-bottom:3px;background:var(--surface2);border:1px solid var(--border);border-radius:4px">
+  let _rowIdx = 0;
+  const makeRow = (id, label, car, date, service, price, type) => {
+    const idx = _rowIdx++;
+    return `<div style="padding:7px;margin-bottom:3px;background:var(--surface2);border:1px solid var(--border);border-radius:4px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
           <div style="font-size:12px;font-weight:600">${car} <span style="font-size:10px;color:var(--muted)">${date}</span></div>
           <div style="font-size:11px;color:var(--muted)">${service} · <b>${price} zł</b></div>
         </div>
-        <button onclick="window.addPozycja('${k}','${id}','${type}',this.closest('div[style]').querySelector('input.reg-input')?.value||'')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>
+        <button onclick="window.addPozycja('${k}','${id}','${type}',(document.getElementById('freg_'+${idx})?.value||'').toUpperCase())" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>
       </div>
-      <input class="reg-input" placeholder="Nr rejestracyjny (opcjonalnie)" style="margin-top:5px;font-size:12px;padding:5px 8px"/>
+      <input id="freg_${idx}" placeholder="Nr rejestracyjny (opcjonalnie)" style="margin-top:5px;font-size:12px;padding:5px 8px"/>
     </div>`;
+  };
 
   const visitRows = allVisits.map(([vk,v]) =>
     makeRow(vk, 'wizyta', v.car||v.name||'—', v.date, v.service||'—', v.price||calcVisitPrice(v), 'visit')
@@ -5025,7 +5028,7 @@ window.addPozycja = async function(firmaKey, itemKey, type, regNum) {
     if (!km) return;
     data = { type, car: km.car||'—', date: km.start||'', service: 'Klima serwis', price: km.price||0 };
   }
-  if (regNum) data.regNum = regNum.toUpperCase();
+  if (regNum) data.regNum = regNum;
   await update(ref(db, 'firmy/' + firmaKey + '/pozycje/' + itemKey), data);
   showToast('✔ Dodano pozycję', 'var(--green)');
   window.renderFirmaModal(firmaKey);
