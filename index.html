@@ -4835,10 +4835,13 @@ window.lookupNIP = async function() {
     document.getElementById('firm_nip').value = raw;
     document.getElementById('firm_address').value = addr;
     result.style.cssText = 'display:block;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);color:var(--text);padding:8px;border-radius:4px;font-size:11px;margin-bottom:10px';
-    result.innerHTML = `✔ <b>${name}</b><br>${addr}${regon?'<br>REGON: '+regon:''}<br><span style="color:#34d399">Dane wypełnione ↓</span>`;
+    result.innerHTML = `✔ <b>${name}</b><br>${addr}${regon?'<br>REGON: '+regon:''}<br><span style="color:#34d399">Dane wypełnione ↓</span><br><br><a href="https://www.biznes.gov.pl/pl/wyszukiwarka-firm?query=${raw}" target="_blank" style="color:var(--accent);text-decoration:underline">🔗 Sprawdź pełne dane na biznes.gov.pl</a>`;
   } catch(e) {
     result.style.cssText = 'display:block;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:var(--red);padding:8px;border-radius:4px;font-size:11px;margin-bottom:10px';
-    result.textContent = '✗ ' + e.message;
+    result.innerHTML = `✗ ${e.message}<br><br>
+      <span style="color:var(--muted)">Firma może nie być płatnikiem VAT. Sprawdź ręcznie:</span><br>
+      <a href="https://www.biznes.gov.pl/pl/wyszukiwarka-firm?query=${raw}" target="_blank"
+        style="color:var(--accent);text-decoration:underline">🔗 Szukaj NIP ${raw} na biznes.gov.pl</a>`;
   }
 };
 
