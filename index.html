@@ -4845,14 +4845,12 @@ window.deleteFirma = async function(k) {
   showToast('✔ Usunięto firmę', 'var(--green)');
 };
 
-window.fakturujFirma = async function(k) {
+window.fakturujFirma = function(k) {
   const f = firmy[k];
   if (!f) return;
   const pozycje = Object.values(f.pozycje || {});
   if (!pozycje.length) { showToast('⚠ Brak pozycji do fakturowania', '#f87171'); return; }
-  if (!confirm('Wystawić fakturę i przenieść pozycje do archiwum?')) return;
 
-  // Generuj raport przed archiwizacją
   const vat = 0.23;
   const totalNetto = pozycje.reduce((s,p) => s+(p.price||0), 0);
   const totalVat = Math.round(totalNetto * vat * 100) / 100;
@@ -4874,59 +4872,71 @@ window.fakturujFirma = async function(k) {
     </tr>`;
   }).join('');
 
-  const win = window.open('', '_blank');
-  if (win) {
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-      body{font-family:Arial,sans-serif;padding:24px;font-size:12px;color:#111;max-width:800px;margin:0 auto}
-      h1{font-size:18px;font-weight:900;margin-bottom:2px}
-      .sub{color:#666;font-size:11px;margin-bottom:16px}
-      .firma{background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:10px 14px;margin-bottom:16px}
-      table{width:100%;border-collapse:collapse;font-size:11px}
-      th{background:#111;color:#fff;padding:5px 8px;text-align:left}
-      td{padding:5px 8px;border-bottom:1px solid #e2e8f0}
-      tr:nth-child(even) td{background:#f8fafc}
-      .total-row td{background:#f0f9ff;font-weight:700;border-top:2px solid #111}
-      .summary{margin-top:16px;text-align:right;font-size:13px}
-      .summary b{font-size:16px}
-      @media print{@page{margin:10mm}}
-    </style></head><body>
-    <h1>Wulkanizacja Mielczarek</h1>
-    <div class="sub">Zestawienie do faktury · ${new Date().toLocaleDateString('pl-PL')}</div>
-    <div class="firma">
-      <b>${f.name||'—'}</b><br>
-      NIP: ${f.nip||'—'}<br>
-      ${f.address||''}
-    </div>
-    <table>
-      <thead><tr>
-        <th>#</th><th>Usługa</th><th>Auto / Nr rej.</th><th>Data</th>
-        <th style="text-align:right">Netto</th>
-        <th style="text-align:right">VAT</th>
-        <th style="text-align:right">Kwota VAT</th>
-        <th style="text-align:right">Brutto</th>
-      </tr></thead>
-      <tbody>${rows}
-      <tr class="total-row">
-        <td colspan="4">RAZEM</td>
-        <td style="text-align:right">${totalNetto.toFixed(2).replace('.',',')} zł</td>
-        <td></td>
-        <td style="text-align:right">${totalVat.toFixed(2).replace('.',',')} zł</td>
-        <td style="text-align:right">${totalBrutto.toFixed(2).replace('.',',')} zł</td>
-      </tr></tbody>
-    </table>
-    <div class="summary">Do zapłaty: <b>${totalBrutto.toFixed(2).replace('.',',')} zł brutto</b>
-    (${totalNetto.toFixed(2).replace('.',',')} zł netto + ${totalVat.toFixed(2).replace('.',',')} zł VAT 23%)</div>
-    </body></html>`);
-    win.document.close();
-    win.print();
-  }
+  const previewHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{font-family:Arial,sans-serif;padding:24px;font-size:12px;color:#111;max-width:800px;margin:0 auto}
+    h1{font-size:18px;font-weight:900;margin-bottom:2px}
+    .sub{color:#666;font-size:11px;margin-bottom:16px}
+    .firma{background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:10px 14px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    th{background:#111;color:#fff;padding:5px 8px;text-align:left}
+    td{padding:5px 8px;border-bottom:1px solid #e2e8f0}
+    tr:nth-child(even) td{background:#f8fafc}
+    .total-row td{background:#f0f9ff;font-weight:700;border-top:2px solid #111}
+    .summary{margin-top:16px;font-size:13px;text-align:right}
+    .summary b{font-size:16px}
+    .btn-bar{display:flex;gap:10px;margin-bottom:20px;justify-content:flex-end}
+    button{padding:10px 20px;font-size:13px;font-weight:700;border:none;border-radius:4px;cursor:pointer}
+    .btn-confirm{background:#16a34a;color:#fff}
+    .btn-cancel{background:#e5e7eb;color:#111}
+    @media print{.btn-bar{display:none}@page{margin:10mm}}
+  </style></head><body>
+  <div class="btn-bar">
+    <button class="btn-cancel" onclick="window.close()">✕ Anuluj</button>
+    <button class="btn-confirm" onclick="window.opener.window.fakturujFirmaConfirm('${k}');window.print();window.close()">🧾 Fakturuj i drukuj</button>
+  </div>
+  <h1>Wulkanizacja Mielczarek</h1>
+  <div class="sub">Zestawienie do faktury · ${new Date().toLocaleDateString('pl-PL')}</div>
+  <div class="firma">
+    <b>${f.name||'—'}</b><br>
+    NIP: ${f.nip||'—'}<br>
+    ${f.address||''}
+  </div>
+  <table>
+    <thead><tr>
+      <th>#</th><th>Usługa</th><th>Auto / Nr rej.</th><th>Data</th>
+      <th style="text-align:right">Netto</th>
+      <th style="text-align:right">VAT</th>
+      <th style="text-align:right">Kwota VAT</th>
+      <th style="text-align:right">Brutto</th>
+    </tr></thead>
+    <tbody>${rows}
+    <tr class="total-row">
+      <td colspan="4">RAZEM</td>
+      <td style="text-align:right">${totalNetto.toFixed(2).replace('.',',')} zł</td>
+      <td></td>
+      <td style="text-align:right">${totalVat.toFixed(2).replace('.',',')} zł</td>
+      <td style="text-align:right">${totalBrutto.toFixed(2).replace('.',',')} zł</td>
+    </tr></tbody>
+  </table>
+  <div class="summary">Do zapłaty: <b>${totalBrutto.toFixed(2).replace('.',',')} zł brutto</b>
+  (${totalNetto.toFixed(2).replace('.',',')} zł netto + ${totalVat.toFixed(2).replace('.',',')} zł VAT 23%)</div>
+  </body></html>`;
 
-  // Archiwizuj
+  const win = window.open('', '_blank');
+  if (!win) { alert('⚠ Zezwól na wyskakujące okna'); return; }
+  win.document.write(previewHtml);
+  win.document.close();
+};
+
+window.fakturujFirmaConfirm = async function(k) {
+  const f = firmy[k];
+  if (!f) return;
   const arch = { ...f, archivedAt: Date.now() };
   await push(ref(db, 'firmy_arch'), arch);
   await update(ref(db, 'firmy/' + k), { pozycje: {} });
-  showToast('✔ Faktura wygenerowana, pozycje przeniesione do archiwum', 'var(--green)');
+  showToast('✔ Faktura wystawiona, pozycje przeniesione do archiwum', 'var(--green)');
 };
+
 
 window.openFirmaModal = function(k) {
   window._firmaModalKey = k;
@@ -4948,22 +4958,30 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
   const q = (search||'').toLowerCase().trim();
 
   const d90 = new Date(Date.now()-90*864e5).toISOString().slice(0,10);
-  const match = (car, name, service, phone, date) =>
-    !q ||
-    (car||'').toLowerCase().includes(q) ||
-    (name||'').toLowerCase().includes(q) ||
-    (service||'').toLowerCase().includes(q) ||
-    (phone||'').replace(/\s/g,'').includes(q.replace(/\s/g,'')) ||
-    (date||'').includes(q);
+  const match = (car, name, service, phone, date, note) => {
+    if (!q) return true;
+    if ((car||'').toLowerCase().includes(q)) return true;
+    if ((name||'').toLowerCase().includes(q)) return true;
+    if ((service||'').toLowerCase().includes(q)) return true;
+    if ((phone||'').replace(/\s/g,'').includes(q.replace(/\s/g,''))) return true;
+    if ((date||'').includes(q)) return true;
+    if ((note||'').toLowerCase().includes(q)) return true;
+    // Szukanie FV/faktura w notatce
+    if (['fv','faktura','fakturę','fakt'].includes(q.toLowerCase())) {
+      const n = (note||'').toLowerCase();
+      if (n.includes('fv') || n.includes('faktur')) return true;
+    }
+    return false;
+  };
 
   const allVisits = Object.entries(visits)
-    .filter(([vk, v]) => (v.date >= d90) && match(v.car, v.name, v.service, v.phone, v.date))
+    .filter(([vk, v]) => (v.date >= d90) && match(v.car, v.name, v.service, v.phone, v.date, v.note))
     .sort((a,b) => b[1].date.localeCompare(a[1].date));
   const allOrders = Object.entries(orders)
-    .filter(([ok, o]) => !o.status && match(o.car, o.name, o.service, o.phone, o.dateStamp))
+    .filter(([ok, o]) => !o.status && match(o.car, o.name, o.service, o.phone, o.dateStamp, o.note))
     .sort((a,b) => (b[1].dateStamp||'').localeCompare(a[1].dateStamp||''));
   const allKlimas = Object.entries(klimas)
-    .filter(([kk, km]) => km && !km.status && match(km.car, km.name, 'klima', km.phone, km.start))
+    .filter(([kk, km]) => km && !km.status && match(km.car, km.name, 'klima', km.phone, km.start, km.note))
     .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
 
   // Przypisane pozycje
@@ -4985,12 +5003,13 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
     : '<div style="color:var(--muted);font-size:12px;margin-bottom:10px">Brak przypisanych pozycji</div>';
 
   let _rowIdx = 0;
-  const makeRow = (id, label, car, date, service, price, type) => {
+  const makeRow = (id, label, car, name, date, service, price, type) => {
     const idx = _rowIdx++;
     return `<div style="padding:7px;margin-bottom:3px;background:var(--surface2);border:1px solid var(--border);border-radius:4px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
           <div style="font-size:12px;font-weight:600">${car} <span style="font-size:10px;color:var(--muted)">${date}</span></div>
+          ${name ? `<div style="font-size:11px;color:var(--text);margin-top:1px">${name}</div>` : ''}
           <div style="font-size:11px;color:var(--muted)">${service} · <b>${price} zł</b></div>
         </div>
         <button onclick="window.addPozycja('${k}','${id}','${type}',(document.getElementById('freg_'+${idx})?.value||'').toUpperCase())" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>
@@ -5025,15 +5044,15 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
 
   const visitRows = groupByDate(
     allVisits, ([vk,v]) => v.date,
-    ([vk,v]) => makeRow(vk, 'wizyta', v.car||v.name||'—', v.date, v.service||'—', v.price||calcVisitPrice(v), 'visit')
+    ([vk,v]) => makeRow(vk, 'wizyta', v.car||'—', v.name||'', v.date, v.service||'—', v.price||calcVisitPrice(v), 'visit')
   );
   const orderRows = groupByDate(
     allOrders, ([ok,o]) => o.dateStamp||o.startDate||'',
-    ([ok,o]) => makeRow(ok, 'zlecenie', o.car||o.name||'—', o.dateStamp||'', o.service||'—', o.price||0, 'order')
+    ([ok,o]) => makeRow(ok, 'zlecenie', o.car||'—', o.name||'', o.dateStamp||'', o.service||'—', o.price||0, 'order')
   );
   const klimaRows = groupByDate(
     allKlimas, ([kk,km]) => km.start||'',
-    ([kk,km]) => makeRow(kk, 'klima', km.car||'—', km.start||'', 'Klima serwis', km.price||0, 'klima')
+    ([kk,km]) => makeRow(kk, 'klima', km.car||'—', km.name||'', km.start||'', 'Klima serwis', km.price||0, 'klima')
   );
 
 
