@@ -2,28 +2,20 @@
 <!--
 =================================================================
   WULKANIZACJA MIELCZAREK — System rezerwacji
-  Wersja: 260
+  Wersja: 270
 =================================================================
   HISTORIA WERSJI:
-  v260 - Naprawa data-tel, kolejność zakładek, archiwum przechowalni, klima pełne info
-  v259 - Klikalne numery telefonów (data-tel) we wszystkich zakładkach
-  v258 - Bus w zleceniach, filtrowanie pozycji faktur, nr rejestracyjny przy pozycji
-  v257 - Firmy: wyszukiwarka pozycji w modalu po aucie/nazwisku/telefonie/dacie
-  v256 - Zakładka Firmy: zarządzanie firmami, przypisywanie, fakturowanie zbiorcze
-  v255 - Toyota C-HR dodana do klima.js
-  v254 - Opcja "Bus" (+20 zł/koło) w wizytach i zleceniach, jeden wiersz checkboxów
-  v253 - Formularz zleceń: daty ręczne jak w klimie, usunięto dziś/jutro/własny
-  v252 - Wyszukiwarka R134a: własne serwisy z Firebase obok bazy NRF
-  v251 - Naprawa addKlima (window. prefix), naprawa sortowania listy wizyt
-  v250 - Przechowalnia zintegrowana z listą wizyt (modal 3 scenariusze)
-  v249 - Sortowanie listy wizyt: daty malejąco, godziny rosnąco
-  v248 - Zakładka Przechowalnia: stała + tymczasowa, edycja, wydruk, statusy
-  v247 - Zakładka Użytkowe: R134a, OEM, VIN decoder
-  v246 - Baza R134a z NRF AC Filling Chart 2024 (712 wpisów)
-  v245 - Wydruk tygodnia A4 portrait, przyciski druku w liście wizyt
-  v244 - Układ kart: tekst pełna szerokość, przyciski pod spodem
-  v243 - Komentarz z historią wersji
-  v242 - (baza stabilna)
+  v270 - Licznik R134a: reset do dokładnego timestampu, tydzień/miesiąc/rok niezależne
+  v269 - Wyszukiwarka NIP (Biała Lista MF) w modalu dodawania firmy, kopiuj do schowka
+  v268 - Zakładka Firmy: dwa modale (dodaj / szukaj), wyszukiwarka po nazwie i NIP
+  v267 - Modal firmy: sortowanie pozycji po dacie+godzinie, blokada duplikatów
+  v266 - Nr rejestracyjny przy przypisanych pozycjach, podgląd faktury przed wystawieniem
+  v265 - Naprawa window. prefix we wszystkich sekcjach (47 przycisków)
+  v264 - Naprawa addOrder (brak const bus), firmaModal poza body
+  v263 - Pozycje faktur pogrupowane po dniach (rozwijana lista)
+  v262 - Wyszukiwarka firm w modalu, filtrowanie po imieniu/notatce/FV
+  v261 - Naprawa zagnieżdżonych data-tel, kolejność zakładek, archiwum przechowalni
+  v260 - (poprzednia baza stabilna)
 =================================================================
 -->
 <html lang="pl">
@@ -6049,7 +6041,7 @@ window.calcR134a = function(period) {
   const today = getToday();
   const now = new Date();
 
-  // Wyznacz zakres dat
+  // Wyznacz zakres dat dla week/month/year
   let dateFrom = null;
   if (period === 'week') {
     const mon = new Date(now);
@@ -6059,11 +6051,8 @@ window.calcR134a = function(period) {
     dateFrom = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
   } else if (period === 'year') {
     dateFrom = `${now.getFullYear()}-01-01`;
-  } else if (period === 'all') {
-    // Od ostatniego uzupełnienia zapasów jeśli istnieje
-    const resetDate = window._r134aResetDate || null;
-    if (resetDate) dateFrom = resetDate;
   }
+  // period === 'all' — zakres kontrolowany przez resetTs (timestamp)
 
   // Filtruj: tylko zrealizowane (status=true) + ustalona cena + wpisana pojemność
   const resetTs = (period === 'all' && window._r134aResetDate && typeof window._r134aResetDate === 'number')
