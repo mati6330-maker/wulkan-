@@ -1687,7 +1687,10 @@ function initPublic() {
   onValue(ref(db, 'invoices/r134aReset'), snap => {
     window._r134aResetDate = snap.val() || null;
     const el = document.getElementById('r134aResetDate');
-    if (el) el.textContent = window._r134aResetDate || '—';
+    if (el) {
+      const v = window._r134aResetDate;
+      el.textContent = v ? (typeof v === 'number' ? new Date(v).toLocaleString('pl-PL') : v) : '—';
+    }
   });
 }
 function initApp() {
@@ -1747,7 +1750,10 @@ function initApp() {
   onValue(ref(db, 'invoices/r134aReset'), snap => {
     window._r134aResetDate = snap.val() || null;
     const el = document.getElementById('r134aResetDate');
-    if (el) el.textContent = window._r134aResetDate || '—';
+    if (el) {
+      const v = window._r134aResetDate;
+      el.textContent = v ? (typeof v === 'number' ? new Date(v).toLocaleString('pl-PL') : v) : '—';
+    }
     window.calcR134a('all');
   });
   onValue(ref(db, 'klima'), snap => {
@@ -6060,6 +6066,9 @@ window.calcR134a = function(period) {
   }
 
   // Filtruj: tylko zrealizowane (status=true) + ustalona cena + wpisana pojemność
+  const resetTs = (period === 'all' && window._r134aResetDate && typeof window._r134aResetDate === 'number')
+    ? window._r134aResetDate : null;
+
   const entries = Object.values(klimas).filter(k => {
     if (!k) return false;
     if (!k.status) return false;                            // tylko zakończone
@@ -6067,7 +6076,10 @@ window.calcR134a = function(period) {
     if (!k.capacity || parseFloat(k.capacity) <= 0) return false; // musi być pojemność
     const realDate = k.end || k.start || '';
     if (!realDate) return false;
-    if (dateFrom && realDate < dateFrom) return false;
+    // Filtr po timestamp resetu (dokładny moment)
+    if (resetTs && (k.createdAt || 0) < resetTs) return false;
+    // Filtr po dacie dla innych okresów
+    if (!resetTs && dateFrom && realDate < dateFrom) return false;
     return true;
   });
 
@@ -6100,12 +6112,14 @@ window.calcR134a = function(period) {
 };
 
 window.resetR134aCounter = async function() {
-  if (!confirm('Potwierdzasz uzupełnienie zapasów R134a?\nLicznik "Całość" będzie liczył od dzisiaj.')) return;
-  const today = getToday();
+  if (!confirm('Potwierdzasz uzupełnienie zapasów R134a?\nLicznik będzie liczył od tego momentu.')) return;
+  const now = Date.now();
   try {
-    await set(ref(db, 'invoices/r134aReset'), today);
-    window._r134aResetDate = today;
-    showToast('❄ Zapasy uzupełnione — licznik zresetowany od ' + today, '#06b6d4');
+    await set(ref(db, 'invoices/r134aReset'), now);
+    window._r134aResetDate = now;
+    const el = document.getElementById('r134aResetDate');
+    if (el) el.textContent = new Date(now).toLocaleString('pl-PL');
+    showToast('❄ Zapasy uzupełnione — licznik zresetowany', '#06b6d4');
     window.calcR134a('all');
   } catch(e) {
     showToast('❌ Błąd: ' + e.message, 'var(--red)');
