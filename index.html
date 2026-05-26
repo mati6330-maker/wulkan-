@@ -915,6 +915,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Run-flat</div><input type="number" id="p_rf" style="margin:0"/></div>
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Niski profil</div><input type="number" id="p_np" style="margin:0"/></div>
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Nowy wentyl</div><input type="number" id="p_nw" style="margin:0"/></div>
+    <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Bus (za koło)</div><input type="number" id="p_bus" style="margin:0"/></div>
     <div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">Rabat zlecenie (−)</div><input type="number" id="p_zlecenie_discount" style="margin:0"/></div>
   </div>
   <button onclick="window.savePrices()" style="margin-top:12px">▶ Zapisz ceny</button>
@@ -1483,6 +1484,7 @@ let prices = {
   wwa_15: 60, wwa_17: 70, wwa_big: 80,            // wyważenie aluminiowe ≤15 / 16-17 / >17
   no: 50,                                          // naprawa opony
   rf: 30, np: 20, nw: 5,                          // run-flat, niski profil, wentyl (za szt.)
+  bus: 20,                                         // dopłata bus (za koło)
   klima_rate: 39,                                  // stawka klimy zł/100g
   zlecenie_discount: 10                            // rabat dla zleceń
 };
@@ -1619,7 +1621,7 @@ function calcVisitPrice(v, isOrder = false) {
   if (v.valve) price += p.nw * (parseInt(v.valveCount) || wheelCount);
 
   // Bus — 20 zł od koła
-  if (v.bus) price += 20 * wheelCount;
+  if (v.bus) price += (p.bus||20) * wheelCount;
 
   // Rabat dla zleceń przy wymianie opon
   if (isOrder && v.service === "Wymiana opon") price -= p.zlecenie_discount;
@@ -6308,7 +6310,8 @@ function renderPricing() {
       Naprawa opony — ${p.no} zł<br>
       Run-flat — +${p.rf} zł<br>
       Niski profil — +${p.np} zł<br>
-      Nowy wentyl — +${p.nw} zł
+      Nowy wentyl — +${p.nw} zł<br>
+      Bus (za koło) — +${p.bus||20} zł
     </div>
     ${currentUser ? `<button onclick="openPriceEdit()" style="margin-top:8px;background:transparent;color:var(--accent);border:1px solid var(--accent)">✎ Edytuj ceny</button>` : ''}
   `;
@@ -6337,6 +6340,7 @@ window.openPriceEdit = function() {
   document.getElementById('p_rf').value = p.rf;
   document.getElementById('p_np').value = p.np;
   document.getElementById('p_nw').value = p.nw;
+  document.getElementById('p_bus').value = p.bus||20;
   document.getElementById('p_zlecenie_discount').value = p.zlecenie_discount;
 };
 
@@ -6362,6 +6366,7 @@ window.savePrices = async function() {
     rf: +document.getElementById('p_rf').value,
     np: +document.getElementById('p_np').value,
     nw: +document.getElementById('p_nw').value,
+    bus: +document.getElementById('p_bus').value,
     zlecenie_discount: +document.getElementById('p_zlecenie_discount').value,
   };
   [16,17,18,19,20,21,22].forEach(s => {
