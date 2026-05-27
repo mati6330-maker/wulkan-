@@ -970,9 +970,10 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 
 <!-- FIRMY -->
 <div class="section" id="firmy">
-  <div style="display:flex;gap:8px;margin-bottom:14px">
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
     <button onclick="window.openAddFirmaModal()" style="flex:1;letter-spacing:1px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">🏢 DODAJ FIRMĘ</button>
     <button onclick="window.openFirmyListModal()" style="flex:1;letter-spacing:1px;background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.3)">🔍 SZUKAJ FIRMY</button>
+    <button onclick="window.openPendingModal()" style="flex:1;letter-spacing:1px;background:rgba(234,179,8,0.12);color:#eab308;border:1px solid rgba(234,179,8,0.3)">🔄 PRZELEWY</button>
   </div>
   <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:6px">AKTYWNE FIRMY</div>
   <div id="firmyList"></div>
@@ -4925,6 +4926,48 @@ window.addFirma = async function() {
   window.closeAddFirmaModal();
 };
 
+window.openPendingModal = function() {
+  document.getElementById('pendingModal').style.display = 'block';
+  window.renderPendingTransfers();
+};
+window.closePendingModal = function() {
+  document.getElementById('pendingModal').style.display = 'none';
+};
+window.renderPendingTransfers = function() {
+  const box = document.getElementById('pendingList');
+  if (!box) return;
+  const entries = Object.entries(firmy_arch)
+    .filter(([k,f]) => f.payMethod === 'przelew_oczekuje')
+    .sort((a,b) => (b[1].archivedAt||0) - (a[1].archivedAt||0));
+  if (!entries.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0;text-align:center">✔ Brak oczekujących przelewów</div>';
+    return;
+  }
+  const total = entries.reduce((s,[k,f]) => s + Object.values(f.pozycje||{}).reduce((ss,p) => ss+(p.price||0), 0), 0);
+  box.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-family:var(--mono)">${entries.length} faktur · łącznie <b style="color:var(--accent)">${total} zł netto</b></div>` +
+    entries.map(([k,f]) => {
+      const pozycje = Object.values(f.pozycje||{});
+      const sum = pozycje.reduce((s,p) => s+(p.price||0), 0);
+      const date = f.archivedAt ? new Date(f.archivedAt).toLocaleDateString('pl-PL') : '—';
+      return `<div style="padding:10px;margin-bottom:8px;background:var(--surface2);border:1px solid rgba(234,179,8,0.3);border-radius:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div>
+            <div style="font-weight:700;font-size:13px">${f.name||'—'}</div>
+            <div style="font-size:11px;color:var(--muted)">NIP: ${f.nip||'—'} · ${date}</div>
+            <div style="font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:2px">${sum} zł netto · ${pozycje.length} poz.</div>
+          </div>
+          <button onclick="window.markTransferReceived('${k}')"
+            style="width:auto;padding:6px 12px;font-size:12px;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.4);white-space:nowrap">✔ Otrzymano</button>
+        </div>
+      </div>`;
+    }).join('');
+};
+window.markTransferReceived = async function(k) {
+  await update(ref(db, 'firmy_arch/' + k), { payMethod: 'przelew_otrzymano', payLabel: '✅ Przelew — otrzymano' });
+  showToast('✔ Przelew oznaczony jako otrzymany', 'var(--green)');
+  window.renderPendingTransfers();
+};
+
 window.setFirmaPayment = async function(k, payMethod) {
   const PAY_LABEL = { gotowka: '💵 Gotówka', przelew_oczekuje: '🔄 Przelew — oczekuje', przelew_otrzymano: '✅ Przelew — otrzymano' };
   await update(ref(db, 'firmy/' + k), { payMethod, payLabel: PAY_LABEL[payMethod]||'' });
@@ -6500,6 +6543,15 @@ setInterval(updateClock,1000); updateClock();
       <button onclick="storageConfirmSwap()" style="width:100%;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.4)">✔ Zapisz zamiennik</button>
     </div>
     <button onclick="closeStorageModal()" style="width:100%;margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">Anuluj</button>
+  </div>
+</div>
+
+<!-- MODAL OCZEKUJĄCE PRZELEWY -->
+<div id="pendingModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2002;overflow-y:auto">
+  <div style="background:var(--surface);margin:20px auto;max-width:500px;border-radius:8px;border:1px solid var(--border);padding:20px">
+    <div style="font-family:var(--mono);font-size:11px;color:#eab308;letter-spacing:2px;margin-bottom:14px">🔄 OCZEKUJĄCE PRZELEWY</div>
+    <div id="pendingList"></div>
+    <button onclick="window.closePendingModal()" style="width:100%;margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">Zamknij</button>
   </div>
 </div>
 
