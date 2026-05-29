@@ -696,7 +696,10 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <div style="width:1px;height:40px;background:var(--border);flex-shrink:0"></div>
     <div>
       <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">KOLEJNA</div>
-      <div id="nextInvoiceDisplay" style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">—</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="nextInvoiceDisplay" style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">—</div>
+        <button onclick="window.openInvoiceReset()" title="Zmień numer" style="width:auto;padding:2px 7px;font-size:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">✎</button>
+      </div>
     </div>
     <button onclick="window.saveInvoice()" id="invoiceSaveBtn" style="margin-left:auto;width:auto;padding:10px 16px;font-size:13px;letter-spacing:0;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">✔ Zapisz wystawioną fakturę</button>
   </div>
@@ -4926,6 +4929,30 @@ window.addFirma = async function() {
   window.closeAddFirmaModal();
 };
 
+window.openInvoiceReset = function() {
+  const current = document.getElementById('nextInvoiceDisplay').textContent || '';
+  document.getElementById('invoiceResetInput').value = current;
+  document.getElementById('invoiceResetModal').style.display = 'block';
+  setTimeout(() => document.getElementById('invoiceResetInput').select(), 100);
+};
+window.confirmInvoiceReset = async function() {
+  const val = (document.getElementById('invoiceResetInput').value||'').trim();
+  if (!/^\d+\/\d{2}$/.test(val)) {
+    showToast('⚠ Nieprawidłowy format — wpisz np. 1/27', '#f87171');
+    return;
+  }
+  const [nr, yy] = val.split('/');
+  const prevNr = parseInt(nr) - 1;
+  if (prevNr > 0) {
+    await update(ref(db, 'invoices/last'), { number: `${prevNr}/${yy}`, date: new Date().toISOString().slice(0,10) });
+  } else {
+    await set(ref(db, 'invoices/last'), null);
+  }
+  document.getElementById('invoiceResetModal').style.display = 'none';
+  document.getElementById('nextInvoiceDisplay').textContent = val;
+  showToast(`✔ Następna faktura: ${val}`, 'var(--green)');
+};
+
 window.openPendingModal = function() {
   document.getElementById('pendingModal').style.display = 'block';
   window.renderPendingTransfers();
@@ -6543,6 +6570,18 @@ setInterval(updateClock,1000); updateClock();
       <button onclick="storageConfirmSwap()" style="width:100%;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.4)">✔ Zapisz zamiennik</button>
     </div>
     <button onclick="closeStorageModal()" style="width:100%;margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">Anuluj</button>
+  </div>
+</div>
+
+<!-- MODAL RESET NUMERU FAKTURY -->
+<div id="invoiceResetModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2002;overflow-y:auto">
+  <div style="background:var(--surface);margin:80px auto;max-width:360px;border-radius:8px;border:1px solid var(--border);padding:20px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:14px">✎ USTAW NUMER FAKTURY</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Wpisz numer który ma być <b>następny</b> (np. <span style="font-family:var(--mono);color:var(--text)">1/27</span>)</div>
+    <input id="invoiceResetInput" placeholder="np. 1/27" style="font-family:var(--mono);font-size:16px;letter-spacing:2px;text-align:center;margin-bottom:12px"
+      onkeydown="if(event.key==='Enter')window.confirmInvoiceReset()"/>
+    <button onclick="window.confirmInvoiceReset()" style="width:100%;margin-bottom:6px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">✔ Ustaw numer</button>
+    <button onclick="document.getElementById('invoiceResetModal').style.display='none'" style="width:100%;background:transparent;color:var(--muted);border:1px solid var(--border)">Anuluj</button>
   </div>
 </div>
 
