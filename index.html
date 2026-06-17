@@ -5126,12 +5126,16 @@ window.fakturujFirmaConfirm = async function(k, payMethod) {
   const f = firmy[k];
   if (!f) return;
   const PAY_LABEL = { gotowka: '💵 Gotówka', przelew_oczekuje: '🔄 Przelew — oczekuje', przelew_otrzymano: '✅ Przelew — otrzymano' };
-  const arch = { ...f, archivedAt: Date.now(), payMethod: payMethod||'gotowka', payLabel: PAY_LABEL[payMethod]||'💵 Gotówka' };
+
+  // Pobierz aktualne pozycje bezpośrednio z Firebase
+  const snap = await get(ref(db, 'firmy/' + k + '/pozycje'));
+  const pozycjeData = snap.val() || {};
+
+  const arch = { ...f, pozycje: pozycjeData, archivedAt: Date.now(), payMethod: payMethod||'gotowka', payLabel: PAY_LABEL[payMethod]||'💵 Gotówka' };
   await push(ref(db, 'firmy_arch'), arch);
 
   // Oznacz każdą pozycję jako zafakturowaną w źródle
-  const pozycje = Object.entries(f.pozycje || {});
-  await Promise.all(pozycje.map(([itemKey, p]) => {
+  await Promise.all(Object.entries(pozycjeData).map(([itemKey, p]) => {
     const path = p.type === 'visit' ? 'wizyty' : p.type === 'order' ? 'zlecenia' : 'klima';
     return update(ref(db, `${path}/${itemKey}`), { invoiced: true });
   }));
