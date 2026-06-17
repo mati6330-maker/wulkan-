@@ -5128,6 +5128,14 @@ window.fakturujFirmaConfirm = async function(k, payMethod) {
   const PAY_LABEL = { gotowka: '💵 Gotówka', przelew_oczekuje: '🔄 Przelew — oczekuje', przelew_otrzymano: '✅ Przelew — otrzymano' };
   const arch = { ...f, archivedAt: Date.now(), payMethod: payMethod||'gotowka', payLabel: PAY_LABEL[payMethod]||'💵 Gotówka' };
   await push(ref(db, 'firmy_arch'), arch);
+
+  // Oznacz każdą pozycję jako zafakturowaną w źródle
+  const pozycje = Object.entries(f.pozycje || {});
+  await Promise.all(pozycje.map(([itemKey, p]) => {
+    const path = p.type === 'visit' ? 'wizyty' : p.type === 'order' ? 'zlecenia' : 'klima';
+    return update(ref(db, `${path}/${itemKey}`), { invoiced: true });
+  }));
+
   await update(ref(db, 'firmy/' + k), { pozycje: {} });
   showToast('✔ Faktura wystawiona, pozycje przeniesione do archiwum', 'var(--green)');
 };
@@ -5171,13 +5179,22 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
 
   const allVisits = Object.entries(visits)
     .filter(([vk, v]) => (v.date >= d90) && match(v.car, v.name, v.service, v.phone, v.date, v.note))
-    .sort((a,b) => b[1].date.localeCompare(a[1].date));
+    .sort((a,b) => {
+      if (!!a[1].invoiced !== !!b[1].invoiced) return a[1].invoiced ? 1 : -1;
+      return b[1].date.localeCompare(a[1].date);
+    });
   const allOrders = Object.entries(orders)
     .filter(([ok, o]) => !o.status && match(o.car, o.name, o.service, o.phone, o.dateStamp, o.note))
-    .sort((a,b) => (b[1].dateStamp||'').localeCompare(a[1].dateStamp||''));
+    .sort((a,b) => {
+      if (!!a[1].invoiced !== !!b[1].invoiced) return a[1].invoiced ? 1 : -1;
+      return (b[1].dateStamp||'').localeCompare(a[1].dateStamp||'');
+    });
   const allKlimas = Object.entries(klimas)
     .filter(([kk, km]) => km && !km.status && match(km.car, km.name, 'klima', km.phone, km.start, km.note))
-    .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+    .sort((a,b) => {
+      if (!!a[1].invoiced !== !!b[1].invoiced) return a[1].invoiced ? 1 : -1;
+      return (b[1].createdAt||0) - (a[1].createdAt||0);
+    });
 
   // Przypisane pozycje
   const assignedHtml = Object.entries(pozycje).length
@@ -5209,20 +5226,21 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
     : '<div style="color:var(--muted);font-size:12px;margin-bottom:10px">Brak przypisanych pozycji</div>';
 
   let _rowIdx = 0;
-  const makeRow = (id, label, car, name, date, service, price, type) => {
+  const makeRow = (id, label, car, name, date, service, price, type, invoiced) => {
     const idx = _rowIdx++;
     const alreadyAdded = pozycje && pozycje[id];
-    return `<div style="padding:7px;margin-bottom:3px;background:${alreadyAdded ? 'rgba(79,142,247,0.08)' : 'var(--surface2)'};border:1px solid ${alreadyAdded ? 'rgba(79,142,247,0.4)' : 'var(--border)'};border-radius:4px">
+    const bg = invoiced ? 'rgba(255,255,255,0.02)' : alreadyAdded ? 'rgba(79,142,247,0.08)' : 'var(--surface2)';
+    const bd = invoiced ? 'var(--border)' : alreadyAdded ? 'rgba(79,142,247,0.4)' : 'var(--border)';
+    return `<div style="padding:7px;margin-bottom:3px;background:${bg};border:1px solid ${bd};border-radius:4px;${invoiced?'opacity:0.45':''}">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:12px;font-weight:600">${car} <span style="font-size:10px;color:var(--muted)">${date}</span>${alreadyAdded ? ' <span style="font-size:10px;color:var(--accent);font-weight:700">✔ dodano</span>' : ''}</div>
+          <div style="font-size:12px;font-weight:600">${car} <span style="font-size:10px;color:var(--muted)">${date}</span>${alreadyAdded ? ' <span style="font-size:10px;color:var(--accent);font-weight:700">✔ dodano</span>' : ''}${invoiced ? ' <span style="font-size:10px;color:var(--muted)">🧾</span>' : ''}</div>
           ${name ? `<div style="font-size:11px;color:var(--text);margin-top:1px">${name}</div>` : ''}
           <div style="font-size:11px;color:var(--muted)">${service} · <b>${price} zł</b></div>
         </div>
-        ${alreadyAdded
-          ? `<span style="font-size:11px;color:var(--accent);padding:4px 10px">✔</span>`
-          : `<button onclick="window.addPozycja('${k}','${id}','${type}')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>`
-        }
+        ${alreadyAdded ? `<span style="font-size:11px;color:var(--accent);padding:4px 10px">✔</span>`
+          : invoiced ? `<span style="font-size:11px;color:var(--muted);padding:4px 10px">🧾</span>`
+          : `<button onclick="window.addPozycja('${k}','${id}','${type}')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>`}
       </div>
     </div>`;
   };
@@ -5253,15 +5271,15 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
 
   const visitRows = groupByDate(
     allVisits, ([vk,v]) => v.date,
-    ([vk,v]) => makeRow(vk, 'wizyta', v.car||'—', v.name||'', v.date, v.service||'—', v.price||calcVisitPrice(v), 'visit')
+    ([vk,v]) => makeRow(vk, 'wizyta', v.car||'—', v.name||'', v.date, v.service||'—', v.price||calcVisitPrice(v), 'visit', !!v.invoiced)
   );
   const orderRows = groupByDate(
     allOrders, ([ok,o]) => o.dateStamp||o.startDate||'',
-    ([ok,o]) => makeRow(ok, 'zlecenie', o.car||'—', o.name||'', o.dateStamp||'', o.service||'—', o.price||0, 'order')
+    ([ok,o]) => makeRow(ok, 'zlecenie', o.car||'—', o.name||'', o.dateStamp||'', o.service||'—', o.price||0, 'order', !!o.invoiced)
   );
   const klimaRows = groupByDate(
     allKlimas, ([kk,km]) => km.start||'',
-    ([kk,km]) => makeRow(kk, 'klima', km.car||'—', km.name||'', km.start||'', 'Klima serwis', km.price||0, 'klima')
+    ([kk,km]) => makeRow(kk, 'klima', km.car||'—', km.name||'', km.start||'', 'Klima serwis', km.price||0, 'klima', !!km.invoiced)
   );
 
 
