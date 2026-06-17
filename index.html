@@ -5131,15 +5131,17 @@ window.fakturujFirmaConfirm = async function(k, payMethod) {
   const snap = await get(ref(db, 'firmy/' + k + '/pozycje'));
   const pozycjeData = snap.val() || {};
 
-  const arch = { ...f, pozycje: pozycjeData, archivedAt: Date.now(), payMethod: payMethod||'gotowka', payLabel: PAY_LABEL[payMethod]||'💵 Gotówka' };
-  await push(ref(db, 'firmy_arch'), arch);
-
-  // Oznacz każdą pozycję jako zafakturowaną w źródle
+  // Oznacz każdą pozycję jako zafakturowaną i pobierz aktualne dane
+  const resolvedPozycje = {};
   await Promise.all(Object.entries(pozycjeData).map(([itemKey, p]) => {
+    const live = resolvePozycja(itemKey, p.type) || p;
+    resolvedPozycje[itemKey] = { ...live, regNum: p.regNum||'' };
     const path = p.type === 'visit' ? 'wizyty' : p.type === 'order' ? 'zlecenia' : 'klima';
     return update(ref(db, `${path}/${itemKey}`), { invoiced: true });
   }));
 
+  const arch = { ...f, pozycje: resolvedPozycje, archivedAt: Date.now(), payMethod: payMethod||'gotowka', payLabel: PAY_LABEL[payMethod]||'💵 Gotówka' };
+  await push(ref(db, 'firmy_arch'), arch);
   await update(ref(db, 'firmy/' + k), { pozycje: {} });
   showToast('✔ Faktura wystawiona, pozycje przeniesione do archiwum', 'var(--green)');
 };
@@ -5208,11 +5210,12 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
         const db = (b[1].date||'') + (b[1].time||'').padStart(5,'0');
         return da.localeCompare(db);
       }).map(([pk, p]) => {
-        const price = p.price || 0;
+        const live = resolvePozycja(pk, p.type) || p;
+        const price = live.price || 0;
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;margin-bottom:4px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.2);border-radius:4px">
           <div>
-            <div style="font-size:12px;font-weight:600">${p.car||p.name||'—'} ${p.date||p.dateStamp||''}</div>
-            <div style="font-size:11px;color:var(--muted)">${p.service||p.type||'klima'} · ${price} zł${p.regNum ? ' · <b style="color:var(--accent)">'+p.regNum+'</b>' : ''}</div>
+            <div style="font-size:12px;font-weight:600">${live.car||'—'} ${live.date||''}</div>
+            <div style="font-size:11px;color:var(--muted)">${live.service||'—'} · ${price} zł${p.regNum ? ' · <b style="color:var(--accent)">'+p.regNum+'</b>' : ''}</div>
             <div style="display:flex;gap:4px;margin-top:4px">
               <input placeholder="Nr rej. (opcjonalnie)" value="${p.regNum||''}"
                 id="preg_${pk.replace(/[^a-z0-9]/gi,'_')}"
@@ -5225,7 +5228,7 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
         </div>`;
       }).join('') +
       `<div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);margin:10px 0;text-align:right">
-        RAZEM: ${Object.values(pozycje).reduce((s,p) => s+(p.price||0), 0)} zł
+        RAZEM: ${Object.entries(pozycje).reduce((s,[pk,p]) => s+((resolvePozycja(pk,p.type)||p).price||0), 0)} zł
       </div>`
     : '<div style="color:var(--muted);font-size:12px;margin-bottom:10px">Brak przypisanych pozycji</div>';
 
@@ -5303,6 +5306,24 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
   }
 }
 
+// Pobierz aktualne dane pozycji ze źródła (wizyty/zlecenia/klima)
+function resolvePozycja(itemKey, type) {
+  if (type === 'visit') {
+    const v = visits[itemKey];
+    if (!v) return null;
+    return { type, car: v.car||v.name||'—', name: v.name||'', date: v.date, service: v.service||'—', price: v.price||calcVisitPrice(v) };
+  } else if (type === 'order') {
+    const o = orders[itemKey];
+    if (!o) return null;
+    return { type, car: o.car||o.name||'—', name: o.name||'', date: o.dateStamp||'', service: o.service||'—', price: o.price||0 };
+  } else if (type === 'klima') {
+    const km = klimas[itemKey];
+    if (!km) return null;
+    return { type, car: km.car||'—', name: km.name||'', date: km.start||'', service: 'Klima serwis', price: km.price||0 };
+  }
+  return null;
+}
+
 window.addPozycja = async function(firmaKey, itemKey, type) {
   const f = firmy[firmaKey];
   if (!f) return;
@@ -5310,21 +5331,7 @@ window.addPozycja = async function(firmaKey, itemKey, type) {
     showToast('⚠ Ta pozycja jest już przypisana', '#f87171');
     return;
   }
-  let data = {};
-  if (type === 'visit') {
-    const v = visits[itemKey];
-    if (!v) return;
-    data = { type, car: v.car||v.name||'—', name: v.name||'', date: v.date, service: v.service||'—', price: v.price||calcVisitPrice(v) };
-  } else if (type === 'order') {
-    const o = orders[itemKey];
-    if (!o) return;
-    data = { type, car: o.car||o.name||'—', name: o.name||'', date: o.dateStamp||'', service: o.service||'—', price: o.price||0 };
-  } else if (type === 'klima') {
-    const km = klimas[itemKey];
-    if (!km) return;
-    data = { type, car: km.car||'—', name: km.name||'', date: km.start||'', service: 'Klima serwis', price: km.price||0 };
-  }
-  await update(ref(db, 'firmy/' + firmaKey + '/pozycje/' + itemKey), data);
+  await update(ref(db, 'firmy/' + firmaKey + '/pozycje/' + itemKey), { type });
   showToast('✔ Dodano — wpisz nr rej. w sekcji PRZYPISANE', 'var(--green)');
   window.renderFirmaModal(firmaKey, document.getElementById('firmaSearch')?.value||'');
 };
