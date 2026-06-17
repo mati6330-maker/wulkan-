@@ -3520,7 +3520,7 @@ window.addOrder = async function() {
     note:document.getElementById('o_note').value,
     service, type, time,
     runflat, low, valve, valveCount, bus,
-    price:calcVisitPrice({service,wheel:type,tireSize:diameter,runflat,low,valve,valveCount}, true),
+    price:calcVisitPrice({service,wheel:type,tireSize:diameter,runflat,low,valve,valveCount,wheelCount:parseInt(document.getElementById('o_wheel_count').value)||4}, true),
     dateStamp: time,
     startDate
   };
