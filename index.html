@@ -5311,7 +5311,7 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
 function resolvePozycja(itemKey, type) {
   // Próbuj wszystkie trzy źródła - niezależnie od zapisanego type
   const v = visits[itemKey];
-  if (v) return { type: 'visit', car: v.car||v.name||'—', name: v.name||'', date: v.date, service: v.service||'—', price: calcVisitPrice(v) || v.price || 0 };
+  if (v) return { type: 'visit', car: v.car||v.name||'—', name: v.name||'', date: v.date, service: v.service||'—', price: v.price !== undefined ? v.price : calcVisitPrice(v) };
   const o = orders[itemKey];
   if (o) return { type: 'order', car: o.car||o.name||'—', name: o.name||'', date: o.dateStamp||'', service: o.service||'—', price: o.price||0 };
   const km = klimas[itemKey];
