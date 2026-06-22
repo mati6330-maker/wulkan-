@@ -43,16 +43,16 @@
   --mono:'Share Tech Mono',monospace;
 }
 body.light{
-  --bg:#dde8f7;
+  --bg:#f5f5f5;
   --surface:#ffffff;
-  --surface2:#eaf1fb;
-  --border:#a8c4e8;
-  --accent:#2563eb;
-  --accent2:#3b82f6;
-  --green:#059669;
+  --surface2:#efefef;
+  --border:#d1d1d1;
+  --accent:#d97706;
+  --accent2:#f59e0b;
+  --green:#16a34a;
   --red:#dc2626;
-  --text:#0c1a3a;
-  --muted:#3a5a8a;
+  --text:#111111;
+  --muted:#666666;
 }
 body.light .tabs{background:#fff;border-bottom:1px solid #a8c4e8;padding:8px 8px 0;gap:4px;}
 body.light .tab{color:#5070a8;}
@@ -91,10 +91,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   input,select,textarea{font-size:14px;}
 }
 #clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 14px rgba(79,142,247,0.45);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
-.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;padding:8px 8px 0;gap:4px;}
+.tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;padding:0;gap:0;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;}
+.tabs::-webkit-scrollbar{display:none;}
 .tab{
-  flex:1;
-  padding:10px 8px 12px;
+  flex:0 0 auto;
+  padding:14px 16px;
   text-align:center;
   background:transparent;
   cursor:pointer;
@@ -103,6 +104,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   font-size:12px;
   letter-spacing:1px;
   text-transform:uppercase;
+  color:var(--muted);
+  border:none;
+  border-bottom:3px solid transparent;
+  white-space:nowrap;
+  scroll-snap-align:start;
+  transition:color .15s,border-color .15s;
+}ransform:uppercase;
   color:var(--muted);
   border-radius:8px 8px 0 0;
   border:1px solid transparent;
@@ -5995,6 +6003,10 @@ window.searchR134a = function() {
 
 window.showTab = function(id, el) {
   if (typeof updateFabActive === 'function') updateFabActive(id);
+  // Scrolluj górne menu do aktywnej zakładki
+  if (el && el.scrollIntoView) {
+    setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'}), 50);
+  }
   const btn = document.getElementById('printBtn');
   const btnW = document.getElementById('printWeekBtn');
   const show = (id==='main' && currentUser) ? 'block' : 'none';
@@ -6678,17 +6690,17 @@ setInterval(updateClock,1000); updateClock();
 <!-- PŁYWAJĄCE MENU FAB -->
 <div class="fab-container" id="fabContainer">
   <div class="fab-items fab-hidden" id="fabItems">
-    <div class="fab-item" onclick="window.showTab('quickview',document.querySelector('[onclick*=\'quickview\']'));closeFab()"><div class="fab-label">Podgląd</div><div class="fab-icon" id="fab-quickview">👁</div></div>
-    <div class="fab-item" onclick="window.showTab('main',document.querySelector('[onclick*=\'main\']'));closeFab()"><div class="fab-label">Grafik</div><div class="fab-icon" id="fab-main">📅</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('list',document.querySelector('[onclick*=\'list\']'));closeFab()"><div class="fab-label">Lista</div><div class="fab-icon" id="fab-list">📋</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('orders',document.querySelector('[onclick*=\'orders\']'));closeFab()"><div class="fab-label">Zlecenia</div><div class="fab-icon" id="fab-orders">🔧</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('klima',document.querySelector('[onclick*=\'klima\']'));closeFab()"><div class="fab-label">Klima</div><div class="fab-icon" id="fab-klima">❄️</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('cash',document.querySelector('[onclick*=\'cash\']'));closeFab()"><div class="fab-label">Kasa</div><div class="fab-icon" id="fab-cash">💰</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('przechowalnia',document.querySelector('[onclick*=\'przechowalnia\']'));closeFab()"><div class="fab-label">Przechowalnia</div><div class="fab-icon" id="fab-przechowalnia">📦</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('firmy',document.querySelector('[onclick*=\'firmy\']'));closeFab()"><div class="fab-label">Firmy</div><div class="fab-icon" id="fab-firmy">🏢</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('uzytkowe',document.querySelector('[onclick*=\'uzytkowe\']'));closeFab()"><div class="fab-label">Użytkowe</div><div class="fab-icon" id="fab-uzytkowe">🔍</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('archive',document.querySelector('[onclick*=\'archive\']'));closeFab()"><div class="fab-label">Archiwum</div><div class="fab-icon" id="fab-archive">🗄</div></div>
-    <div class="fab-item" onclick="window.requireAdmin('pricing',document.querySelector('[onclick*=\'pricing\']'));closeFab()"><div class="fab-label">Cennik</div><div class="fab-icon" id="fab-pricing">💲</div></div>
+    <div class="fab-item" onclick="fabGoTo('quickview')"><div class="fab-label">Podgląd</div><div class="fab-icon" id="fab-quickview">👁</div></div>
+    <div class="fab-item" onclick="fabGoTo('main')"><div class="fab-label">Grafik</div><div class="fab-icon" id="fab-main">📅</div></div>
+    <div class="fab-item" onclick="fabGoTo('list')"><div class="fab-label">Lista</div><div class="fab-icon" id="fab-list">📋</div></div>
+    <div class="fab-item" onclick="fabGoTo('orders')"><div class="fab-label">Zlecenia</div><div class="fab-icon" id="fab-orders">🔧</div></div>
+    <div class="fab-item" onclick="fabGoTo('klima')"><div class="fab-label">Klima</div><div class="fab-icon" id="fab-klima">❄️</div></div>
+    <div class="fab-item" onclick="fabGoTo('cash')"><div class="fab-label">Kasa</div><div class="fab-icon" id="fab-cash">💰</div></div>
+    <div class="fab-item" onclick="fabGoTo('przechowalnia')"><div class="fab-label">Przechowalnia</div><div class="fab-icon" id="fab-przechowalnia">📦</div></div>
+    <div class="fab-item" onclick="fabGoTo('firmy')"><div class="fab-label">Firmy</div><div class="fab-icon" id="fab-firmy">🏢</div></div>
+    <div class="fab-item" onclick="fabGoTo('uzytkowe')"><div class="fab-label">Użytkowe</div><div class="fab-icon" id="fab-uzytkowe">🔍</div></div>
+    <div class="fab-item" onclick="fabGoTo('archive')"><div class="fab-label">Archiwum</div><div class="fab-icon" id="fab-archive">🗄</div></div>
+    <div class="fab-item" onclick="fabGoTo('pricing')"><div class="fab-label">Cennik</div><div class="fab-icon" id="fab-pricing">💲</div></div>
   </div>
   <button class="fab-main" id="fabBtn" onclick="toggleFab()">☰</button>
 </div>
@@ -6696,7 +6708,17 @@ setInterval(updateClock,1000); updateClock();
 let _fabOpen=false;
 function toggleFab(){_fabOpen=!_fabOpen;document.getElementById('fabItems').classList.toggle('fab-hidden',!_fabOpen);document.getElementById('fabBtn').textContent=_fabOpen?'✕':'☰';}
 function closeFab(){_fabOpen=false;document.getElementById('fabItems').classList.add('fab-hidden');document.getElementById('fabBtn').textContent='☰';}
-function updateFabActive(tabId){document.querySelectorAll('.fab-icon').forEach(el=>el.classList.remove('fab-active'));const el=document.getElementById('fab-'+tabId);if(el)el.classList.add('fab-active');}
+function updateFabActive(tabId){
+  document.querySelectorAll('.fab-icon').forEach(el=>el.classList.remove('fab-active'));
+  const el=document.getElementById('fab-'+tabId);
+  if(el)el.classList.add('fab-active');
+}
+function fabGoTo(tabId){
+  // Znajdź zakładkę w górnym menu i kliknij ją — to wykona showTab + scroll
+  const tabEl = Array.from(document.querySelectorAll('.tab')).find(t=>t.getAttribute('onclick')&&t.getAttribute('onclick').includes("'"+tabId+"'"));
+  if(tabEl) tabEl.click();
+  closeFab();
+}
 document.addEventListener('click',e=>{if(_fabOpen&&!e.target.closest('.fab-container'))closeFab();});
 </script>
 
