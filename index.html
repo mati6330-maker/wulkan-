@@ -91,7 +91,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   input,select,textarea{font-size:14px;}
 }
 #clock{font-family:var(--mono)!important;background:var(--surface)!important;color:var(--accent)!important;border-bottom:2px solid var(--accent)!important;letter-spacing:2px;font-size:15px!important;text-shadow:0 0 14px rgba(79,142,247,0.45);padding:13px!important;position:fixed;top:0;left:0;width:100%;text-align:center;z-index:9999;}
-.tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;padding:0;gap:0;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;}
+.tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;padding:0;gap:0;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
 .tabs::-webkit-scrollbar{display:none;}
 .tab{
   flex:0 0 auto;
@@ -108,8 +108,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   border:none;
   border-bottom:3px solid transparent;
   white-space:nowrap;
-  scroll-snap-align:start;
   transition:color .15s,border-color .15s;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
 }ransform:uppercase;
   color:var(--muted);
   border-radius:8px 8px 0 0;
@@ -6714,9 +6715,18 @@ function updateFabActive(tabId){
   if(el)el.classList.add('fab-active');
 }
 function fabGoTo(tabId){
-  // Znajdź zakładkę w górnym menu i kliknij ją — to wykona showTab + scroll
-  const tabEl = Array.from(document.querySelectorAll('.tab')).find(t=>t.getAttribute('onclick')&&t.getAttribute('onclick').includes("'"+tabId+"'"));
-  if(tabEl) tabEl.click();
+  // Wywołaj bezpośrednio - działa też na ukrytych elementach
+  const tabEl = Array.from(document.querySelectorAll('.tab')).find(t=>{
+    const oc = t.getAttribute('onclick')||'';
+    return oc.includes("'"+tabId+"'") || oc.includes('"'+tabId+'"');
+  });
+  if(tabEl){
+    // Wywołaj onclick bezpośrednio zamiast .click() bo click() nie działa na display:none
+    const fn = tabEl.getAttribute('onclick');
+    try { new Function(fn).call(tabEl); } catch(e){}
+    // Scroll do zakładki w menu
+    setTimeout(()=>tabEl.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),100);
+  }
   closeFab();
 }
 document.addEventListener('click',e=>{if(_fabOpen&&!e.target.closest('.fab-container'))closeFab();});
