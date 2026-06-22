@@ -29,16 +29,16 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
-  --bg:#060d1f;
-  --surface:#0d1730;
-  --surface2:#131f3a;
-  --border:#1d3461;
-  --accent:#4f8ef7;
-  --accent2:#7db4ff;
-  --green:#34d399;
-  --red:#f87171;
-  --text:#dce8ff;
-  --muted:#6b8cbf;
+  --bg:#0f0f0f;
+  --surface:#1a1a1a;
+  --surface2:#242424;
+  --border:#333;
+  --accent:#f59e0b;
+  --accent2:#fbbf24;
+  --green:#22c55e;
+  --red:#ef4444;
+  --text:#f0f0f0;
+  --muted:#888;
   --font:'Inter',sans-serif;
   --mono:'Share Tech Mono',monospace;
 }
@@ -375,6 +375,17 @@ body.light #adminBar,body.light #guestBar{background:#0c1a3a;border-bottom:1px s
 body.light .day-count.all-free{color:#059669;background:rgba(5,150,105,0.1);}
 body.light .day-count.full{color:#b91c1c;background:rgba(185,28,28,0.08);}
 body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08);}
+
+/* ── PŁYWAJĄCE MENU FAB ── */
+.fab-container{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;z-index:1999}
+.fab-items{display:flex;flex-direction:column;gap:8px;align-items:flex-end;transition:opacity .2s,transform .2s;max-height:80vh;overflow-y:auto;padding-right:2px}
+.fab-items.fab-hidden{opacity:0;pointer-events:none;transform:translateY(10px)}
+.fab-item{display:flex;align-items:center;gap:8px;cursor:pointer}
+.fab-label{background:#111;color:var(--text);font-size:12px;font-family:var(--mono);padding:5px 10px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;letter-spacing:1px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.fab-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--surface2);border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.5);flex-shrink:0;transition:border-color .15s,background .15s}
+.fab-icon.fab-active{border-color:var(--accent);background:rgba(245,158,11,.15)}
+.fab-main{width:52px;height:52px;border-radius:50%;background:var(--accent);color:#000;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(245,158,11,.4);display:flex;align-items:center;justify-content:center;transition:transform .2s;font-weight:700}
+.fab-main:active{transform:scale(.93)}
 </style>
   <script src="klima.js"></script>
   <script src="wheels.js"></script>
@@ -5983,6 +5994,7 @@ window.searchR134a = function() {
 };
 
 window.showTab = function(id, el) {
+  if (typeof updateFabActive === 'function') updateFabActive(id);
   const btn = document.getElementById('printBtn');
   const btnW = document.getElementById('printWeekBtn');
   const show = (id==='main' && currentUser) ? 'block' : 'none';
@@ -6661,6 +6673,32 @@ setInterval(updateClock,1000); updateClock();
     <button onclick="window.closeFirmaModal()" style="width:100%;margin-top:12px;background:transparent;color:var(--muted);border:1px solid var(--border)">Zamknij</button>
   </div>
 </div>
+
+
+<!-- PŁYWAJĄCE MENU FAB -->
+<div class="fab-container" id="fabContainer">
+  <div class="fab-items fab-hidden" id="fabItems">
+    <div class="fab-item" onclick="window.showTab('quickview',document.querySelector('[onclick*=\'quickview\']'));closeFab()"><div class="fab-label">Podgląd</div><div class="fab-icon" id="fab-quickview">👁</div></div>
+    <div class="fab-item" onclick="window.showTab('main',document.querySelector('[onclick*=\'main\']'));closeFab()"><div class="fab-label">Grafik</div><div class="fab-icon" id="fab-main">📅</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('list',document.querySelector('[onclick*=\'list\']'));closeFab()"><div class="fab-label">Lista</div><div class="fab-icon" id="fab-list">📋</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('orders',document.querySelector('[onclick*=\'orders\']'));closeFab()"><div class="fab-label">Zlecenia</div><div class="fab-icon" id="fab-orders">🔧</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('klima',document.querySelector('[onclick*=\'klima\']'));closeFab()"><div class="fab-label">Klima</div><div class="fab-icon" id="fab-klima">❄️</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('cash',document.querySelector('[onclick*=\'cash\']'));closeFab()"><div class="fab-label">Kasa</div><div class="fab-icon" id="fab-cash">💰</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('przechowalnia',document.querySelector('[onclick*=\'przechowalnia\']'));closeFab()"><div class="fab-label">Przechowalnia</div><div class="fab-icon" id="fab-przechowalnia">📦</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('firmy',document.querySelector('[onclick*=\'firmy\']'));closeFab()"><div class="fab-label">Firmy</div><div class="fab-icon" id="fab-firmy">🏢</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('uzytkowe',document.querySelector('[onclick*=\'uzytkowe\']'));closeFab()"><div class="fab-label">Użytkowe</div><div class="fab-icon" id="fab-uzytkowe">🔍</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('archive',document.querySelector('[onclick*=\'archive\']'));closeFab()"><div class="fab-label">Archiwum</div><div class="fab-icon" id="fab-archive">🗄</div></div>
+    <div class="fab-item" onclick="window.requireAdmin('pricing',document.querySelector('[onclick*=\'pricing\']'));closeFab()"><div class="fab-label">Cennik</div><div class="fab-icon" id="fab-pricing">💲</div></div>
+  </div>
+  <button class="fab-main" id="fabBtn" onclick="toggleFab()">☰</button>
+</div>
+<script>
+let _fabOpen=false;
+function toggleFab(){_fabOpen=!_fabOpen;document.getElementById('fabItems').classList.toggle('fab-hidden',!_fabOpen);document.getElementById('fabBtn').textContent=_fabOpen?'✕':'☰';}
+function closeFab(){_fabOpen=false;document.getElementById('fabItems').classList.add('fab-hidden');document.getElementById('fabBtn').textContent='☰';}
+function updateFabActive(tabId){document.querySelectorAll('.fab-icon').forEach(el=>el.classList.remove('fab-active'));const el=document.getElementById('fab-'+tabId);if(el)el.classList.add('fab-active');}
+document.addEventListener('click',e=>{if(_fabOpen&&!e.target.closest('.fab-container'))closeFab();});
+</script>
 
 </body>
 </html>
