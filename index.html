@@ -5135,7 +5135,7 @@ window.fakturujFirmaConfirm = async function(k, payMethod) {
   // Oznacz każdą pozycję jako zafakturowaną i pobierz aktualne dane
   const resolvedPozycje = {};
   await Promise.all(Object.entries(pozycjeData).map(([itemKey, p]) => {
-    const live = (p.type ? resolvePozycja(itemKey, p.type) : null) || p;
+    const live = resolvePozycja(itemKey, p.type) || p;
     resolvedPozycje[itemKey] = { ...live, regNum: p.regNum||'' };
     const path = p.type === 'visit' ? 'wizyty' : p.type === 'order' ? 'zlecenia' : 'klima';
     return update(ref(db, `${path}/${itemKey}`), { invoiced: true });
@@ -5211,7 +5211,7 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
         const db = (b[1].date||'') + (b[1].time||'').padStart(5,'0');
         return da.localeCompare(db);
       }).map(([pk, p]) => {
-        const live = (p.type ? resolvePozycja(pk, p.type) : null) || p;
+        const live = resolvePozycja(pk, p.type) || p;
         const price = live.price || 0;
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;margin-bottom:4px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.2);border-radius:4px">
           <div>
@@ -5229,7 +5229,7 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
         </div>`;
       }).join('') +
       `<div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);margin:10px 0;text-align:right">
-        RAZEM: ${Object.entries(pozycje).reduce((s,[pk,p]) => s+(((p.type ? resolvePozycja(pk,p.type) : null)||p).price||0), 0)} zł
+        RAZEM: ${Object.entries(pozycje).reduce((s,[pk,p]) => s+((resolvePozycja(pk,p.type)||p).price||0), 0)} zł
       </div>`
     : '<div style="color:var(--muted);font-size:12px;margin-bottom:10px">Brak przypisanych pozycji</div>';
 
@@ -5309,19 +5309,13 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
 
 // Pobierz aktualne dane pozycji ze źródła (wizyty/zlecenia/klima)
 function resolvePozycja(itemKey, type) {
-  if (type === 'visit') {
-    const v = visits[itemKey];
-    if (!v) return null;
-    return { type, car: v.car||v.name||'—', name: v.name||'', date: v.date, service: v.service||'—', price: calcVisitPrice(v) || v.price || 0 };
-  } else if (type === 'order') {
-    const o = orders[itemKey];
-    if (!o) return null;
-    return { type, car: o.car||o.name||'—', name: o.name||'', date: o.dateStamp||'', service: o.service||'—', price: o.price||0 };
-  } else if (type === 'klima') {
-    const km = klimas[itemKey];
-    if (!km) return null;
-    return { type, car: km.car||'—', name: km.name||'', date: km.start||'', service: 'Klima serwis', price: km.price||0 };
-  }
+  // Próbuj wszystkie trzy źródła - niezależnie od zapisanego type
+  const v = visits[itemKey];
+  if (v) return { type: 'visit', car: v.car||v.name||'—', name: v.name||'', date: v.date, service: v.service||'—', price: calcVisitPrice(v) || v.price || 0 };
+  const o = orders[itemKey];
+  if (o) return { type: 'order', car: o.car||o.name||'—', name: o.name||'', date: o.dateStamp||'', service: o.service||'—', price: o.price||0 };
+  const km = klimas[itemKey];
+  if (km) return { type: 'klima', car: km.car||'—', name: km.name||'', date: km.start||'', service: 'Klima serwis', price: km.price||0 };
   return null;
 }
 
