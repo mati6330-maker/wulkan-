@@ -22,6 +22,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="theme-color" content="#f59e0b"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Mielczarek"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
 <title>Wulkanizacja "Mielczarek" v2.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -6706,6 +6713,15 @@ setInterval(updateClock,1000); updateClock();
   <button class="fab-main" id="fabBtn" onclick="toggleFab()">☰</button>
 </div>
 <script>
+// Rejestracja PWA Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/wulkan-/sw.js')
+      .then(r => console.log('SW zarejestrowany:', r.scope))
+      .catch(e => console.log('SW błąd:', e));
+  });
+}
+
 let _fabOpen=false;
 function toggleFab(){_fabOpen=!_fabOpen;document.getElementById('fabItems').classList.toggle('fab-hidden',!_fabOpen);document.getElementById('fabBtn').textContent=_fabOpen?'✕':'☰';}
 function closeFab(){_fabOpen=false;document.getElementById('fabItems').classList.add('fab-hidden');document.getElementById('fabBtn').textContent='☰';}
