@@ -5327,6 +5327,9 @@ window.addPozycja = async function(firmaKey, itemKey, type) {
     return;
   }
   await update(ref(db, 'firmy/' + firmaKey + '/pozycje/' + itemKey), { type });
+  // Pobierz aktualne dane z Firebase przed rerenderem
+  const snap = await get(ref(db, 'firmy/' + firmaKey));
+  if (snap.val()) firmy[firmaKey] = snap.val();
   showToast('✔ Dodano — wpisz nr rej. w sekcji PRZYPISANE', 'var(--green)');
   window.renderFirmaModal(firmaKey, document.getElementById('firmaSearch')?.value||'');
 };
