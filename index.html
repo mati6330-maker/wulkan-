@@ -962,10 +962,10 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">❄ POJEMNOŚĆ CZYNNIKA R134a / R1234yf</div>
     <div style="display:flex;gap:6px;margin-bottom:6px">
-      <input id="r134a_make" placeholder="Marka" style="flex:2;min-width:0"/>
-      <input id="r134a_model" placeholder="Model" style="flex:2;min-width:0"/>
-      <input id="r134a_year" placeholder="Rok" inputmode="numeric" style="flex:1;min-width:0"/>
+      <input id="r134a_make" placeholder="Marka" style="flex:1;min-width:0"/>
+      <input id="r134a_model" placeholder="Model" style="flex:1;min-width:0"/>
     </div>
+    <input id="r134a_year" placeholder="Rok (np. 2015)" inputmode="numeric" style="margin-bottom:6px"/>
     <input id="r134a_engine" placeholder="Silnik (opcjonalnie, np. 1.6 TDI)" style="margin-bottom:6px"/>
     <input id="r134a_kw" placeholder="Moc (opcjonalnie, np. 105 kW)" inputmode="numeric" style="margin-bottom:8px"/>
     <button onclick="window.searchR134a()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj pojemności</button>
@@ -976,10 +976,10 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🔧 ROZMIARY OEM</div>
     <div style="display:flex;gap:6px;margin-bottom:6px">
-      <input id="tire_make" placeholder="Marka" style="flex:2;min-width:0"/>
-      <input id="tire_model" placeholder="Model" style="flex:2;min-width:0"/>
-      <input id="tire_year" placeholder="Rok" inputmode="numeric" style="flex:1;min-width:0"/>
+      <input id="tire_make" placeholder="Marka" style="flex:1;min-width:0"/>
+      <input id="tire_model" placeholder="Model" style="flex:1;min-width:0"/>
     </div>
+    <input id="tire_year" placeholder="Rok (np. 2015)" inputmode="numeric" style="margin-bottom:6px"/>
     <input id="tire_engine" placeholder="Silnik (opcjonalnie, np. 2.0d)" style="margin-bottom:8px"/>
     <button onclick="window.searchTires()" style="width:100%;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Szukaj rozmiarów</button>
     <div id="tireResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
