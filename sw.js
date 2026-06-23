@@ -1,4 +1,4 @@
-const CACHE = 'wulkan-v1';
+const CACHE = 'wulkan-v2';
 const ASSETS = [
   '/wulkan-/',
   '/wulkan-/index.html',
