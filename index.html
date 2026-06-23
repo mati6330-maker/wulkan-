@@ -5973,6 +5973,32 @@ window.decodeVin = function() {
     `</table>`;
 };
 
+window.askClimaTech = async function(make, model, year, engine) {
+  const box = document.getElementById('climaTechResult');
+  box.style.display = 'block';
+  box.innerHTML = '⟳ Pobieram informacje techniczne...';
+  const carDesc = [make, model, year, engine].filter(Boolean).join(' ');
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Jestem mechanikiem w serwisie klimatyzacji samochodowych. Podaj mi praktyczne informacje techniczne dla: ${carDesc}.\n\nOdpowiedz krótko i konkretnie:\n1. 🔌 Gdzie są złącza serwisowe (wysokie/niskie ciśnienie) — lokalizacja w komorze silnika\n2. 🔩 Rodzaj zaworków (R134a / R1234yf)\n3. 🌬️ Filtr kabinowy — gdzie się znajduje i jak go wymienić (krótko)\n4. ⚠️ Specyficzne uwagi dla tego modelu (jeśli są)\n\nPisz po polsku, bez zbędnego wstępu.`
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || 'Brak odpowiedzi';
+    box.innerHTML = text.replace(/\n/g, '<br>');
+  } catch(e) {
+    box.innerHTML = '✗ Błąd: ' + e.message;
+  }
+};
+
 window.searchR134a = function() {
   const make = document.getElementById('r134a_make').value.trim().toLowerCase();
   const model = document.getElementById('r134a_model').value.trim().toLowerCase();
@@ -6106,7 +6132,11 @@ window.searchR134a = function() {
     engineHeader +
     '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">ILOŚĆ</th>' +
     '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">CZYNNIK</th>' +
-    '</tr></thead><tbody>' + rows + '</tbody></table>';
+    '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<button onclick="window.askClimaTech(\'' + matches[0][0] + '\',\'' + matches[0][1] + '\',' + (year||'') + ',\'' + (engineStr||'') + '\')" ' +
+    'style="width:100%;margin-top:10px;background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.4);font-size:12px;letter-spacing:1px">' +
+    '🤖 Szczegóły techniczne (AI)</button>' +
+    '<div id="climaTechResult" style="display:none;margin-top:10px;font-size:13px;line-height:1.7;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px"></div>';
 
   // Własne serwisy z Firebase
   const norm2 = s => (s||'').toLowerCase().replace(/[\s\-./]/g,'');
