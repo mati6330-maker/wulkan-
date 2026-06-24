@@ -5839,7 +5839,9 @@ window.askClimaTech = async function(make, model, year, engine) {
       max_tokens: 1000,
       messages: [{ role: 'user', content: `Jestem mechanikiem w serwisie klimatyzacji. Podaj praktyczne informacje dla: ${carDesc}.\n\n1. 🔌 Złącza serwisowe (wysokie/niskie ciśnienie) — lokalizacja\n2. 🔩 Rodzaj zaworków\n3. 🌬️ Filtr kabinowy — gdzie i jak wymienić\n4. ⚠️ Specyficzne uwagi\n\nPo polsku, krótko i konkretnie.` }]
     });
-    const text = data.content?.[0]?.text || 'Brak odpowiedzi';
+    const text = (data.content && data.content[0] && data.content[0].text)
+      ? data.content[0].text
+      : (data.error ? '✗ ' + data.error.message : JSON.stringify(data));
     box.innerHTML = text.replace(/\n/g, '<br>');
   } catch(e) { box.innerHTML = '✗ Błąd: ' + e.message; }
 };
