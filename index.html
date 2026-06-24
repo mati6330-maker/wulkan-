@@ -5850,7 +5850,12 @@ window.askClimaTech = async function(make, model, year, engine) {
     const text = (data.content && data.content[0] && data.content[0].text)
       ? data.content[0].text
       : (data.error ? '✗ ' + data.error.message : JSON.stringify(data));
-    box.innerHTML = text.replace(/\n/g, '<br>');
+    const query = encodeURIComponent(carDesc + ' AC service port connector high low pressure');
+    const imgUrl = 'https://www.google.com/search?tbm=isch&q=' + query;
+    box.innerHTML = text.replace(/\n/g, '<br>') +
+      '<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">' +
+      '<a href="' + imgUrl + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);border-radius:4px;font-size:13px;font-family:var(--mono);text-decoration:none;letter-spacing:1px">🔌 Zdjęcia złącz serwisowych</a>' +
+      '</div>';
   } catch(e) { box.innerHTML = '✗ Błąd: ' + e.message; }
 };
 
@@ -6902,6 +6907,121 @@ setInterval(updateClock,1000); updateClock();
   </div>
 </div>
 
+
+<!-- ASYSTENT CZAT -->
+<style>
+#chatBtn{position:fixed;bottom:80px;left:16px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#000;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(245,158,11,.4);display:flex;align-items:center;justify-content:center;z-index:1999;transition:transform .2s;padding:0}
+#chatBtn:active{transform:scale(.93)}
+#chatWindow{position:fixed;bottom:144px;left:16px;width:min(380px,calc(100vw - 32px));height:min(520px,calc(100vh - 200px));background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6);z-index:2000;display:none;flex-direction:column;overflow:hidden}
+#chatWindow.open{display:flex}
+#chatHeader{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface2)}
+#chatHeader .ttl{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:2px}
+#chatHeader button{width:auto;padding:4px 8px;font-size:13px;margin:0;background:transparent;color:var(--muted);border:1px solid var(--border)}
+#chatMessages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{max-width:85%;padding:9px 12px;border-radius:10px;font-size:14px;line-height:1.5;word-wrap:break-word}
+.chat-msg.user{align-self:flex-end;background:var(--accent);color:#000;border-bottom-right-radius:2px}
+.chat-msg.bot{align-self:flex-start;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:2px}
+.chat-msg.bot.thinking{color:var(--muted);font-family:var(--mono);font-size:12px}
+#chatInputRow{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border);background:var(--surface2)}
+#chatInput{flex:1;margin:0;font-size:14px;resize:none;max-height:80px;min-height:42px}
+#chatSend{width:auto;padding:0 16px;margin:0;font-size:18px;flex-shrink:0}
+#chatEmpty{margin:auto;text-align:center;color:var(--muted);font-size:13px;line-height:1.6;padding:20px}
+</style>
+<button id="chatBtn" onclick="window.toggleChat()" title="Asystent motoryzacyjny">🔧</button>
+<div id="chatWindow">
+  <div id="chatHeader">
+    <div class="ttl">🔧 ASYSTENT MOTO</div>
+    <div style="display:flex;gap:4px">
+      <button onclick="window.clearChat()" title="Wyczyść rozmowę">🗑</button>
+      <button onclick="window.toggleChat()" title="Zamknij">✕</button>
+    </div>
+  </div>
+  <div id="chatMessages">
+    <div id="chatEmpty">Zadaj dowolne pytanie motoryzacyjne.<br>Asystent pamięta kontekst rozmowy.</div>
+  </div>
+  <div id="chatInputRow">
+    <textarea id="chatInput" placeholder="Wpisz pytanie..." rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.sendChat();}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+    <button id="chatSend" onclick="window.sendChat()">➤</button>
+  </div>
+</div>
+<script>
+let _chatHistory = [];
+let _chatBusy = false;
+
+window.toggleChat = function() {
+  const w = document.getElementById('chatWindow');
+  w.classList.toggle('open');
+  if (w.classList.contains('open')) {
+    setTimeout(() => document.getElementById('chatInput').focus(), 100);
+  }
+};
+
+window.clearChat = function() {
+  _chatHistory = [];
+  document.getElementById('chatMessages').innerHTML =
+    '<div id="chatEmpty">Zadaj dowolne pytanie motoryzacyjne.<br>Asystent pamięta kontekst rozmowy.</div>';
+};
+
+function appendChatMsg(role, text) {
+  const box = document.getElementById('chatMessages');
+  const empty = document.getElementById('chatEmpty');
+  if (empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + (role === 'user' ? 'user' : 'bot');
+  div.innerHTML = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br>');
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+window.sendChat = async function() {
+  if (_chatBusy) return;
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  input.style.height = 'auto';
+  appendChatMsg('user', q);
+  _chatHistory.push({ role: 'user', content: q });
+
+  _chatBusy = true;
+  const sendBtn = document.getElementById('chatSend');
+  sendBtn.disabled = true;
+  const thinking = appendChatMsg('bot', '⟳ Myślę...');
+  thinking.classList.add('thinking');
+
+  // Instrukcja roli wstrzyknięta w pierwszą wiadomość (spójnie z resztą aplikacji)
+  const ROLA = 'Jesteś ekspertem motoryzacyjnym pomagającym mechanikowi w warsztacie wulkanizacyjnym w Polsce. Odpowiadaj po polsku, konkretnie i praktycznie. Skupiaj się na rzeczach przydatnych w warsztacie: opony, felgi, klimatyzacja, zawieszenie, podstawowa mechanika.';
+  const msgs = _chatHistory.map((m, i) =>
+    i === 0 && m.role === 'user'
+      ? { role: 'user', content: ROLA + '\n\n---\n\nPytanie: ' + m.content }
+      : m
+  );
+
+  try {
+    const data = await callClaude({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: msgs
+    });
+    const text = (data.content && data.content[0] && data.content[0].text)
+      ? data.content[0].text
+      : (data.error ? '✗ ' + data.error.message : 'Brak odpowiedzi');
+    thinking.remove();
+    appendChatMsg('bot', text);
+    _chatHistory.push({ role: 'assistant', content: text });
+  } catch(e) {
+    thinking.remove();
+    appendChatMsg('bot', '✗ Błąd: ' + e.message);
+    _chatHistory.pop();
+  } finally {
+    _chatBusy = false;
+    sendBtn.disabled = false;
+  }
+};
+</script>
 
 <!-- PŁYWAJĄCE MENU FAB -->
 <div class="fab-container" id="fabContainer">
