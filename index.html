@@ -1009,13 +1009,21 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <!-- DEKODER VIN -->
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🔑 DEKODER VIN</div>
-    <div style="display:flex;gap:6px;margin-bottom:8px">
+    <div style="display:flex;gap:6px;margin-bottom:6px">
       <input id="vin_input" placeholder="Wpisz numer VIN (17 znaków)" maxlength="17"
         style="flex:1;font-family:var(--mono);text-transform:uppercase;letter-spacing:2px"
-        oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')decodeVin()"/>
+        oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')window.decodeVin()"/>
       <button onclick="window.decodeVin()" style="width:auto;padding:8px 16px;font-size:12px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Dekoduj</button>
     </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+      <label style="font-size:11px;color:var(--muted);white-space:nowrap">📷 Skanuj VIN:</label>
+      <input type="file" id="vinPhoto" accept="image/*" capture="environment"
+        onchange="window.scanVinPhoto(this)"
+        style="flex:1;font-size:12px;padding:4px"/>
+    </div>
+    <div id="vinScanStatus" style="display:none;font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:6px"></div>
     <div id="vinResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.8"></div>
+    <div id="vinAiResult" style="display:none;margin-top:10px;font-size:13px;line-height:1.7;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:4px"></div>
   </div>
 </div>
 
@@ -5849,7 +5857,40 @@ window.askClimaTech = async function(make, model, year, engine) {
 // ── WYSZUKIWARKA R134a ──
 // R134A_DB załadowana z klima.js
 
-window.decodeVin = function() {
+// ── DEKODER VIN z API ──
+window.scanVinPhoto = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('vinScanStatus');
+  status.style.display = 'block';
+  status.textContent = '⟳ Odczytuję numer VIN ze zdjęcia...';
+  try {
+    const b64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+    const data = await callClaude({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 100,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
+        { type: 'text', text: 'Odczytaj numer VIN ze zdjęcia. Zwróć TYLKO 17-znakowy numer VIN, bez żadnego innego tekstu. Jeśli nie możesz odczytać, zwróć samo słowo: BRAK' }
+      ]}]
+    });
+    const vin = (data.content?.[0]?.text || '').trim().toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '');
+    if (vin === 'BRAK' || vin.length !== 17) {
+      status.textContent = '⚠ Nie udało się odczytać VIN — spróbuj wyraźniejsze zdjęcie';
+      return;
+    }
+    status.textContent = `✔ Odczytano: ${vin}`;
+    document.getElementById('vin_input').value = vin;
+    window.decodeVin();
+  } catch(e) { status.textContent = '✗ Błąd: ' + e.message; }
+};
+
+window.decodeVin = async function() {
   const vin = document.getElementById('vin_input').value.trim().toUpperCase();
   const result = document.getElementById('vinResult');
 
@@ -5982,6 +6023,22 @@ window.decodeVin = function() {
     row('Nr seryjny (12–17)', serial, true) +
     row('Cyfra kontrolna (9)', `${checkDigit} ${checkOK ? '✔ poprawna' : '✗ niepoprawna — VIN może być sfałszowany'}`) +
     `</table>`;
+
+  // Analiza AI po lokalnym dekodowaniu
+  const aiBox = document.getElementById('vinAiResult');
+  aiBox.style.display = 'block';
+  aiBox.innerHTML = '⟳ Pobieram szczegółowe dane z AI...';
+  try {
+    const aiData = await callClaude({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: 'Podaj wszystkie dostępne informacje o samochodzie z numerem VIN: ' + vin + '.\n\nOdpowiedz po polsku:\n- Marka i model\n- Rok produkcji\n- Wersja / silnik / skrzynia\n- Kraj produkcji i fabryka\n- Znane problemy lub kampanie serwisowe\n- Inne istotne informacje\n\nJeśli nie możesz zidentyfikować konkretnego auta, podaj co wiesz na podstawie WMI i VDS.' }]
+    });
+    const aiText = (aiData.content && aiData.content[0] && aiData.content[0].text) ? aiData.content[0].text : 'Brak odpowiedzi';
+    aiBox.innerHTML = aiText.replace(/\n/g, '<br>');
+  } catch(e) {
+    aiBox.innerHTML = '✗ Błąd AI: ' + e.message;
+  }
 };
 
 window.searchR134a = function() {
