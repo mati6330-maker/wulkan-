@@ -1,4 +1,4 @@
-const CACHE = 'wulkan-v3';
+const CACHE = 'wulkan-v4';
 const ASSETS = [
   '/wulkan-/',
   '/wulkan-/index.html',
@@ -23,11 +23,13 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Przepuść wszystkie zewnętrzne API bez cache
   if (e.request.url.includes('firebase') ||
+      e.request.url.includes('anthropic.com') ||
       e.request.url.includes('googleapis.com/identitytoolkit') ||
       e.request.url.includes('wl-api.mf.gov.pl') ||
       e.request.url.includes('gstatic.com')) {
-    return;
+    return; // nie obsługuj — przeglądarka wyśle normalnie
   }
   // Network first dla HTML — zawsze świeży index.html
   if (e.request.destination === 'document') {
