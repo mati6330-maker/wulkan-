@@ -993,19 +993,14 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <!-- SKANER KARTKI -->
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">📷 SKANUJ KARTKĘ Z KLIENTAMI</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Zrób zdjęcie kartki — Claude odczyta dane i przygotuje wpisy do zapisania.</div>
-    <input type="file" id="scanPhoto" accept="image/*" capture="environment"
-      onchange="window.scanPhoto(this)"
-      style="margin-bottom:8px;font-size:13px"/>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Zrób zdjęcie kartki — AI odczyta dane i przygotuje wpisy.</div>
+    <input type="file" id="scanPhoto" accept="image/*" capture="environment" onchange="window.scanPhoto(this)" style="margin-bottom:8px;font-size:13px"/>
     <div id="scanStatus" style="display:none;font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:8px"></div>
     <div id="scanResults" style="display:none">
       <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:2px;margin-bottom:8px">ROZPOZNANE WPISY</div>
       <div id="scanEntries"></div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <select id="scanTarget" style="flex:1">
-          <option value="list">→ Lista wizyt</option>
-          <option value="orders">→ Zlecenia</option>
-        </select>
+        <select id="scanTarget" style="flex:1"><option value="list">→ Lista wizyt</option><option value="orders">→ Zlecenia</option></select>
         <button onclick="window.saveScanResults()" style="flex:1;background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.4)">💾 Zapisz wszystkie</button>
       </div>
     </div>
@@ -5727,6 +5722,37 @@ window.searchTires = function() {
     '<div style="font-size:10px;color:var(--muted);margin-top:8px;border-top:1px solid var(--border);padding-top:6px">Zawsze weryfikuj z naklejką na framuzie drzwi kierowcy lub w dokumentach pojazdu.</div>';
 };
 
+
+// ── AI API ──
+let _anthropicKey = null;
+const _ANTHROPIC_KEY_DEFAULT = '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';
+
+async function callClaude(body) {
+  if (!_anthropicKey) {
+    const snap = await get(ref(db, 'config/anthropic_key'));
+    _anthropicKey = snap.val() || _ANTHROPIC_KEY_DEFAULT;
+    // Zapisz do Firebase jeśli jeszcze nie ma
+    if (!snap.val()) await set(ref(db, 'config/anthropic_key'), _ANTHROPIC_KEY_DEFAULT);
+  }
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': _anthropicKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-usage': 'true',
+    },
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) {
+    _anthropicKey = null;
+    await set(ref(db, 'config/anthropic_key'), null);
+    throw new Error('Błąd API ' + resp.status + ' — sprawdź klucz');
+  }
+  return resp.json();
+}
+
+
 // ── SKANER KARTKI ──
 let _scanData = [];
 
@@ -5739,7 +5765,6 @@ window.scanPhoto = async function(input) {
   status.style.display = 'block';
   results.style.display = 'none';
   status.textContent = '⟳ Analizuję zdjęcie...';
-
   try {
     const b64 = await new Promise((res, rej) => {
       const r = new FileReader();
@@ -5747,41 +5772,19 @@ window.scanPhoto = async function(input) {
       r.onerror = rej;
       r.readAsDataURL(file);
     });
-
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: file.type, data: b64 }
-            },
-            {
-              type: 'text',
-              text: `To jest kartka z zapisanymi klientami serwisu oponiarskiego. Odczytaj wszystkie wpisy i zwróć JSON array. Każdy wpis jako obiekt z polami (tylko jeśli są widoczne): name (imię/nazwisko), phone (telefon), car (marka/model auta), service (usługa np. "Wymiana opon"), time (godzina np. "08:00"), note (notatka). Puste pola pomiń. Odpowiedz TYLKO JSON array, bez żadnego tekstu przed ani po. Przykład: [{"name":"Kowalski","phone":"600123456","car":"VW Golf","time":"09:00"}]`
-            }
-          ]
-        }]
-      })
+    const data = await callClaude({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
+        { type: 'text', text: 'To jest kartka z zapisanymi klientami serwisu oponiarskiego. Odczytaj wszystkie wpisy i zwróć JSON array. Każdy wpis jako obiekt z polami (tylko jeśli widoczne): name, phone, car, service, time, note. Odpowiedz TYLKO JSON array. Przykład: [{"name":"Kowalski","phone":"600123456","car":"VW Golf","time":"09:00"}]' }
+      ]}]
     });
-
-    const data = await resp.json();
     const text = data.content?.[0]?.text || '[]';
-    const clean = text.replace(/```json|```/g, '').trim();
-    _scanData = JSON.parse(clean);
-
-    if (!_scanData.length) {
-      status.textContent = '⚠ Nie rozpoznano żadnych wpisów';
-      return;
-    }
-
+    _scanData = JSON.parse(text.replace(/```json|```/g,'').trim());
+    if (!_scanData.length) { status.textContent = '⚠ Nie rozpoznano żadnych wpisów'; return; }
     status.textContent = `✔ Rozpoznano ${_scanData.length} wpisów`;
-    entries.innerHTML = _scanData.map((e, i) => `
+    entries.innerHTML = _scanData.map((e,i) => `
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:11px;font-family:var(--mono);color:var(--muted)">#${i+1}</span>
@@ -5796,14 +5799,27 @@ window.scanPhoto = async function(input) {
         </div>
       </div>`).join('');
     results.style.display = 'block';
-  } catch(e) {
-    status.textContent = '✗ Błąd: ' + e.message;
-  }
+  } catch(e) { status.textContent = '✗ Błąd: ' + e.message; }
 };
 
 window.removeScanEntry = function(i) {
   _scanData.splice(i, 1);
-  window.scanPhoto({ files: [document.getElementById('scanPhoto').files[0]] });
+  // Przerysuj
+  const entries = document.getElementById('scanEntries');
+  entries.innerHTML = _scanData.map((e,i) => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:11px;font-family:var(--mono);color:var(--muted)">#${i+1}</span>
+        <button onclick="window.removeScanEntry(${i})" style="width:auto;padding:2px 8px;font-size:11px;background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <input placeholder="Imię" value="${e.name||''}" oninput="_scanData[${i}].name=this.value" style="font-size:12px;padding:5px 8px"/>
+        <input placeholder="Telefon" value="${e.phone||''}" oninput="_scanData[${i}].phone=this.value" style="font-size:12px;padding:5px 8px"/>
+        <input placeholder="Auto" value="${e.car||''}" oninput="_scanData[${i}].car=this.value" style="font-size:12px;padding:5px 8px"/>
+        <input placeholder="Godzina" value="${e.time||''}" oninput="_scanData[${i}].time=this.value" style="font-size:12px;padding:5px 8px"/>
+        <input placeholder="Usługa" value="${e.service||''}" oninput="_scanData[${i}].service=this.value" style="font-size:12px;padding:5px 8px;grid-column:span 2"/>
+      </div>
+    </div>`).join('');
 };
 
 window.saveScanResults = async function() {
@@ -5813,18 +5829,9 @@ window.saveScanResults = async function() {
   for (const e of _scanData) {
     if (!e.name && !e.phone) continue;
     if (target === 'list') {
-      await push(ref(db, 'wizyty'), {
-        name: e.name||'', phone: e.phone||'', car: e.car||'',
-        service: e.service||'Wymiana opon', time: e.time||'',
-        date: today, wheel: 'Aluminiowe', status: false,
-        note: e.note||'', createdAt: Date.now()
-      });
+      await push(ref(db, 'wizyty'), { name:e.name||'', phone:e.phone||'', car:e.car||'', service:e.service||'Wymiana opon', time:e.time||'', date:today, wheel:'Aluminiowe', status:false, note:e.note||'', createdAt:Date.now() });
     } else {
-      await push(ref(db, 'zlecenia'), {
-        name: e.name||'', phone: e.phone||'', car: e.car||'',
-        service: e.service||'Wymiana opon', dateStamp: today,
-        status: false, note: e.note||'', createdAt: Date.now()
-      });
+      await push(ref(db, 'zlecenia'), { name:e.name||'', phone:e.phone||'', car:e.car||'', service:e.service||'Wymiana opon', dateStamp:today, status:false, note:e.note||'', createdAt:Date.now() });
     }
     saved++;
   }
@@ -5833,6 +5840,23 @@ window.saveScanResults = async function() {
   document.getElementById('scanStatus').textContent = '';
   document.getElementById('scanPhoto').value = '';
   _scanData = [];
+};
+
+// ── SZCZEGÓŁY TECHNICZNE AI ──
+window.askClimaTech = async function(make, model, year, engine) {
+  const box = document.getElementById('climaTechResult');
+  box.style.display = 'block';
+  box.innerHTML = '⟳ Pobieram informacje techniczne...';
+  const carDesc = [make, model, year, engine].filter(Boolean).join(' ');
+  try {
+    const data = await callClaude({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: `Jestem mechanikiem w serwisie klimatyzacji. Podaj praktyczne informacje dla: ${carDesc}.\n\n1. 🔌 Złącza serwisowe (wysokie/niskie ciśnienie) — lokalizacja\n2. 🔩 Rodzaj zaworków\n3. 🌬️ Filtr kabinowy — gdzie i jak wymienić\n4. ⚠️ Specyficzne uwagi\n\nPo polsku, krótko i konkretnie.` }]
+    });
+    const text = data.content?.[0]?.text || 'Brak odpowiedzi';
+    box.innerHTML = text.replace(/\n/g, '<br>');
+  } catch(e) { box.innerHTML = '✗ Błąd: ' + e.message; }
 };
 
 // ── WYSZUKIWARKA R134a ──
@@ -5971,32 +5995,6 @@ window.decodeVin = function() {
     row('Nr seryjny (12–17)', serial, true) +
     row('Cyfra kontrolna (9)', `${checkDigit} ${checkOK ? '✔ poprawna' : '✗ niepoprawna — VIN może być sfałszowany'}`) +
     `</table>`;
-};
-
-window.askClimaTech = async function(make, model, year, engine) {
-  const box = document.getElementById('climaTechResult');
-  box.style.display = 'block';
-  box.innerHTML = '⟳ Pobieram informacje techniczne...';
-  const carDesc = [make, model, year, engine].filter(Boolean).join(' ');
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `Jestem mechanikiem w serwisie klimatyzacji samochodowych. Podaj mi praktyczne informacje techniczne dla: ${carDesc}.\n\nOdpowiedz krótko i konkretnie:\n1. 🔌 Gdzie są złącza serwisowe (wysokie/niskie ciśnienie) — lokalizacja w komorze silnika\n2. 🔩 Rodzaj zaworków (R134a / R1234yf)\n3. 🌬️ Filtr kabinowy — gdzie się znajduje i jak go wymienić (krótko)\n4. ⚠️ Specyficzne uwagi dla tego modelu (jeśli są)\n\nPisz po polsku, bez zbędnego wstępu.`
-        }]
-      })
-    });
-    const data = await resp.json();
-    const text = data.content?.[0]?.text || 'Brak odpowiedzi';
-    box.innerHTML = text.replace(/\n/g, '<br>');
-  } catch(e) {
-    box.innerHTML = '✗ Błąd: ' + e.message;
-  }
 };
 
 window.searchR134a = function() {
