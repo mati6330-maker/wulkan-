@@ -5725,30 +5725,15 @@ window.searchTires = function() {
 
 // ── AI API ──
 let _anthropicKey = null;
-const _ANTHROPIC_KEY_DEFAULT = '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';
+const _ANTHROPIC_KEY_DEFAULT = null; // klucz zarządzany przez Cloudflare Worker
 
 async function callClaude(body) {
-  if (!_anthropicKey) {
-    const snap = await get(ref(db, 'config/anthropic_key'));
-    _anthropicKey = snap.val() || _ANTHROPIC_KEY_DEFAULT;
-    // Zapisz do Firebase jeśli jeszcze nie ma
-    if (!snap.val()) await set(ref(db, 'config/anthropic_key'), _ANTHROPIC_KEY_DEFAULT);
-  }
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('https://black-boat-0f91.mati6330-mj.workers.dev', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': _anthropicKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-usage': 'true',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  if (!resp.ok) {
-    _anthropicKey = null;
-    await set(ref(db, 'config/anthropic_key'), null);
-    throw new Error('Błąd API ' + resp.status + ' — sprawdź klucz');
-  }
+  if (!resp.ok) throw new Error('Błąd API: ' + resp.status);
   return resp.json();
 }
 
