@@ -7001,11 +7001,17 @@ window.sendChat = async function() {
   );
 
   try {
-    const data = await callClaude({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      messages: msgs
+    const resp = await fetch('https://black-boat-0f91.mati6330-mj.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: msgs
+      })
     });
+    if (!resp.ok) throw new Error('Błąd API: ' + resp.status);
+    const data = await resp.json();
     const text = (data.content && data.content[0] && data.content[0].text)
       ? data.content[0].text
       : (data.error ? '✗ ' + data.error.message : 'Brak odpowiedzi');
