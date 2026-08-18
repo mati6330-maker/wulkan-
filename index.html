@@ -905,13 +905,17 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:10px 0 4px">POBRANO CZYNNIKA (g)</div>
     <input id="k_recovered" type="number" placeholder="np. 300" oninput="calcKlimaPrice()"/>
     <div style="margin:12px 0;display:flex;flex-direction:column;gap:8px">
-      <label id="k_filter_label" style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;padding:10px 12px;background:var(--surface2);border:2px solid var(--border);border-radius:4px;transition:all 0.15s" onclick="this.style.borderColor=document.getElementById('k_filter').checked?'var(--border)':'#4f8ef7';this.style.background=document.getElementById('k_filter').checked?'var(--surface2)':'rgba(79,142,247,0.1)'">
-        <input type="checkbox" id="k_filter" class="custom-cb" onchange="calcKlimaPrice();var l=document.getElementById('k_filter_label');l.style.borderColor=this.checked?'#4f8ef7':'var(--border)';l.style.background=this.checked?'rgba(79,142,247,0.1)':'var(--surface2)'" style="width:22px;height:22px;accent-color:var(--accent);cursor:pointer;flex-shrink:0"/>
-        Wymiana filtra kabinowego <span style="color:var(--accent);font-family:var(--mono);margin-left:auto">+50 zł</span>
+      <label id="k_filter_label" style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;font-weight:600;padding:14px 14px;background:var(--surface2);border:2px solid var(--border);border-radius:8px;transition:all 0.15s;user-select:none" onclick="var cb=document.getElementById('k_filter');cb.checked=!cb.checked;calcKlimaPrice();var l=this;var on=cb.checked;l.style.borderColor=on?'#4f8ef7':'var(--border)';l.style.background=on?'rgba(79,142,247,0.12)':'var(--surface2)';l.querySelector('.cbx').textContent=on?'☑':'☐';l.querySelector('.cbx').style.color=on?'#4f8ef7':'var(--muted)'">
+        <input type="checkbox" id="k_filter" style="display:none"/>
+        <span class="cbx" style="font-size:22px;line-height:1;color:var(--muted)">☐</span>
+        <span style="flex:1">Wymiana filtra kabinowego</span>
+        <span style="color:var(--accent);font-family:var(--mono);font-size:13px">+50 zł</span>
       </label>
-      <label id="k_ozone_label" style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;padding:10px 12px;background:var(--surface2);border:2px solid var(--border);border-radius:4px;transition:all 0.15s" onclick="this.style.borderColor=document.getElementById('k_ozone').checked?'var(--border)':'#4f8ef7';this.style.background=document.getElementById('k_ozone').checked?'var(--surface2)':'rgba(79,142,247,0.1)'">
-        <input type="checkbox" id="k_ozone" class="custom-cb" onchange="calcKlimaPrice();var l=document.getElementById('k_ozone_label');l.style.borderColor=this.checked?'#4f8ef7':'var(--border)';l.style.background=this.checked?'rgba(79,142,247,0.1)':'var(--surface2)'" style="width:22px;height:22px;accent-color:var(--accent);cursor:pointer;flex-shrink:0"/>
-        Odgrzybienie kabiny <span style="color:var(--accent);font-family:var(--mono);margin-left:auto">+30 zł</span>
+      <label id="k_ozone_label" style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;font-weight:600;padding:14px 14px;background:var(--surface2);border:2px solid var(--border);border-radius:8px;transition:all 0.15s;user-select:none" onclick="var cb=document.getElementById('k_ozone');cb.checked=!cb.checked;calcKlimaPrice();var l=this;var on=cb.checked;l.style.borderColor=on?'#4f8ef7':'var(--border)';l.style.background=on?'rgba(79,142,247,0.12)':'var(--surface2)';l.querySelector('.cbx').textContent=on?'☑':'☐';l.querySelector('.cbx').style.color=on?'#4f8ef7':'var(--muted)'">
+        <input type="checkbox" id="k_ozone" style="display:none"/>
+        <span class="cbx" style="font-size:22px;line-height:1;color:var(--muted)">☐</span>
+        <span style="flex:1">Odgrzybienie kabiny</span>
+        <span style="color:var(--accent);font-family:var(--mono);font-size:13px">+30 zł</span>
       </label>
     </div>
     <div id="klimaPriceResult" style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent);text-align:center;padding:12px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.3);border-radius:4px;margin-bottom:14px">— zł</div>
@@ -4422,8 +4426,8 @@ window.calcKlimaPrice = function() {
   const y = parseFloat(document.getElementById('k_recovered').value) || 0;
   const filter = document.getElementById('k_filter').checked ? 50 : 0;
   const ozone = document.getElementById('k_ozone').checked ? 30 : 0;
-  const gasEl = document.getElementById('k_gas_1234');
-  const gas = (gasEl && gasEl.checked) ? 'R1234yf' : 'R134a';
+  const gasEl = document.querySelector('input[name="k_gas"]:checked');
+  const gas = gasEl ? gasEl.value : 'R134a';
   const z = x - y;
   // Podpięcie maszyny 98 zł gdy pojemność > 0 lub ściągnięto > 0; czynnik 1 zł/g
   const connectFee = (x === 0 && y === 0) ? 0 : 98;
