@@ -1656,6 +1656,9 @@ onAuthStateChanged(auth, user => {
     });
     document.getElementById('loginBtn').innerHTML = '▶ Zaloguj się';
     document.getElementById('loginBtn').disabled = false;
+    // Pokaż pływające menu (FAB) dla zalogowanych
+    const fabC = document.getElementById('fabContainer');
+    if (fabC) fabC.style.display = 'flex';
     initApp();
   } else {
     // Niezalogowany — pokaż tylko grafik i formularz zapisu
