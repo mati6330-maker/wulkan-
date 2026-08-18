@@ -772,7 +772,42 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <button onclick="window.resetR134aCounter()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">❄ Uzupełniłem zapasy — resetuj licznik</button>
   </div>
 </div>
-<div class="section-label" style="margin-top:16px">Raporty</div>
+<!-- LICZNIK ZAROBKÓW NA CZYNNIKACH -->
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-top:14px">
+  <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">💰 ZAROBKI NA CZYNNIKACH</div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <button onclick="window.setKlimaEarnPeriod('day')" id="keBtn_day" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:var(--accent);color:#000;border:1px solid var(--accent)">Dzień</button>
+    <button onclick="window.setKlimaEarnPeriod('week')" id="keBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Tydzień</button>
+    <button onclick="window.setKlimaEarnPeriod('month')" id="keBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Miesiąc</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div style="background:var(--surface);border:1px solid rgba(6,182,212,0.3);border-radius:4px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">R134a</div>
+      <div id="keSum134" style="font-family:var(--mono);font-size:20px;font-weight:700;color:#06b6d4">— zł</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">R1234yf</div>
+      <div id="keSum1234" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)">— zł</div>
+    </div>
+  </div>
+  <div id="keTotal" style="text-align:center;margin-top:8px;font-size:12px;color:var(--muted);font-family:var(--mono)"></div>
+  <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+    <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;font-family:var(--mono)">DODAJ WPIS RĘCZNY</div>
+    <div style="display:flex;gap:6px;margin-bottom:6px">
+      <input id="keAmount" type="number" placeholder="Kwota zł" inputmode="numeric" style="flex:1;min-width:0;margin:0"/>
+      <input id="keDate" type="date" style="flex:1;min-width:0;margin:0"/>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <label id="keGas134_label" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;padding:9px;background:rgba(6,182,212,0.12);border:2px solid #06b6d4;border-radius:6px;user-select:none" onclick="window.setKeGas('R134a')">
+        <span class="kecbx" style="font-size:16px">◉</span> R134a
+      </label>
+      <label id="keGas1234_label" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;padding:9px;background:var(--surface2);border:2px solid var(--border);border-radius:6px;user-select:none" onclick="window.setKeGas('R1234yf')">
+        <span class="kecbx" style="font-size:16px;color:var(--muted)">○</span> R1234yf
+      </label>
+    </div>
+    <button onclick="window.addKlimaEarning()" style="background:var(--accent);color:#000">＋ Dodaj wpis</button>
+    <div id="keList" style="margin-top:10px"></div>
+  </div>
 <button onclick="window.printDailyFullReport()">▶ Raport dzienny</button>
 <label style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#888;letter-spacing:1px;display:block;margin-top:10px;margin-bottom:2px">TYDZIEŃ</label>
 <input type="date" id="cashWeek">
@@ -1204,6 +1239,7 @@ let blockedDays = {}; // { dateStr: { reason } }
 let slotBlocks = {}; // { "YYYY-MM-DD|HH:MM": true }
 let dayNotes = {};   // { "YYYY-MM-DD": "treść notatki" }
 let klimas = {};     // klima service orders
+let klimaEarnings = {}; // licznik zarobkow na czynnikach (R134a / R1234yf)
 let selectedDate = new Date();
 let selectedTime = null;
 let weekOffset = 0;
@@ -1633,6 +1669,10 @@ onAuthStateChanged(auth, user => {
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.add('tab-locked');
     });
+    // Ukryj pływające menu (FAB) dla niezalogowanych
+    const fab = document.getElementById('fabContainer');
+    if (fab) fab.style.display = 'none';
+    if (typeof closeFab === 'function') closeFab();
     initPublic();
   }
 });
@@ -1830,6 +1870,10 @@ function initApp() {
   onValue(ref(db, 'klima'), snap => {
     klimas = snap.val() || {};
     renderKlima();
+  });
+  onValue(ref(db, 'klimaEarnings'), snap => {
+    klimaEarnings = snap.val() || {};
+    if (typeof renderKlimaEarnings === 'function') renderKlimaEarnings();
   });
   onValue(ref(db, 'firmy'), snap => {
     firmy = snap.val() || {};
@@ -4363,6 +4407,92 @@ window.toggleKlima = async function(k) {
   await update(ref(db, 'klima/' + k), {status: !o.status});
 };
 
+let keGasChoice = 'R134a';
+let kemPeriod = 'day';
+window.setKeGas = function(gas) {
+  keGasChoice = gas;
+  const l134 = document.getElementById('keGas134_label');
+  const l1234 = document.getElementById('keGas1234_label');
+  l134.style.borderColor = (gas==='R134a') ? '#06b6d4' : 'var(--border)';
+  l134.style.background = (gas==='R134a') ? 'rgba(6,182,212,0.12)' : 'var(--surface2)';
+  l134.querySelector('.kecbx').textContent = (gas==='R134a') ? '◉' : '○';
+  l134.querySelector('.kecbx').style.color = (gas==='R134a') ? '#06b6d4' : 'var(--muted)';
+  l1234.style.borderColor = (gas==='R1234yf') ? '#f59e0b' : 'var(--border)';
+  l1234.style.background = (gas==='R1234yf') ? 'rgba(245,158,11,0.12)' : 'var(--surface2)';
+  l1234.querySelector('.kecbx').textContent = (gas==='R1234yf') ? '◉' : '○';
+  l1234.querySelector('.kecbx').style.color = (gas==='R1234yf') ? '#f59e0b' : 'var(--muted)';
+};
+
+window.setKlimaEarnPeriod = function(p) {
+  kemPeriod = p;
+  ['day','week','month'].forEach(x => {
+    const b = document.getElementById('keBtn_' + x);
+    if (!b) return;
+    const on = (x === p);
+    b.style.background = on ? 'var(--accent)' : 'transparent';
+    b.style.color = on ? '#000' : 'var(--muted)';
+    b.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
+  });
+  renderKlimaEarnings();
+};
+
+window.addKlimaEarning = async function() {
+  const amount = parseFloat(document.getElementById('keAmount').value);
+  const date = document.getElementById('keDate').value || getToday();
+  if (!amount || amount <= 0) { showToast('⚠️ Podaj kwotę', 'var(--muted)'); return; }
+  await push(ref(db, 'klimaEarnings'), { amount: Math.round(amount), gas: keGasChoice, date, source: 'manual' });
+  document.getElementById('keAmount').value = '';
+  showToast('✔ Wpis dodany: ' + Math.round(amount) + ' zł (' + keGasChoice + ')', 'var(--green)');
+};
+
+window.deleteKlimaEarning = async function(k) {
+  if (!confirm('Usunąć ten wpis z licznika zarobków?')) return;
+  await remove(ref(db, 'klimaEarnings/' + k));
+  showToast('🗑 Wpis usunięty', 'var(--muted)');
+};
+
+window.renderKlimaEarnings = function() {
+  const now = new Date();
+  const today = getToday();
+  const startWeek = new Date(now); startWeek.setDate(now.getDate() - ((now.getDay()+6)%7)); startWeek.setHours(0,0,0,0);
+  let s134 = 0, s1234 = 0;
+  const inPeriod = (ds) => {
+    if (kemPeriod === 'day') return ds === today;
+    const d = parseDate(ds);
+    if (kemPeriod === 'week') return d >= startWeek;
+    if (kemPeriod === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return true;
+  };
+  const rows = [];
+  Object.entries(klimaEarnings).forEach(([k,e]) => {
+    if (!e || e.amount == null) return;
+    if (!inPeriod(e.date)) return;
+    if (e.gas === 'R1234yf') s1234 += e.amount; else s134 += e.amount;
+    rows.push([k, e]);
+  });
+  const el134 = document.getElementById('keSum134');
+  const el1234 = document.getElementById('keSum1234');
+  const elTot = document.getElementById('keTotal');
+  if (el134) el134.textContent = s134 + ' zł';
+  if (el1234) el1234.textContent = s1234 + ' zł';
+  if (elTot) elTot.textContent = 'Razem: ' + (s134 + s1234) + ' zł';
+  const list = document.getElementById('keList');
+  if (list) {
+    rows.sort((a,b) => (b[1].date||'').localeCompare(a[1].date||''));
+    list.innerHTML = rows.length ? rows.map(([k,e]) => {
+      const col = e.gas === 'R1234yf' ? 'var(--accent)' : '#06b6d4';
+      const src = e.source === 'manual' ? '✍ ręczny' : '🔧 zlecenie';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:4px;font-size:12px">
+        <span style="font-family:var(--mono);font-weight:700;color:${col};min-width:64px">${e.amount} zł</span>
+        <span style="color:${col};font-size:11px">${e.gas}</span>
+        <span style="color:var(--muted);font-size:11px">${e.date}</span>
+        <span style="color:var(--muted);font-size:10px;margin-left:auto">${src}</span>
+        <button onclick="window.deleteKlimaEarning('${k}')" style="width:auto;padding:2px 8px;font-size:11px;background:transparent;color:var(--red);border:1px solid rgba(248,113,113,0.35)">✕</button>
+      </div>`;
+    }).join('') : '<div style="color:var(--muted);font-family:var(--mono);font-size:11px;padding:6px 0">Brak wpisów w tym okresie</div>';
+  }
+};
+
 window.setKlimaGas = function(gas) {
   document.getElementById('k_gas_134').checked = (gas === 'R134a');
   document.getElementById('k_gas_1234').checked = (gas === 'R1234yf');
@@ -4458,6 +4588,18 @@ window.saveKlimaPrice = async function() {
   const filter = document.getElementById('k_filter').checked;
   const ozone = document.getElementById('k_ozone').checked;
   await update(ref(db, 'klima/' + klimaPriceKey), {price: total, gas, capacity, recovered, filter, ozone, status: true});
+  // Auto-wpis do licznika zarobkow na czynnikach (aktualizuj istniejacy wpis dla tego zlecenia)
+  try {
+    const o = klimas[klimaPriceKey] || {};
+    const dateStr = o.end || o.start || getToday();
+    const existing = Object.entries(klimaEarnings).find(([ek,ev]) => ev && ev.orderKey === klimaPriceKey);
+    const entry = { amount: total, gas, date: dateStr, source: 'order', orderKey: klimaPriceKey };
+    if (existing) {
+      await update(ref(db, 'klimaEarnings/' + existing[0]), entry);
+    } else {
+      await push(ref(db, 'klimaEarnings'), entry);
+    }
+  } catch(e) { console.warn('klimaEarnings auto-zapis:', e); }
   showToast('✔ Cena zapisana: ' + total + ' zł', 'var(--green)');
   closeKlimaPriceModal();
 };
