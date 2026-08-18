@@ -772,13 +772,15 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <button onclick="window.resetR134aCounter()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">❄ Uzupełniłem zapasy — resetuj licznik</button>
   </div>
 </div>
-<!-- LICZNIK ZAROBKÓW NA CZYNNIKACH -->
+<!-- LICZNIK ZAROBKÓW NA KLIMIE -->
 <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-top:14px">
-  <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">💰 ZAROBKI NA CZYNNIKACH</div>
+  <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">💰 ZAROBKI NA KLIMIE</div>
   <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
     <button onclick="window.setKlimaEarnPeriod('day')" id="keBtn_day" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:var(--accent);color:#000;border:1px solid var(--accent)">Dzień</button>
     <button onclick="window.setKlimaEarnPeriod('week')" id="keBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Tydzień</button>
     <button onclick="window.setKlimaEarnPeriod('month')" id="keBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Miesiąc</button>
+    <button onclick="window.setKlimaEarnPeriod('year')" id="keBtn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Rok</button>
+    <button onclick="window.setKlimaEarnPeriod('all')" id="keBtn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Całość</button>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <div style="background:var(--surface);border:1px solid rgba(6,182,212,0.3);border-radius:4px;padding:12px;text-align:center">
@@ -4430,7 +4432,7 @@ window.setKeGas = function(gas) {
 
 window.setKlimaEarnPeriod = function(p) {
   kemPeriod = p;
-  ['day','week','month'].forEach(x => {
+  ['day','week','month','year','all'].forEach(x => {
     const b = document.getElementById('keBtn_' + x);
     if (!b) return;
     const on = (x === p);
