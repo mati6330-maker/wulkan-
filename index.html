@@ -891,6 +891,15 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <div id="klimaPriceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center">
   <div style="background:var(--surface);padding:24px;border-radius:6px;border:1px solid var(--border);border-top:3px solid var(--accent);width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
     <div style="font-family:var(--font);font-weight:700;font-size:17px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">❄️ Oblicz cenę</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">CZYNNIK</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <label id="k_gas_134_label" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;padding:10px;background:rgba(79,142,247,0.1);border:2px solid #4f8ef7;border-radius:4px" onclick="window.setKlimaGas('R134a')">
+        <input type="radio" name="k_gas" id="k_gas_134" value="R134a" checked style="pointer-events:none"/> R134a
+      </label>
+      <label id="k_gas_1234_label" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;padding:10px;background:var(--surface2);border:2px solid var(--border);border-radius:4px" onclick="window.setKlimaGas('R1234yf')">
+        <input type="radio" name="k_gas" id="k_gas_1234" value="R1234yf" style="pointer-events:none"/> R1234yf
+      </label>
+    </div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">POJEMNOŚĆ UKŁADU (g)</div>
     <input id="k_capacity" type="number" placeholder="np. 500" oninput="calcKlimaPrice()"/>
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin:10px 0 4px">POBRANO CZYNNIKA (g)</div>
@@ -4350,6 +4359,18 @@ window.toggleKlima = async function(k) {
   await update(ref(db, 'klima/' + k), {status: !o.status});
 };
 
+window.setKlimaGas = function(gas) {
+  document.getElementById('k_gas_134').checked = (gas === 'R134a');
+  document.getElementById('k_gas_1234').checked = (gas === 'R1234yf');
+  const l134 = document.getElementById('k_gas_134_label');
+  const l1234 = document.getElementById('k_gas_1234_label');
+  l134.style.borderColor = (gas==='R134a') ? '#4f8ef7' : 'var(--border)';
+  l134.style.background = (gas==='R134a') ? 'rgba(79,142,247,0.1)' : 'var(--surface2)';
+  l1234.style.borderColor = (gas==='R1234yf') ? '#4f8ef7' : 'var(--border)';
+  l1234.style.background = (gas==='R1234yf') ? 'rgba(79,142,247,0.1)' : 'var(--surface2)';
+  calcKlimaPrice();
+};
+
 window.saveKlimaRate = function(val) {
   const rate = parseFloat(val);
   if (!rate || rate <= 0) return;
@@ -4401,35 +4422,38 @@ window.calcKlimaPrice = function() {
   const y = parseFloat(document.getElementById('k_recovered').value) || 0;
   const filter = document.getElementById('k_filter').checked ? 50 : 0;
   const ozone = document.getElementById('k_ozone').checked ? 30 : 0;
+  const gasEl = document.getElementById('k_gas_1234');
+  const gas = (gasEl && gasEl.checked) ? 'R1234yf' : 'R134a';
   const z = x - y;
-  const rate = prices.klima_rate || 39;
-  // Opłata 50 zł za serwis tylko gdy podłączamy maszynę (pojemność > 0 lub ściągnięto > 0)
-  const serviceFee = (x === 0 && y === 0) ? 0 : 50;
-  const base = z > 0 ? ((z / 100) * rate) + serviceFee : serviceFee;
-  const total = Math.round(base + filter + ozone);
+  // Podpięcie maszyny 98 zł gdy pojemność > 0 lub ściągnięto > 0; czynnik 1 zł/g
+  const connectFee = (x === 0 && y === 0) ? 0 : 98;
+  const gasCost = z > 0 ? z : 0;
+  const total = Math.round(connectFee + gasCost + filter + ozone);
   const el = document.getElementById('klimaPriceResult');
   const breakdown = [];
   if (x === 0 && y === 0) {
-    breakdown.push('brak napełnienia — brak opłaty za serwis');
+    breakdown.push('brak napełnienia — brak opłaty za podpięcie');
   } else if (z > 0) {
-    breakdown.push(`uzupełniono ${z}g × ${((prices.klima_rate||39)/100).toFixed(2).replace('.',',')} zł + 50 zł`);
+    breakdown.push(`podpięcie 98 zł + ${z}g × 1 zł`);
   } else {
-    breakdown.push('brak uzupełnienia + 50 zł');
+    breakdown.push('podpięcie 98 zł');
   }
   if (filter) breakdown.push('filtr +50 zł');
   if (ozone) breakdown.push('odgrzybienie +30 zł');
-  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px">${breakdown.join(' | ')}</div><b>${total} zł</b>`;
+  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px">${gas} · ${breakdown.join(' | ')}</div><b>${total} zł</b>`;
   el.dataset.total = total;
+  el.dataset.gas = gas;
 };
 
 window.saveKlimaPrice = async function() {
   if (!klimaPriceKey) return;
   const total = parseFloat(document.getElementById('klimaPriceResult').dataset.total) || 0;
+  const gas = document.getElementById('klimaPriceResult').dataset.gas || 'R134a';
   const capacity = document.getElementById('k_capacity').value;
   const recovered = document.getElementById('k_recovered').value;
   const filter = document.getElementById('k_filter').checked;
   const ozone = document.getElementById('k_ozone').checked;
-  await update(ref(db, 'klima/' + klimaPriceKey), {price: total, capacity, recovered, filter, ozone, status: true});
+  await update(ref(db, 'klima/' + klimaPriceKey), {price: total, gas, capacity, recovered, filter, ozone, status: true});
   showToast('✔ Cena zapisana: ' + total + ' zł', 'var(--green)');
   closeKlimaPriceModal();
 };
@@ -5850,12 +5874,7 @@ window.askClimaTech = async function(make, model, year, engine) {
     const text = (data.content && data.content[0] && data.content[0].text)
       ? data.content[0].text
       : (data.error ? '✗ ' + data.error.message : JSON.stringify(data));
-    const query = encodeURIComponent(carDesc + ' AC service port connector high low pressure');
-    const imgUrl = 'https://www.google.com/search?tbm=isch&q=' + query;
-    box.innerHTML = text.replace(/\n/g, '<br>') +
-      '<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">' +
-      '<a href="' + imgUrl + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);border-radius:4px;font-size:13px;font-family:var(--mono);text-decoration:none;letter-spacing:1px">🔌 Zdjęcia złącz serwisowych</a>' +
-      '</div>';
+    box.innerHTML = text.replace(/\n/g, '<br>');
   } catch(e) { box.innerHTML = '✗ Błąd: ' + e.message; }
 };
 
@@ -6277,16 +6296,16 @@ window.printKlima = function(k) {
   const capacity = o.capacity || 0;
   const recovered = o.recovered || 0;
   const filled = Math.max(0, capacity - recovered);
-  const rate = prices.klima_rate || 39;
-  const serviceFee = (capacity === 0 && recovered === 0) ? 0 : 50;
-  const gasPrice = filled > 0 ? Math.round((filled / 100) * rate) : 0;
+  const gas = o.gas || 'R134a';
+  const connectFee = (capacity === 0 && recovered === 0) ? 0 : 98;
+  const gasPrice = filled > 0 ? filled : 0;
   const filterPrice = o.filter ? 50 : 0;
   const ozonePrice = o.ozone ? 30 : 0;
-  const total = o.price != null ? o.price : Math.round(serviceFee + gasPrice + filterPrice + ozonePrice);
+  const total = o.price != null ? o.price : Math.round(connectFee + gasPrice + filterPrice + ozonePrice);
 
   const gasRow = filled > 0
-    ? `<tr><td>Różnica / uzupełniono</td><td>${filled} g × ${(rate/100).toFixed(2).replace('.',',')} zł/g + ${serviceFee} zł serwis = ${serviceFee + gasPrice} zł</td></tr>`
-    : `<tr><td>Nabito z butli</td><td>0 g${serviceFee ? ` + ${serviceFee} zł serwis` : ' — brak opłaty za serwis'}</td></tr>`;
+    ? `<tr><td>Nabito czynnika (${gas})</td><td>${filled} g × 1 zł/g + ${connectFee} zł podpięcie = ${connectFee + gasPrice} zł</td></tr>`
+    : `<tr><td>Nabito czynnika (${gas})</td><td>0 g${connectFee ? ` + ${connectFee} zł podpięcie` : ' — brak opłaty za podpięcie'}</td></tr>`;
 
   const content = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
     'body{font-family:Arial,sans-serif;padding:24px;font-size:13px;color:#111;max-width:600px;margin:0 auto}' +
@@ -6907,127 +6926,6 @@ setInterval(updateClock,1000); updateClock();
   </div>
 </div>
 
-
-<!-- ASYSTENT CZAT -->
-<style>
-#chatBtn{position:fixed;bottom:80px;left:16px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#000;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(245,158,11,.4);display:flex;align-items:center;justify-content:center;z-index:1999;transition:transform .2s;padding:0}
-#chatBtn:active{transform:scale(.93)}
-#chatWindow{position:fixed;bottom:144px;left:16px;width:min(380px,calc(100vw - 32px));height:min(520px,calc(100vh - 200px));background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6);z-index:2000;display:none;flex-direction:column;overflow:hidden}
-#chatWindow.open{display:flex}
-#chatHeader{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface2)}
-#chatHeader .ttl{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:2px}
-#chatHeader button{width:auto;padding:4px 8px;font-size:13px;margin:0;background:transparent;color:var(--muted);border:1px solid var(--border)}
-#chatMessages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.chat-msg{max-width:85%;padding:9px 12px;border-radius:10px;font-size:14px;line-height:1.5;word-wrap:break-word}
-.chat-msg.user{align-self:flex-end;background:var(--accent);color:#000;border-bottom-right-radius:2px}
-.chat-msg.bot{align-self:flex-start;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:2px}
-.chat-msg.bot.thinking{color:var(--muted);font-family:var(--mono);font-size:12px}
-#chatInputRow{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border);background:var(--surface2)}
-#chatInput{flex:1;margin:0;font-size:14px;resize:none;max-height:80px;min-height:42px}
-#chatSend{width:auto;padding:0 16px;margin:0;font-size:18px;flex-shrink:0}
-#chatEmpty{margin:auto;text-align:center;color:var(--muted);font-size:13px;line-height:1.6;padding:20px}
-</style>
-<button id="chatBtn" onclick="window.toggleChat()" title="Asystent motoryzacyjny">🔧</button>
-<div id="chatWindow">
-  <div id="chatHeader">
-    <div class="ttl">🔧 ASYSTENT MOTO</div>
-    <div style="display:flex;gap:4px">
-      <button onclick="window.clearChat()" title="Wyczyść rozmowę">🗑</button>
-      <button onclick="window.toggleChat()" title="Zamknij">✕</button>
-    </div>
-  </div>
-  <div id="chatMessages">
-    <div id="chatEmpty">Zadaj dowolne pytanie motoryzacyjne.<br>Asystent pamięta kontekst rozmowy.</div>
-  </div>
-  <div id="chatInputRow">
-    <textarea id="chatInput" placeholder="Wpisz pytanie..." rows="1"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.sendChat();}"
-      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
-    <button id="chatSend" onclick="window.sendChat()">➤</button>
-  </div>
-</div>
-<script>
-let _chatHistory = [];
-let _chatBusy = false;
-
-window.toggleChat = function() {
-  const w = document.getElementById('chatWindow');
-  w.classList.toggle('open');
-  if (w.classList.contains('open')) {
-    setTimeout(() => document.getElementById('chatInput').focus(), 100);
-  }
-};
-
-window.clearChat = function() {
-  _chatHistory = [];
-  document.getElementById('chatMessages').innerHTML =
-    '<div id="chatEmpty">Zadaj dowolne pytanie motoryzacyjne.<br>Asystent pamięta kontekst rozmowy.</div>';
-};
-
-function appendChatMsg(role, text) {
-  const box = document.getElementById('chatMessages');
-  const empty = document.getElementById('chatEmpty');
-  if (empty) empty.remove();
-  const div = document.createElement('div');
-  div.className = 'chat-msg ' + (role === 'user' ? 'user' : 'bot');
-  div.innerHTML = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br>');
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-  return div;
-}
-
-window.sendChat = async function() {
-  if (_chatBusy) return;
-  const input = document.getElementById('chatInput');
-  const q = input.value.trim();
-  if (!q) return;
-  input.value = '';
-  input.style.height = 'auto';
-  appendChatMsg('user', q);
-  _chatHistory.push({ role: 'user', content: q });
-
-  _chatBusy = true;
-  const sendBtn = document.getElementById('chatSend');
-  sendBtn.disabled = true;
-  const thinking = appendChatMsg('bot', '⟳ Myślę...');
-  thinking.classList.add('thinking');
-
-  // Instrukcja roli wstrzyknięta w pierwszą wiadomość (spójnie z resztą aplikacji)
-  const ROLA = 'Jesteś ekspertem motoryzacyjnym pomagającym mechanikowi w warsztacie wulkanizacyjnym w Polsce. Odpowiadaj po polsku, konkretnie i praktycznie. Skupiaj się na rzeczach przydatnych w warsztacie: opony, felgi, klimatyzacja, zawieszenie, podstawowa mechanika.';
-  const msgs = _chatHistory.map((m, i) =>
-    i === 0 && m.role === 'user'
-      ? { role: 'user', content: ROLA + '\n\n---\n\nPytanie: ' + m.content }
-      : m
-  );
-
-  try {
-    const resp = await fetch('https://black-boat-0f91.mati6330-mj.workers.dev', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: msgs
-      })
-    });
-    if (!resp.ok) throw new Error('Błąd API: ' + resp.status);
-    const data = await resp.json();
-    const text = (data.content && data.content[0] && data.content[0].text)
-      ? data.content[0].text
-      : (data.error ? '✗ ' + data.error.message : 'Brak odpowiedzi');
-    thinking.remove();
-    appendChatMsg('bot', text);
-    _chatHistory.push({ role: 'assistant', content: text });
-  } catch(e) {
-    thinking.remove();
-    appendChatMsg('bot', '✗ Błąd: ' + e.message);
-    _chatHistory.pop();
-  } finally {
-    _chatBusy = false;
-    sendBtn.disabled = false;
-  }
-};
-</script>
 
 <!-- PŁYWAJĄCE MENU FAB -->
 <div class="fab-container" id="fabContainer">
