@@ -6453,14 +6453,17 @@ window.printKlima = function(k) {
   const recovered = o.recovered || 0;
   const filled = Math.max(0, capacity - recovered);
   const gas = o.gas || 'R134a';
-  const connectFee = (capacity === 0 && recovered === 0) ? 0 : 98;
-  const gasPrice = filled > 0 ? filled : 0;
+  const gasRate = (gas === 'R1234yf') ? 1 : 0.39;
+  const connectBase = (gas === 'R1234yf') ? 98 : 49;
+  const connectFee = (capacity === 0 && recovered === 0) ? 0 : connectBase;
+  const gasPrice = filled > 0 ? Math.round(filled * gasRate) : 0;
   const filterPrice = o.filter ? 50 : 0;
   const ozonePrice = o.ozone ? 30 : 0;
   const total = o.price != null ? o.price : Math.round(connectFee + gasPrice + filterPrice + ozonePrice);
 
+  const rateStr = gasRate.toFixed(2).replace('.',',');
   const gasRow = filled > 0
-    ? `<tr><td>Nabito czynnika (${gas})</td><td>${filled} g × 1 zł/g + ${connectFee} zł podpięcie = ${connectFee + gasPrice} zł</td></tr>`
+    ? `<tr><td>Nabito czynnika (${gas})</td><td>${filled} g × ${rateStr} zł/g + ${connectFee} zł podpięcie = ${connectFee + gasPrice} zł</td></tr>`
     : `<tr><td>Nabito czynnika (${gas})</td><td>0 g${connectFee ? ` + ${connectFee} zł podpięcie` : ' — brak opłaty za podpięcie'}</td></tr>`;
 
   const content = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
