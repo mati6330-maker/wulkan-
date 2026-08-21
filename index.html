@@ -4566,10 +4566,11 @@ window.calcKlimaPrice = function() {
   const gasEl = document.querySelector('input[name="k_gas"]:checked');
   const gas = gasEl ? gasEl.value : 'R134a';
   const z = x - y;
-  // Podpięcie maszyny 98 zł gdy pojemność > 0 lub ściągnięto > 0
+  // Podpięcie: R134a = 49 zł, R1234yf = 98 zł (gdy pojemność > 0 lub ściągnięto > 0)
   // Czynnik: R134a = 0,39 zł/g, R1234yf = 1 zł/g
   const gasRate = (gas === 'R1234yf') ? 1 : 0.39;
-  const connectFee = (x === 0 && y === 0) ? 0 : 98;
+  const connectBase = (gas === 'R1234yf') ? 98 : 49;
+  const connectFee = (x === 0 && y === 0) ? 0 : connectBase;
   const gasCost = z > 0 ? z * gasRate : 0;
   const total = Math.round(connectFee + gasCost + filter + ozone);
   const el = document.getElementById('klimaPriceResult');
@@ -4577,9 +4578,9 @@ window.calcKlimaPrice = function() {
   if (x === 0 && y === 0) {
     breakdown.push('brak napełnienia — brak opłaty za podpięcie');
   } else if (z > 0) {
-    breakdown.push(`podpięcie 98 zł + ${z}g × ${gasRate.toFixed(2).replace('.',',')} zł`);
+    breakdown.push(`podpięcie ${connectBase} zł + ${z}g × ${gasRate.toFixed(2).replace('.',',')} zł`);
   } else {
-    breakdown.push('podpięcie 98 zł');
+    breakdown.push(`podpięcie ${connectBase} zł`);
   }
   if (filter) breakdown.push('filtr +50 zł');
   if (ozone) breakdown.push('odgrzybienie +30 zł');
