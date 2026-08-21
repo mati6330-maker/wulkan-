@@ -4566,16 +4566,18 @@ window.calcKlimaPrice = function() {
   const gasEl = document.querySelector('input[name="k_gas"]:checked');
   const gas = gasEl ? gasEl.value : 'R134a';
   const z = x - y;
-  // Podpięcie maszyny 98 zł gdy pojemność > 0 lub ściągnięto > 0; czynnik 1 zł/g
+  // Podpięcie maszyny 98 zł gdy pojemność > 0 lub ściągnięto > 0
+  // Czynnik: R134a = 0,39 zł/g, R1234yf = 1 zł/g
+  const gasRate = (gas === 'R1234yf') ? 1 : 0.39;
   const connectFee = (x === 0 && y === 0) ? 0 : 98;
-  const gasCost = z > 0 ? z : 0;
+  const gasCost = z > 0 ? z * gasRate : 0;
   const total = Math.round(connectFee + gasCost + filter + ozone);
   const el = document.getElementById('klimaPriceResult');
   const breakdown = [];
   if (x === 0 && y === 0) {
     breakdown.push('brak napełnienia — brak opłaty za podpięcie');
   } else if (z > 0) {
-    breakdown.push(`podpięcie 98 zł + ${z}g × 1 zł`);
+    breakdown.push(`podpięcie 98 zł + ${z}g × ${gasRate.toFixed(2).replace('.',',')} zł`);
   } else {
     breakdown.push('podpięcie 98 zł');
   }
