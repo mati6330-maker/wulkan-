@@ -5384,6 +5384,8 @@ window.fakturujFirma = function(k) {
     </tr>`;
   }).join('');
 
+  const terminData = new Date(Date.now() + 14*864e5).toLocaleDateString('pl-PL');
+
   const previewHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     body{font-family:Arial,sans-serif;padding:24px;font-size:12px;color:#111;max-width:800px;margin:0 auto}
     h1{font-size:18px;font-weight:900;margin-bottom:2px}
@@ -5399,20 +5401,14 @@ window.fakturujFirma = function(k) {
     .btn-bar{display:flex;gap:10px;margin-bottom:20px;justify-content:flex-end}
     button{padding:10px 20px;font-size:13px;font-weight:700;border:none;border-radius:4px;cursor:pointer}
     .btn-confirm{background:#16a34a;color:#fff}
+    .btn-print{background:#2563eb;color:#fff}
     .btn-cancel{background:#e5e7eb;color:#111}
     @media print{.btn-bar{display:none}@page{margin:10mm}}
   </style></head><body>
   <div class="btn-bar">
     <button class="btn-cancel" onclick="window.close()">✕ Anuluj</button>
-    <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:center">
-      <span style="font-size:12px;font-weight:700;color:#374151">Płatność:</span>
-      <select id="payMethod" style="padding:6px 10px;font-size:13px;font-weight:600;border:2px solid #374151;border-radius:4px;background:#f9fafb">
-        <option value="gotowka">💵 Gotówka</option>
-        <option value="przelew_oczekuje">🔄 Przelew — oczekuje</option>
-        <option value="przelew_otrzymano">✅ Przelew — otrzymano</option>
-      </select>
-    </div>
-    <button class="btn-confirm" onclick="window.opener.window.fakturujFirmaConfirm('${k}',document.getElementById('payMethod').value);window.print();window.close()">🧾 Fakturuj i drukuj</button>
+    <button class="btn-confirm" onclick="window.opener.window.fakturujFirmaConfirm('${k}','przelew_oczekuje');window.close()">🧾 Fakturuj</button>
+    <button class="btn-print" onclick="window.opener.window.fakturujFirmaConfirm('${k}','przelew_oczekuje');window.print();window.close()">🖨 Fakturuj i drukuj</button>
   </div>
   
     <h1>Wulkanizacja Mielczarek</h1>
@@ -5441,6 +5437,7 @@ window.fakturujFirma = function(k) {
   </table>
   <div class="summary">Do zapłaty: <b>${totalBrutto.toFixed(2).replace('.',',')} zł brutto</b>
   (${totalNetto.toFixed(2).replace('.',',')} zł netto + ${totalVat.toFixed(2).replace('.',',')} zł VAT 23%)</div>
+  <div class="summary">Termin płatności: <b>${terminData}</b> (14 dni od dnia wystawienia)</div>
   </body></html>`;
 
   const win = window.open('', '_blank');
