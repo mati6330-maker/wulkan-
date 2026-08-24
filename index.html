@@ -2767,6 +2767,7 @@ window.renderArchiveFirmy = function() {
           <option value="przelew_oczekuje" ${(f.payMethod||'')==='przelew_oczekuje'?'selected':''}>🔄 Przelew — oczekuje</option>
           <option value="przelew_otrzymano" ${(f.payMethod||'')==='przelew_otrzymano'?'selected':''}>✅ Przelew — otrzymano</option>
         </select>
+        <button onclick="window.deleteFirmaArch('${k}')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń fakturę</button>
       </div>
     </div>`;
   }).join('');
@@ -5331,6 +5332,16 @@ window.setFirmaArchPayment = async function(k, payMethod) {
   showToast('✔ Status płatności zaktualizowany', 'var(--green)');
 };
 
+window.deleteFirmaArch = async function(k) {
+  const f = firmy_arch[k];
+  const name = f ? (f.name||'firma') : 'ta faktura';
+  if (!confirm(`Usunąć zarchiwizowaną fakturę: ${name}?\n\nTo usunie całą historię tej faktury (pozycje, kwoty, status płatności) — bez możliwości cofnięcia.`)) return;
+  await remove(ref(db, 'firmy_arch/' + k));
+  showToast('🗑 Faktura usunięta z archiwum', 'var(--muted)');
+  window.renderArchiveFirmy();
+};
+
+
 window.cancelFirmaEdit = function() {
   window._editFirmaKey = null;
   ['firm_name','firm_nip','firm_address'].forEach(id => document.getElementById(id).value = '');
@@ -5570,7 +5581,7 @@ window.renderFirmaModal = function renderFirmaModal(k, search) {
           <div style="font-size:11px;color:var(--muted)">${service} · <b>${price} zł</b></div>
         </div>
         ${alreadyAdded ? `<span style="font-size:11px;color:var(--accent);padding:4px 10px">✔</span>`
-          : invoiced ? `<span style="font-size:11px;color:var(--muted);padding:4px 10px">🧾</span>`
+          : invoiced ? `<button onclick="window.deleteInvoicedPozycja('${id}','${type}')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń</button>`
           : `<button onclick="window.addPozycja('${k}','${id}','${type}')" style="width:auto;padding:4px 10px;font-size:11px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4)">+ Dodaj</button>`}
       </div>
     </div>`;
@@ -5655,6 +5666,15 @@ window.addPozycja = async function(firmaKey, itemKey, type) {
   if (snap.val()) firmy[firmaKey] = snap.val();
   showToast('✔ Dodano — wpisz nr rej. w sekcji PRZYPISANE', 'var(--green)');
   window.renderFirmaModal(firmaKey, document.getElementById('firmaSearch')?.value||'');
+};
+
+window.deleteInvoicedPozycja = async function(itemKey, type) {
+  if (!confirm('Usunąć ten zafakturowany wpis?\n\nJest on już zapisany w archiwum faktur firmy — to tylko usunie go z tej listy.\nTej operacji nie można cofnąć.')) return;
+  const path = type === 'visit' ? 'wizyty' : type === 'order' ? 'zlecenia' : 'klima';
+  await remove(ref(db, path + '/' + itemKey));
+  showToast('🗑 Wpis usunięty', 'var(--muted)');
+  const k = window._firmaModalKey;
+  if (k) window.renderFirmaModal(k, document.getElementById('firmaSearch')?.value||'');
 };
 
 window.saveRegNum = async function(firmaKey, itemKey, regNum) {
