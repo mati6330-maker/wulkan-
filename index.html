@@ -968,6 +968,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       </div>
       <button onclick="window.addKlimaEarning()" style="background:var(--accent);color:#000">＋ Dodaj wpis</button>
       <div id="keList" style="margin-top:10px"></div>
+      <button onclick="window.resetKlimaEarnings()" style="margin-top:10px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Resetuj całkowicie licznik zarobków na klimie</button>
     </div>
   </div>
   </div>
@@ -4523,6 +4524,16 @@ window.deleteKlimaEarning = async function(k) {
   if (!confirm('Usunąć ten wpis z licznika zarobków?')) return;
   await remove(ref(db, 'klimaEarnings/' + k));
   showToast('🗑 Wpis usunięty', 'var(--muted)');
+};
+
+window.resetKlimaEarnings = async function() {
+  const count = Object.keys(klimaEarnings).length;
+  if (!count) { showToast('Licznik jest już pusty', 'var(--muted)'); return; }
+  if (!confirm(`⚠️ UWAGA!\n\nTo usunie WSZYSTKIE ${count} wpisów z licznika zarobków na klimie (ręczne i ze zleceń) — niezależnie od daty.\n\nTej operacji nie można cofnąć!\nCzy na pewno chcesz zresetować licznik?`)) return;
+  for (const k of Object.keys(klimaEarnings)) {
+    await remove(ref(db, 'klimaEarnings/' + k));
+  }
+  showToast(`✔ Licznik zarobków na klimie zresetowany (usunięto ${count} wpisów)`, 'var(--green)');
 };
 
 window.renderKlimaEarnings = function() {
