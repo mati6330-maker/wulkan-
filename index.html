@@ -822,17 +822,21 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   </div>
 
   <div id="klima-subpanel-orders">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
-    <div class="section-label" style="margin:0">Klima serwis — nowe zlecenie</div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 8px">
-        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap">zł/100g</span>
-        <input id="klimaRateInput" type="number" min="1" max="999" step="1"
-          style="width:52px;margin:0;padding:4px 6px;font-size:13px;font-family:var(--mono);text-align:center;background:transparent;border:none;color:var(--accent)"
-          oninput="saveKlimaRate(this.value)"/>
-      </div>
-      <button onclick="window.openKlimaCalc()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:1px;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">🧮 Kalkulator</button>
+  <div class="section-label" style="margin:0 0 8px">Klima serwis — nowe zlecenie</div>
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid rgba(6,182,212,0.4);border-radius:4px;padding:4px 8px">
+      <span style="font-family:var(--mono);font-size:10px;color:#06b6d4;white-space:nowrap">R134a zł/1g</span>
+      <input id="klimaRateInput" type="number" min="0" max="20" step="0.01"
+        style="width:52px;margin:0;padding:4px 6px;font-size:13px;font-family:var(--mono);text-align:center;background:transparent;border:none;color:#06b6d4"
+        oninput="saveKlimaRate('R134a', this.value)"/>
     </div>
+    <div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid rgba(245,158,11,0.4);border-radius:4px;padding:4px 8px">
+      <span style="font-family:var(--mono);font-size:10px;color:#f59e0b;white-space:nowrap">R1234yf zł/1g</span>
+      <input id="klimaRate1234Input" type="number" min="0" max="20" step="0.01"
+        style="width:52px;margin:0;padding:4px 6px;font-size:13px;font-family:var(--mono);text-align:center;background:transparent;border:none;color:#f59e0b"
+        oninput="saveKlimaRate('R1234yf', this.value)"/>
+    </div>
+    <button onclick="window.openKlimaCalc()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:1px;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">🧮 Kalkulator</button>
   </div>
   <input id="k_name" placeholder="Imię (opcjonalne)"/>
   <input id="k_phone" inputmode="numeric" placeholder="Telefon (opcjonalne)" type="tel"/>
@@ -1617,7 +1621,8 @@ let prices = {
   no: 50,                                          // naprawa opony
   rf: 30, np: 20, nw: 5,                          // run-flat, niski profil, wentyl (za szt.)
   bus: 20,                                         // dopłata bus (za koło)
-  klima_rate: 39,                                  // stawka klimy zł/100g
+  klima_rate: 0.39,                                // stawka klimy R134a, zł/1g
+  klima_rate_1234: 1,                              // stawka klimy R1234yf, zł/1g
   zlecenie_discount: 10                            // rabat dla zleceń
 };
 
@@ -1809,7 +1814,9 @@ function initPublic() {
     if (snap.val()) { prices = {...prices, ...snap.val()}; }
     renderPricing();
     const ri = document.getElementById('klimaRateInput');
-    if (ri) ri.value = prices.klima_rate || 39;
+    if (ri) ri.value = prices.klima_rate || 0.39;
+    const ri2 = document.getElementById('klimaRate1234Input');
+    if (ri2) ri2.value = prices.klima_rate_1234 || 1;
   });
   onValue(ref(db, 'slotBlocks'), snap => {
     slotBlocks = snap.val() || {};
@@ -1873,7 +1880,9 @@ function initApp() {
     if (snap.val()) { prices = {...prices, ...snap.val()}; }
     renderPricing();
     const ri = document.getElementById('klimaRateInput');
-    if (ri) ri.value = prices.klima_rate || 39;
+    if (ri) ri.value = prices.klima_rate || 0.39;
+    const ri2 = document.getElementById('klimaRate1234Input');
+    if (ri2) ri2.value = prices.klima_rate_1234 || 1;
   });
   onValue(ref(db, 'slotBlocks'), snap => {
     slotBlocks = snap.val() || {};
@@ -4368,7 +4377,7 @@ let klimaPriceKey = null;
 window.applyKlimaDiscount = async function(k, delta) {
   const o = klimas[k];
   if (!o || o.price == null) { showToast('⚠️ Najpierw ustal cenę', 'var(--muted)'); return; }
-  const catalog = Math.round(((parseFloat(o.capacity||0) - parseFloat(o.recovered||0)) / 100 * (prices.klima_rate||39) + 50) + (o.filter?50:0) + (o.ozone?30:0));
+  const catalog = Math.round(((parseFloat(o.capacity||0) - parseFloat(o.recovered||0)) * (o.gas==='R1234yf' ? (prices.klima_rate_1234||1) : (prices.klima_rate||0.39)) + 50) + (o.filter?50:0) + (o.ozone?30:0));
   const newPrice = delta > 0 ? Math.min(catalog, o.price + delta) : Math.max(0, o.price + delta);
   if (delta > 0 && o.price >= catalog) { showToast('Cena już jest pełną ceną', 'var(--muted)'); return; }
   await update(ref(db, 'klima/' + k), {price: newPrice});
@@ -4570,11 +4579,16 @@ window.setKlimaGas = function(gas) {
   calcKlimaPrice();
 };
 
-window.saveKlimaRate = function(val) {
+window.saveKlimaRate = function(gas, val) {
   const rate = parseFloat(val);
   if (!rate || rate <= 0) return;
-  prices.klima_rate = rate;
-  update(ref(db, 'ceny'), {klima_rate: rate});
+  if (gas === 'R1234yf') {
+    prices.klima_rate_1234 = rate;
+    update(ref(db, 'ceny'), {klima_rate_1234: rate});
+  } else {
+    prices.klima_rate = rate;
+    update(ref(db, 'ceny'), {klima_rate: rate});
+  }
 };
 
 window.openKlimaCalc = function() {
@@ -4626,7 +4640,7 @@ window.calcKlimaPrice = function() {
   const z = x - y;
   // Podpięcie: R134a = 49 zł, R1234yf = 98 zł (gdy pojemność > 0 lub ściągnięto > 0)
   // Czynnik: R134a = 0,39 zł/g, R1234yf = 1 zł/g
-  const gasRate = (gas === 'R1234yf') ? 1 : (prices.klima_rate||39)/100;
+  const gasRate = (gas === 'R1234yf') ? (prices.klima_rate_1234||1) : (prices.klima_rate||0.39);
   const connectBase = (gas === 'R1234yf') ? 98 : 49;
   const connectFee = (x === 0 && y === 0) ? 0 : connectBase;
   const gasCost = z > 0 ? z * gasRate : 0;
@@ -4716,7 +4730,7 @@ window.renderKlima = function() {
             <button onclick="deleteKlima('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-            ${o.price!=null&&o.price<(((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))/100*(prices.klima_rate||39)+50)+(o.filter?50:0)+(o.ozone?30:0))?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${Math.round((1-o.price/((((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))/100*(prices.klima_rate||39)+50)+(o.filter?50:0)+(o.ozone?30:0))))*100)}%</span>`:''}
+            ${o.price!=null&&o.price<(((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))*(o.gas==='R1234yf'?(prices.klima_rate_1234||1):(prices.klima_rate||0.39))+50)+(o.filter?50:0)+(o.ozone?30:0))?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${Math.round((1-o.price/((((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))*(o.gas==='R1234yf'?(prices.klima_rate_1234||1):(prices.klima_rate||0.39))+50)+(o.filter?50:0)+(o.ozone?30:0))))*100)}%</span>`:''}
             ${priceHtml}
           </div>
         </div>
@@ -6336,7 +6350,7 @@ window.printKlima = function(k) {
   const recovered = o.recovered || 0;
   const filled = Math.max(0, capacity - recovered);
   const gas = o.gas || 'R134a';
-  const gasRate = (gas === 'R1234yf') ? 1 : (prices.klima_rate||39)/100;
+  const gasRate = (gas === 'R1234yf') ? (prices.klima_rate_1234||1) : (prices.klima_rate||0.39);
   const connectBase = (gas === 'R1234yf') ? 98 : 49;
   const connectFee = (capacity === 0 && recovered === 0) ? 0 : connectBase;
   const gasPrice = filled > 0 ? Math.round(filled * gasRate) : 0;
