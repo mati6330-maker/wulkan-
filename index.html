@@ -1719,6 +1719,10 @@ function calcVisitPrice(v, isOrder = false) {
   if (v.service === "Naprawa opony" || v.service === "Naprawa koła") {
     const repairCount = parseInt(v.wheelCount) || 1;
     price = p.no * repairCount;
+    if (v.runflat) price += p.rf;
+    if (v.low) price += p.np;
+    if (v.valve) price += p.nw * (parseInt(v.valveCount) || repairCount);
+    if (v.bus) price += (p.bus||20) * repairCount;
     if (isOrder) price -= p.zlecenie_discount;
     return Math.max(0, price);
   }
@@ -1744,8 +1748,8 @@ function calcVisitPrice(v, isOrder = false) {
   // Bus — 20 zł od koła
   if (v.bus) price += (p.bus||20) * wheelCount;
 
-  // Rabat dla zleceń przy wymianie opon
-  if (isOrder && v.service === "Wymiana opon") price -= p.zlecenie_discount;
+  // Rabat dla zleceń — dotyczy wszystkich usług
+  if (isOrder) price -= p.zlecenie_discount;
 
   return Math.max(0, price);
 }
@@ -2995,7 +2999,7 @@ window.renderList = function renderList() {
       <div id="vg-${date}" style="display:${shouldOpen?'block':'none'};padding-top:4px">`);
 
     dayEntries.forEach(([k,v]) => {
-      const extras = [v.runflat?'RF':'', v.low?'NP':'', v.valve?'W':''].filter(Boolean).join(' ');
+      const extras = [v.runflat?'RF':'', v.low?'NP':'', v.valve?'W':'', v.bus?'BUS':''].filter(Boolean).join(' ');
       const isPast = v.date < getToday();
       const isOverdue = isPast && !v.status; // miniona i niezrobiona
       const statusColor = v.status ? 'var(--green)' : isOverdue ? '#666' : 'var(--red)';
@@ -3072,10 +3076,11 @@ window.renderList = function renderList() {
             <button id="qe_wh_${k}_Stalowe" onclick="qeSet('${k}','wheel','Stalowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Stalowe'?'#4f8ef7':'var(--surface2)'};color:${v.wheel==='Stalowe'?'#000':'var(--text)'};border:1px solid var(--border)">Stalowe</button>
           </div>
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">DODATKI</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:8px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;margin-bottom:8px">
             <button id="qe_rf_${k}" onclick="qeToggle('${k}','runflat')" style="padding:6px 3px;font-size:11px;margin:0;background:${v.runflat?'#4f8ef7':'var(--surface2)'};color:${v.runflat?'#000':'var(--text)'};border:1px solid var(--border)">Run-flat</button>
             <button id="qe_lp_${k}" onclick="qeToggle('${k}','low')" style="padding:6px 3px;font-size:11px;margin:0;background:${v.low?'#4f8ef7':'var(--surface2)'};color:${v.low?'#000':'var(--text)'};border:1px solid var(--border)">Niski profil</button>
             <button id="qe_vl_${k}" onclick="qeToggle('${k}','valve')" style="padding:6px 3px;font-size:11px;margin:0;background:${v.valve?'#4f8ef7':'var(--surface2)'};color:${v.valve?'#000':'var(--text)'};border:1px solid var(--border)">Wentyl ×4</button>
+            <button id="qe_bus_${k}" onclick="qeToggle('${k}','bus')" style="padding:6px 3px;font-size:11px;margin:0;background:${v.bus?'#4f8ef7':'var(--surface2)'};color:${v.bus?'#000':'var(--text)'};border:1px solid var(--border)">Bus</button>
           </div>
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">NOTATKA</div>
           <div style="display:flex;gap:4px">
@@ -3208,7 +3213,9 @@ window.applyOrderDiscount = async function(k, delta) {
   const o = orders[k];
   if (!o) return;
   const current = o.price !== undefined ? o.price : 0;
-  const catalog = calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter}, true);
+  const catalog = calcVisitPrice({service:o.service, wheel:o.type, tireSize:o.diameter,
+    wheelCount: parseInt(o.wheels)||4, runflat:o.runflat, low:o.low, valve:o.valve,
+    valveCount:o.valveCount, bus:o.bus}, true);
   const newPrice = delta > 0
     ? Math.min(catalog, current + delta)
     : Math.max(0, current + delta);
@@ -3457,6 +3464,7 @@ window.toggleSizePicker = function(k) {
       runflat: !!v.runflat,
       low: !!v.low,
       valve: !!v.valve,
+      bus: !!v.bus,
       note: v.note || ''
     };
   }
@@ -3489,7 +3497,7 @@ window.qeSet = function(k, field, value) {
 window.qeToggle = function(k, field) {
   if (!window._qe[k]) return;
   window._qe[k][field] = !window._qe[k][field];
-  const ids = { runflat:'qe_rf_'+k, low:'qe_lp_'+k, valve:'qe_vl_'+k };
+  const ids = { runflat:'qe_rf_'+k, low:'qe_lp_'+k, valve:'qe_vl_'+k, bus:'qe_bus_'+k };
   const b = document.getElementById(ids[field]);
   const val = window._qe[k][field];
   if (b) { b.style.background = val?'#4f8ef7':'var(--surface2)'; b.style.color = val?'#000':'var(--text)'; }
@@ -3505,7 +3513,7 @@ window.qeSave = async function(k) {
   const price = calcVisitPrice(merged);
   const upd = { service: qe.service, tireSize: merged.tireSize, wheel: qe.wheel,
     runflat: qe.runflat, low: qe.low, valve: qe.valve, valveCount: merged.valveCount,
-    note: qe.note, price };
+    bus: qe.bus, note: qe.note, price };
   await update(ref(db, 'wizyty/' + k), upd);
   showToast('✔ Zapisano', 'var(--green)');
   // Zamknij picker
@@ -3784,7 +3792,7 @@ window.renderOrders = function renderOrders() {
             <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px">
               <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">CENA</span>
           <span style="display:flex;align-items:center;gap:6px">
-            ${(()=>{const base=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true),curr=o.price!==undefined?o.price:base,disc=base>0?Math.round((1-curr/base)*100):0;return disc>0?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${disc}%</span>`:''})()}
+            ${(()=>{const base=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter,wheelCount:parseInt(o.wheels)||4,runflat:o.runflat,low:o.low,valve:o.valve,valveCount:o.valveCount,bus:o.bus},true),curr=o.price!==undefined?o.price:base,disc=base>0?Math.round((1-curr/base)*100):0;return disc>0?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${disc}%</span>`:''})()}
             <span id="oprice-${k}" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${o.price||0} zł</span>
           </span>
         </div>
@@ -4037,7 +4045,7 @@ function renderReport(title, list, sum) {
 window.printDailyFullReport = function() {
   const today=getToday(); let list=[],sum=0;
   Object.values(visits).forEach(v=>{if(v.status&&v.date===today){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,catalog:bp,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;if(o.status&&ds===today){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;if(o.status&&ds===today){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter,wheelCount:parseInt(o.wheels)||4,runflat:o.runflat,low:o.low,valve:o.valve,valveCount:o.valveCount,bus:o.bus},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
   Object.values(klimas).forEach(k=>{if(k&&k.status&&k.start===today&&k.price!=null){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}});
   renderReport('Raport dzienny — '+today,list,sum);
 };
@@ -4047,7 +4055,7 @@ window.printWeekFullReport = function() {
   start.setDate(base.getDate()-day+1); start.setHours(0,0,0,0);
   const end=new Date(start.getTime()+7*86400000); let list=[],sum=0;
   Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d>=start&&d<end){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,catalog:bp,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d>=start&&d<end){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d>=start&&d<end){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter,wheelCount:parseInt(o.wheels)||4,runflat:o.runflat,low:o.low,valve:o.valve,valveCount:o.valveCount,bus:o.bus},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
   Object.values(klimas).forEach(k=>{if(k&&k.status&&k.price!=null){const d=parseDate(k.start);if(d>=start&&d<end){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}}});
   renderReport('Raport tygodniowy',list,sum);
 };
@@ -4055,7 +4063,7 @@ window.printMonthFullReport = function() {
   const val=document.getElementById('cashMonth').value; if(!val){alert('Wybierz miesiąc');return;}
   const[y,m]=val.split('-').map(Number); let list=[],sum=0;
   Object.values(visits).forEach(v=>{const d=parseDate(v.date);if(v.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=v.price||calcVisitPrice(v);const bp=calcVisitPrice(v);const disc=bp>0?Math.round((1-p/bp)*100):0;sum+=p;list.push({date:v.date,time:v.time,name:v.name,service:v.service,price:p,catalog:bp,disc,type:'wizyta'});}});
-  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
+  Object.values(orders).forEach(o=>{const ds=o.startDate||o.dateStamp;const d=parseDate(ds);if(o.status&&d.getFullYear()===y&&(d.getMonth()+1)===m){const p=o.price||0;const bpo=calcVisitPrice({service:o.service,wheel:o.type,tireSize:o.diameter,wheelCount:parseInt(o.wheels)||4,runflat:o.runflat,low:o.low,valve:o.valve,valveCount:o.valveCount,bus:o.bus},true);const disco=bpo>0?Math.round((1-p/bpo)*100):0;sum+=p;list.push({date:ds,time:o.time,name:o.name,service:o.service,price:p,catalog:bpo,disc:disco,type:'zlecenie'});}});
   Object.values(klimas).forEach(k=>{if(k&&k.status&&k.price!=null){const d=parseDate(k.start);if(d.getFullYear()===y&&(d.getMonth()+1)===m){sum+=k.price;list.push({date:k.start,time:'—',name:k.name||'—',service:'Klima serwis',price:k.price,disc:0,type:'klima'});}}});
   renderReport('Raport miesięczny',list,sum);
 };
