@@ -753,7 +753,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <button onclick="window.exportAllData()" style="background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.4)">⬇ Eksportuj wszystkie dane (JSON)</button>
 <button onclick="window.exportAllDataCSV()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (CSV)</button>
 <button onclick="window.exportAllDataPDF()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (PDF)</button>
-<button onclick="window.cleanOldData()" style="margin-top:6px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń dane archiwalne (zostaw przyszłe wizyty)</button>
+<button onclick="window.cleanOldData()" style="margin-top:6px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń wszystkie dane (wizyty, zlecenia, klima)</button>
 </div>
 
 <div class="section" id="archive">
@@ -5882,41 +5882,35 @@ window.exportAllDataCSV = function() {
 };
 
 window.cleanOldData = async function() {
-  const today = formatDate(new Date());
   const confirmed = confirm(
-    '⚠️ UWAGA!\n\nUsunięte zostaną:\n• Wszystkie wizyty z przeszłości (zrealizowane i niezrealizowane)\n• Wszystkie zlecenia z przeszłości\n• Wszystkie serwisy klimy z przeszłości\n\nZachowane zostaną:\n• Dzisiejsze i przyszłe wizyty\n\nTej operacji nie można cofnąć!\nCzy na pewno chcesz kontynuować?'
+    '⚠️ UWAGA!\n\nUsunięte zostaną WSZYSTKIE dane, niezależnie od daty:\n• Wszystkie wizyty (przeszłe, dzisiejsze i przyszłe)\n• Wszystkie zlecenia\n• Wszystkie serwisy klimy\n\nStatystyki przychodów (wizyty/zlecenia/klima) zostaną naturalnie wyzerowane.\nLicznik zarobków na klimie NIE zostanie ruszony — resetujesz go osobno.\n\nTej operacji nie można cofnąć!\nCzy na pewno chcesz kontynuować?'
   );
   if (!confirmed) return;
 
   let deleted = 0;
 
-  // Usuń archiwalne wizyty (wszystkie przeszłe - zrealizowane i niezrealizowane)
+  // Usuń wszystkie wizyty
   for (const [k, v] of Object.entries(visits)) {
-    if (v.date < today) {
-      await remove(ref(db, 'wizyty/' + k));
-      await remove(ref(db, 'slots/' + k));
-      deleted++;
-    }
+    await remove(ref(db, 'wizyty/' + k));
+    await remove(ref(db, 'slots/' + k));
+    deleted++;
   }
 
-  // Usuń archiwalne zlecenia
+  // Usuń wszystkie zlecenia
   for (const [k, o] of Object.entries(orders)) {
-    const d = o.startDate || o.dateStamp || '';
-    if (d < today) {
-      await remove(ref(db, 'zlecenia/' + k));
-      deleted++;
-    }
+    await remove(ref(db, 'zlecenia/' + k));
+    deleted++;
   }
 
-  // Usuń archiwalne klima
+  // Usuń wszystkie klima
   for (const [k, kl] of Object.entries(klimas)) {
-    if (kl && kl.start < today) {
+    if (kl) {
       await remove(ref(db, 'klima/' + k));
       deleted++;
     }
   }
 
-  showToast(`✔ Usunięto ${deleted} archiwalnych wpisów`);
+  showToast(`✔ Usunięto wszystkie dane (${deleted} wpisów)`);
 };
 
 window.showPrivacyPolicy = function() { document.getElementById('privacyModal').style.display = 'block'; };
