@@ -740,77 +740,6 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <div id="cashBox"></div>
 <button onclick="window.calculateCash()" style="margin-top:8px">↻ Odśwież</button>
 
-<!-- LICZNIK R134a -->
-<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-top:14px">
-  <div style="font-family:var(--mono);font-size:11px;color:#06b6d4;letter-spacing:2px;margin-bottom:12px">❄ ZUŻYCIE R134a</div>
-  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-    <button onclick="window.calcR134a('all')" id="r134aBtn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:#06b6d4;color:#000;border:1px solid #06b6d4">Całość</button>
-    <button onclick="window.calcR134a('month')" id="r134aBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten miesiąc</button>
-    <button onclick="window.calcR134a('week')" id="r134aBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten tydzień</button>
-    <button onclick="window.calcR134a('year')" id="r134aBtn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten rok</button>
-  </div>
-  <div id="r134aResult" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NABITO ŁĄCZNIE</div>
-      <div id="r134aFilled" style="font-family:var(--mono);font-size:18px;font-weight:700;color:#06b6d4">—</div>
-      <div style="font-size:10px;color:var(--muted)">gramów</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ODZYSKANO</div>
-      <div id="r134aRecovered" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green)">—</div>
-      <div style="font-size:10px;color:var(--muted)">gramów</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ZUŻYTO NETTO</div>
-      <div id="r134aNet" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)">—</div>
-      <div style="font-size:10px;color:var(--muted)">gramów</div>
-    </div>
-  </div>
-  <div id="r134aDetails" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono)"></div>
-  <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <div id="r134aResetInfo" style="font-size:11px;color:var(--muted);flex:1">Ostatnie uzupełnienie zapasów: <span id="r134aResetDate" style="color:var(--text)">—</span></div>
-    <button onclick="window.resetR134aCounter()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">❄ Uzupełniłem zapasy — resetuj licznik</button>
-  </div>
-</div>
-<!-- LICZNIK ZAROBKÓW NA KLIMIE -->
-<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-top:14px">
-  <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">💰 ZAROBKI NA KLIMIE</div>
-  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-    <button onclick="window.setKlimaEarnPeriod('day')" id="keBtn_day" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:var(--accent);color:#000;border:1px solid var(--accent)">Dzień</button>
-    <button onclick="window.setKlimaEarnPeriod('week')" id="keBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Tydzień</button>
-    <button onclick="window.setKlimaEarnPeriod('month')" id="keBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Miesiąc</button>
-    <button onclick="window.setKlimaEarnPeriod('year')" id="keBtn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Rok</button>
-    <button onclick="window.setKlimaEarnPeriod('all')" id="keBtn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Całość</button>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div style="background:var(--surface);border:1px solid rgba(6,182,212,0.3);border-radius:4px;padding:12px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">R134a</div>
-      <div id="keSum134" style="font-family:var(--mono);font-size:20px;font-weight:700;color:#06b6d4">— zł</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:12px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">R1234yf</div>
-      <div id="keSum1234" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)">— zł</div>
-    </div>
-  </div>
-  <div id="keTotal" style="text-align:center;margin-top:8px;font-size:12px;color:var(--muted);font-family:var(--mono)"></div>
-  <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-    <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;font-family:var(--mono)">DODAJ WPIS RĘCZNY</div>
-    <div style="display:flex;gap:6px;margin-bottom:6px">
-      <input id="keAmount" type="number" placeholder="Kwota zł" inputmode="numeric" style="flex:1;min-width:0;margin:0"/>
-      <input id="keDate" type="date" style="flex:1;min-width:0;margin:0"/>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <label id="keGas134_label" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;padding:9px;background:rgba(6,182,212,0.12);border:2px solid #06b6d4;border-radius:6px;user-select:none" onclick="window.setKeGas('R134a')">
-        <span class="kecbx" style="font-size:16px">◉</span> R134a
-      </label>
-      <label id="keGas1234_label" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;padding:9px;background:var(--surface2);border:2px solid var(--border);border-radius:6px;user-select:none" onclick="window.setKeGas('R1234yf')">
-        <span class="kecbx" style="font-size:16px;color:var(--muted)">○</span> R1234yf
-      </label>
-    </div>
-    <button onclick="window.addKlimaEarning()" style="background:var(--accent);color:#000">＋ Dodaj wpis</button>
-    <div id="keList" style="margin-top:10px"></div>
-  </div>
-</div>
 <div class="section-label" style="margin-top:16px">Raporty</div>
 <button onclick="window.printDailyFullReport()">▶ Raport dzienny</button>
 <label style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#888;letter-spacing:1px;display:block;margin-top:10px;margin-bottom:2px">TYDZIEŃ</label>
@@ -886,7 +815,13 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 </div>
 
 <div class="section" id="klima">
-  
+
+  <div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+    <button id="klima-subtab-orders" onclick="window.switchKlimaSubtab('orders')" style="flex:1;background:var(--accent);color:#000;border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">ZLECENIA</button>
+    <button id="klima-subtab-stats" onclick="window.switchKlimaSubtab('stats')" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:0;font-size:12px;letter-spacing:1px;padding:9px">STATYSTYKI</button>
+  </div>
+
+  <div id="klima-subpanel-orders">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px">
     <div class="section-label" style="margin:0">Klima serwis — nowe zlecenie</div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -925,6 +860,114 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
   <div class="section-label" style="margin-top:18px">Zlecenia klima</div>
   <input id="k_search" placeholder="🔍 Szukaj..." oninput="renderKlima()"/>
   <div id="klimaBox" style="margin-top:8px"></div>
+  </div>
+
+  <div id="klima-subpanel-stats" style="display:none">
+  <!-- LICZNIK R134a -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:#06b6d4;letter-spacing:2px;margin-bottom:12px">❄ ZUŻYCIE R134a</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <button onclick="window.calcR134a('all')" id="r134aBtn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:#06b6d4;color:#000;border:1px solid #06b6d4">Całość</button>
+      <button onclick="window.calcR134a('month')" id="r134aBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten miesiąc</button>
+      <button onclick="window.calcR134a('week')" id="r134aBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten tydzień</button>
+      <button onclick="window.calcR134a('year')" id="r134aBtn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten rok</button>
+    </div>
+    <div id="r134aResult" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NABITO ŁĄCZNIE</div>
+        <div id="r134aFilled" style="font-family:var(--mono);font-size:18px;font-weight:700;color:#06b6d4">—</div>
+        <div style="font-size:10px;color:var(--muted)">gramów</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ODZYSKANO</div>
+        <div id="r134aRecovered" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green)">—</div>
+        <div style="font-size:10px;color:var(--muted)">gramów</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ZUŻYTO NETTO</div>
+        <div id="r134aNet" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)">—</div>
+        <div style="font-size:10px;color:var(--muted)">gramów</div>
+      </div>
+    </div>
+    <div id="r134aDetails" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono)"></div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div id="r134aResetInfo" style="font-size:11px;color:var(--muted);flex:1">Ostatnie uzupełnienie zapasów: <span id="r134aResetDate" style="color:var(--text)">—</span></div>
+      <button onclick="window.resetR134aCounter()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.4)">❄ Uzupełniłem zapasy — resetuj licznik</button>
+    </div>
+  </div>
+  <!-- LICZNIK R1234yf -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-top:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:#f59e0b;letter-spacing:2px;margin-bottom:12px">❄ ZUŻYCIE R1234yf</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <button onclick="window.calcR1234yf('all')" id="r1234Btn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:#f59e0b;color:#000;border:1px solid #f59e0b">Całość</button>
+      <button onclick="window.calcR1234yf('month')" id="r1234Btn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten miesiąc</button>
+      <button onclick="window.calcR1234yf('week')" id="r1234Btn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten tydzień</button>
+      <button onclick="window.calcR1234yf('year')" id="r1234Btn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Ten rok</button>
+    </div>
+    <div id="r1234Result" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NABITO ŁĄCZNIE</div>
+        <div id="r1234Filled" style="font-family:var(--mono);font-size:18px;font-weight:700;color:#f59e0b">—</div>
+        <div style="font-size:10px;color:var(--muted)">gramów</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ODZYSKANO</div>
+        <div id="r1234Recovered" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green)">—</div>
+        <div style="font-size:10px;color:var(--muted)">gramów</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ZUŻYTO NETTO</div>
+        <div id="r1234Net" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)">—</div>
+        <div style="font-size:10px;color:var(--muted)">gramów</div>
+      </div>
+    </div>
+    <div id="r1234Details" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono)"></div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div id="r1234ResetInfo" style="font-size:11px;color:var(--muted);flex:1">Ostatnie uzupełnienie zapasów: <span id="r1234ResetDate" style="color:var(--text)">—</span></div>
+      <button onclick="window.resetR1234yfCounter()" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.4)">❄ Uzupełniłem zapasy — resetuj licznik</button>
+    </div>
+  </div>
+  <!-- LICZNIK ZAROBKÓW NA KLIMIE -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-top:14px">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:12px">💰 ZAROBKI NA KLIMIE</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <button onclick="window.setKlimaEarnPeriod('day')" id="keBtn_day" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:var(--accent);color:#000;border:1px solid var(--accent)">Dzień</button>
+      <button onclick="window.setKlimaEarnPeriod('week')" id="keBtn_week" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Tydzień</button>
+      <button onclick="window.setKlimaEarnPeriod('month')" id="keBtn_month" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Miesiąc</button>
+      <button onclick="window.setKlimaEarnPeriod('year')" id="keBtn_year" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Rok</button>
+      <button onclick="window.setKlimaEarnPeriod('all')" id="keBtn_all" style="width:auto;padding:6px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">Całość</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:var(--surface);border:1px solid rgba(6,182,212,0.3);border-radius:4px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">R134a</div>
+        <div id="keSum134" style="font-family:var(--mono);font-size:20px;font-weight:700;color:#06b6d4">— zł</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">R1234yf</div>
+        <div id="keSum1234" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)">— zł</div>
+      </div>
+    </div>
+    <div id="keTotal" style="text-align:center;margin-top:8px;font-size:12px;color:var(--muted);font-family:var(--mono)"></div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;font-family:var(--mono)">DODAJ WPIS RĘCZNY</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input id="keAmount" type="number" placeholder="Kwota zł" inputmode="numeric" style="flex:1;min-width:0;margin:0"/>
+        <input id="keDate" type="date" style="flex:1;min-width:0;margin:0"/>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <label id="keGas134_label" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;padding:9px;background:rgba(6,182,212,0.12);border:2px solid #06b6d4;border-radius:6px;user-select:none" onclick="window.setKeGas('R134a')">
+          <span class="kecbx" style="font-size:16px">◉</span> R134a
+        </label>
+        <label id="keGas1234_label" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;padding:9px;background:var(--surface2);border:2px solid var(--border);border-radius:6px;user-select:none" onclick="window.setKeGas('R1234yf')">
+          <span class="kecbx" style="font-size:16px;color:var(--muted)">○</span> R1234yf
+        </label>
+      </div>
+      <button onclick="window.addKlimaEarning()" style="background:var(--accent);color:#000">＋ Dodaj wpis</button>
+      <div id="keList" style="margin-top:10px"></div>
+    </div>
+  </div>
+  </div>
+
 </div>
 
 <div id="klimaPriceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center">
@@ -1042,22 +1085,6 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     <div id="tireResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.7"></div>
   </div>
 
-  <!-- SKANER KARTKI -->
-  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
-    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">📷 SKANUJ KARTKĘ Z KLIENTAMI</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Zrób zdjęcie kartki — AI odczyta dane i przygotuje wpisy.</div>
-    <input type="file" id="scanPhoto" accept="image/*" capture="environment" onchange="window.scanPhoto(this)" style="margin-bottom:8px;font-size:13px"/>
-    <div id="scanStatus" style="display:none;font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:8px"></div>
-    <div id="scanResults" style="display:none">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:2px;margin-bottom:8px">ROZPOZNANE WPISY</div>
-      <div id="scanEntries"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <select id="scanTarget" style="flex:1"><option value="list">→ Lista wizyt</option><option value="orders">→ Zlecenia</option></select>
-        <button onclick="window.saveScanResults()" style="flex:1;background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.4)">💾 Zapisz wszystkie</button>
-      </div>
-    </div>
-  </div>
-
   <!-- DEKODER VIN -->
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🔑 DEKODER VIN</div>
@@ -1067,15 +1094,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
         oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')window.decodeVin()"/>
       <button onclick="window.decodeVin()" style="width:auto;padding:8px 16px;font-size:12px;background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.4);letter-spacing:1px">🔍 Dekoduj</button>
     </div>
-    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
-      <label style="font-size:11px;color:var(--muted);white-space:nowrap">📷 Skanuj VIN:</label>
-      <input type="file" id="vinPhoto" accept="image/*" capture="environment"
-        onchange="window.scanVinPhoto(this)"
-        style="flex:1;font-size:12px;padding:4px"/>
-    </div>
-    <div id="vinScanStatus" style="display:none;font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:6px"></div>
     <div id="vinResult" style="margin-top:10px;display:none;padding:12px;border-radius:4px;font-size:13px;line-height:1.8"></div>
-    <div id="vinAiResult" style="display:none;margin-top:10px;font-size:13px;line-height:1.7;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:4px"></div>
   </div>
 </div>
 
@@ -1814,6 +1833,14 @@ function initPublic() {
       el.textContent = v ? (typeof v === 'number' ? new Date(v).toLocaleString('pl-PL') : v) : '—';
     }
   });
+  onValue(ref(db, 'invoices/r1234yfReset'), snap => {
+    window._r1234yfResetDate = snap.val() || null;
+    const el = document.getElementById('r1234ResetDate');
+    if (el) {
+      const v = window._r1234yfResetDate;
+      el.textContent = v ? (typeof v === 'number' ? new Date(v).toLocaleString('pl-PL') : v) : '—';
+    }
+  });
 }
 function initApp() {
   unsubscribeAll();
@@ -1877,6 +1904,15 @@ function initApp() {
       el.textContent = v ? (typeof v === 'number' ? new Date(v).toLocaleString('pl-PL') : v) : '—';
     }
     window.calcR134a('all');
+  });
+  onValue(ref(db, 'invoices/r1234yfReset'), snap => {
+    window._r1234yfResetDate = snap.val() || null;
+    const el = document.getElementById('r1234ResetDate');
+    if (el) {
+      const v = window._r1234yfResetDate;
+      el.textContent = v ? (typeof v === 'number' ? new Date(v).toLocaleString('pl-PL') : v) : '—';
+    }
+    window.calcR1234yf('all');
   });
   onValue(ref(db, 'klima'), snap => {
     klimas = snap.val() || {};
@@ -2721,6 +2757,20 @@ window.renderArchiveFirmy = function() {
       </div>
     </div>`;
   }).join('');
+};
+
+window.switchKlimaSubtab = function(tab) {
+  ['orders','stats'].forEach(t => {
+    const panel = document.getElementById('klima-subpanel-'+t);
+    const btn = document.getElementById('klima-subtab-'+t);
+    if (panel) panel.style.display = tab===t ? 'block' : 'none';
+    if (btn) {
+      btn.style.background = tab===t ? 'var(--accent)' : 'transparent';
+      btn.style.color = tab===t ? '#000' : 'var(--muted)';
+    }
+  });
+  if (tab==='stats') { window.calcR134a('all'); window.calcR1234yf('all'); if (typeof renderKlimaEarnings === 'function') renderKlimaEarnings(); }
+  else renderKlima();
 };
 
 window.switchArchiveTab = function(tab) {
@@ -4576,7 +4626,7 @@ window.calcKlimaPrice = function() {
   const z = x - y;
   // Podpięcie: R134a = 49 zł, R1234yf = 98 zł (gdy pojemność > 0 lub ściągnięto > 0)
   // Czynnik: R134a = 0,39 zł/g, R1234yf = 1 zł/g
-  const gasRate = (gas === 'R1234yf') ? 1 : 0.39;
+  const gasRate = (gas === 'R1234yf') ? 1 : (prices.klima_rate||39)/100;
   const connectBase = (gas === 'R1234yf') ? 98 : 49;
   const connectFee = (x === 0 && y === 0) ? 0 : connectBase;
   const gasCost = z > 0 ? z * gasRate : 0;
@@ -4666,7 +4716,7 @@ window.renderKlima = function() {
             <button onclick="deleteKlima('${k}')" style="width:auto;padding:5px 8px;font-size:12px;letter-spacing:0;background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.3)">✕</button>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-            ${o.price!=null&&o.price<(((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))/100*39+50)+(o.filter?50:0)+(o.ozone?30:0))?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${Math.round((1-o.price/((((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))/100*39+50)+(o.filter?50:0)+(o.ozone?30:0))))*100)}%</span>`:''}
+            ${o.price!=null&&o.price<(((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))/100*(prices.klima_rate||39)+50)+(o.filter?50:0)+(o.ozone?30:0))?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${Math.round((1-o.price/((((parseFloat(o.capacity||0)-parseFloat(o.recovered||0))/100*(prices.klima_rate||39)+50)+(o.filter?50:0)+(o.ozone?30:0))))*100)}%</span>`:''}
             ${priceHtml}
           </div>
         </div>
@@ -5919,165 +5969,10 @@ window.searchTires = function() {
 };
 
 
-// ── AI API ──
-let _anthropicKey = null;
-const _ANTHROPIC_KEY_DEFAULT = null; // klucz zarządzany przez Cloudflare Worker
-
-async function callClaude(body) {
-  const resp = await fetch('https://black-boat-0f91.mati6330-mj.workers.dev', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!resp.ok) throw new Error('Błąd API: ' + resp.status);
-  return resp.json();
-}
-
-
-// ── SKANER KARTKI ──
-let _scanData = [];
-
-window.scanPhoto = async function(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const status = document.getElementById('scanStatus');
-  const results = document.getElementById('scanResults');
-  const entries = document.getElementById('scanEntries');
-  status.style.display = 'block';
-  results.style.display = 'none';
-  status.textContent = '⟳ Analizuję zdjęcie...';
-  try {
-    const b64 = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result.split(',')[1]);
-      r.onerror = rej;
-      r.readAsDataURL(file);
-    });
-    const data = await callClaude({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
-        { type: 'text', text: 'To jest kartka z zapisanymi klientami serwisu oponiarskiego. Odczytaj wszystkie wpisy i zwróć JSON array. Każdy wpis jako obiekt z polami (tylko jeśli widoczne): name, phone, car, service, time, note. Odpowiedz TYLKO JSON array. Przykład: [{"name":"Kowalski","phone":"600123456","car":"VW Golf","time":"09:00"}]' }
-      ]}]
-    });
-    const text = data.content?.[0]?.text || '[]';
-    _scanData = JSON.parse(text.replace(/```json|```/g,'').trim());
-    if (!_scanData.length) { status.textContent = '⚠ Nie rozpoznano żadnych wpisów'; return; }
-    status.textContent = `✔ Rozpoznano ${_scanData.length} wpisów`;
-    entries.innerHTML = _scanData.map((e,i) => `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:6px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:11px;font-family:var(--mono);color:var(--muted)">#${i+1}</span>
-          <button onclick="window.removeScanEntry(${i})" style="width:auto;padding:2px 8px;font-size:11px;background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)">✕</button>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-          <input placeholder="Imię" value="${e.name||''}" oninput="_scanData[${i}].name=this.value" style="font-size:12px;padding:5px 8px"/>
-          <input placeholder="Telefon" value="${e.phone||''}" oninput="_scanData[${i}].phone=this.value" style="font-size:12px;padding:5px 8px"/>
-          <input placeholder="Auto" value="${e.car||''}" oninput="_scanData[${i}].car=this.value" style="font-size:12px;padding:5px 8px"/>
-          <input placeholder="Godzina" value="${e.time||''}" oninput="_scanData[${i}].time=this.value" style="font-size:12px;padding:5px 8px"/>
-          <input placeholder="Usługa" value="${e.service||''}" oninput="_scanData[${i}].service=this.value" style="font-size:12px;padding:5px 8px;grid-column:span 2"/>
-        </div>
-      </div>`).join('');
-    results.style.display = 'block';
-  } catch(e) { status.textContent = '✗ Błąd: ' + e.message; }
-};
-
-window.removeScanEntry = function(i) {
-  _scanData.splice(i, 1);
-  // Przerysuj
-  const entries = document.getElementById('scanEntries');
-  entries.innerHTML = _scanData.map((e,i) => `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:6px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:11px;font-family:var(--mono);color:var(--muted)">#${i+1}</span>
-        <button onclick="window.removeScanEntry(${i})" style="width:auto;padding:2px 8px;font-size:11px;background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)">✕</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-        <input placeholder="Imię" value="${e.name||''}" oninput="_scanData[${i}].name=this.value" style="font-size:12px;padding:5px 8px"/>
-        <input placeholder="Telefon" value="${e.phone||''}" oninput="_scanData[${i}].phone=this.value" style="font-size:12px;padding:5px 8px"/>
-        <input placeholder="Auto" value="${e.car||''}" oninput="_scanData[${i}].car=this.value" style="font-size:12px;padding:5px 8px"/>
-        <input placeholder="Godzina" value="${e.time||''}" oninput="_scanData[${i}].time=this.value" style="font-size:12px;padding:5px 8px"/>
-        <input placeholder="Usługa" value="${e.service||''}" oninput="_scanData[${i}].service=this.value" style="font-size:12px;padding:5px 8px;grid-column:span 2"/>
-      </div>
-    </div>`).join('');
-};
-
-window.saveScanResults = async function() {
-  const target = document.getElementById('scanTarget').value;
-  const today = getToday();
-  let saved = 0;
-  for (const e of _scanData) {
-    if (!e.name && !e.phone) continue;
-    if (target === 'list') {
-      await push(ref(db, 'wizyty'), { name:e.name||'', phone:e.phone||'', car:e.car||'', service:e.service||'Wymiana opon', time:e.time||'', date:today, wheel:'Aluminiowe', status:false, note:e.note||'', createdAt:Date.now() });
-    } else {
-      await push(ref(db, 'zlecenia'), { name:e.name||'', phone:e.phone||'', car:e.car||'', service:e.service||'Wymiana opon', dateStamp:today, status:false, note:e.note||'', createdAt:Date.now() });
-    }
-    saved++;
-  }
-  showToast(`✔ Zapisano ${saved} wpisów`, 'var(--green)');
-  document.getElementById('scanResults').style.display = 'none';
-  document.getElementById('scanStatus').textContent = '';
-  document.getElementById('scanPhoto').value = '';
-  _scanData = [];
-};
-
-// ── SZCZEGÓŁY TECHNICZNE AI ──
-window.askClimaTech = async function(make, model, year, engine) {
-  const box = document.getElementById('climaTechResult');
-  box.style.display = 'block';
-  box.innerHTML = '⟳ Pobieram informacje techniczne...';
-  const carDesc = [make, model, year, engine].filter(Boolean).join(' ');
-  try {
-    const data = await callClaude({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: `Jestem mechanikiem w serwisie klimatyzacji. Podaj praktyczne informacje dla: ${carDesc}.\n\n1. 🔌 Złącza serwisowe (wysokie/niskie ciśnienie) — lokalizacja\n2. 🔩 Rodzaj zaworków\n3. 🌬️ Filtr kabinowy — gdzie i jak wymienić\n4. ⚠️ Specyficzne uwagi\n\nPo polsku, krótko i konkretnie.` }]
-    });
-    const text = (data.content && data.content[0] && data.content[0].text)
-      ? data.content[0].text
-      : (data.error ? '✗ ' + data.error.message : JSON.stringify(data));
-    box.innerHTML = text.replace(/\n/g, '<br>');
-  } catch(e) { box.innerHTML = '✗ Błąd: ' + e.message; }
-};
-
 // ── WYSZUKIWARKA R134a ──
 // R134A_DB załadowana z klima.js
 
-// ── DEKODER VIN z API ──
-window.scanVinPhoto = async function(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const status = document.getElementById('vinScanStatus');
-  status.style.display = 'block';
-  status.textContent = '⟳ Odczytuję numer VIN ze zdjęcia...';
-  try {
-    const b64 = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result.split(',')[1]);
-      r.onerror = rej;
-      r.readAsDataURL(file);
-    });
-    const data = await callClaude({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 100,
-      messages: [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
-        { type: 'text', text: 'Odczytaj numer VIN ze zdjęcia. Zwróć TYLKO 17-znakowy numer VIN, bez żadnego innego tekstu. Jeśli nie możesz odczytać, zwróć samo słowo: BRAK' }
-      ]}]
-    });
-    const vin = (data.content?.[0]?.text || '').trim().toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '');
-    if (vin === 'BRAK' || vin.length !== 17) {
-      status.textContent = '⚠ Nie udało się odczytać VIN — spróbuj wyraźniejsze zdjęcie';
-      return;
-    }
-    status.textContent = `✔ Odczytano: ${vin}`;
-    document.getElementById('vin_input').value = vin;
-    window.decodeVin();
-  } catch(e) { status.textContent = '✗ Błąd: ' + e.message; }
-};
-
+// ── DEKODER VIN ──
 window.decodeVin = async function() {
   const vin = document.getElementById('vin_input').value.trim().toUpperCase();
   const result = document.getElementById('vinResult');
@@ -6211,22 +6106,6 @@ window.decodeVin = async function() {
     row('Nr seryjny (12–17)', serial, true) +
     row('Cyfra kontrolna (9)', `${checkDigit} ${checkOK ? '✔ poprawna' : '✗ niepoprawna — VIN może być sfałszowany'}`) +
     `</table>`;
-
-  // Analiza AI po lokalnym dekodowaniu
-  const aiBox = document.getElementById('vinAiResult');
-  aiBox.style.display = 'block';
-  aiBox.innerHTML = '⟳ Pobieram szczegółowe dane z AI...';
-  try {
-    const aiData = await callClaude({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: 'Podaj wszystkie dostępne informacje o samochodzie z numerem VIN: ' + vin + '.\n\nOdpowiedz po polsku:\n- Marka i model\n- Rok produkcji\n- Wersja / silnik / skrzynia\n- Kraj produkcji i fabryka\n- Znane problemy lub kampanie serwisowe\n- Inne istotne informacje\n\nJeśli nie możesz zidentyfikować konkretnego auta, podaj co wiesz na podstawie WMI i VDS.' }]
-    });
-    const aiText = (aiData.content && aiData.content[0] && aiData.content[0].text) ? aiData.content[0].text : 'Brak odpowiedzi';
-    aiBox.innerHTML = aiText.replace(/\n/g, '<br>');
-  } catch(e) {
-    aiBox.innerHTML = '✗ Błąd AI: ' + e.message;
-  }
 };
 
 window.searchR134a = function() {
@@ -6362,11 +6241,7 @@ window.searchR134a = function() {
     engineHeader +
     '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">ILOŚĆ</th>' +
     '<th style="text-align:left;padding:3px 6px;color:var(--muted);font-size:10px">CZYNNIK</th>' +
-    '</tr></thead><tbody>' + rows + '</tbody></table>' +
-    '<button onclick="window.askClimaTech(\'' + matches[0][0] + '\',\'' + matches[0][1] + '\',' + (year||'') + ',\'' + (engineStr||'') + '\')" ' +
-    'style="width:100%;margin-top:10px;background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.4);font-size:12px;letter-spacing:1px">' +
-    '🤖 Szczegóły techniczne (AI)</button>' +
-    '<div id="climaTechResult" style="display:none;margin-top:10px;font-size:13px;line-height:1.7;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px"></div>';
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
 
   // Własne serwisy z Firebase
   const norm2 = s => (s||'').toLowerCase().replace(/[\s\-./]/g,'');
@@ -6421,7 +6296,7 @@ window.showTab = function(id, el) {
   if (id==='list') window.renderList();
   if (id==='orders') window.renderOrders();
   if (id==='quickview') renderQuickView();
-  if (id==='cash') { window.calculateCash(); window.calcR134a('all'); }
+  if (id==='cash') { window.calculateCash(); }
   if (id==='archive') { window.renderArchive(); if (archiveTab==='prz') window.renderArchivePrz(); }
   if (id==='pricing') window.renderPricing();
   if (id==='klima') window.renderKlima();
@@ -6461,7 +6336,7 @@ window.printKlima = function(k) {
   const recovered = o.recovered || 0;
   const filled = Math.max(0, capacity - recovered);
   const gas = o.gas || 'R134a';
-  const gasRate = (gas === 'R1234yf') ? 1 : 0.39;
+  const gasRate = (gas === 'R1234yf') ? 1 : (prices.klima_rate||39)/100;
   const connectBase = (gas === 'R1234yf') ? 98 : 49;
   const connectFee = (capacity === 0 && recovered === 0) ? 0 : connectBase;
   const gasPrice = filled > 0 ? Math.round(filled * gasRate) : 0;
@@ -6643,6 +6518,7 @@ window.calcR134a = function(period) {
     if (!k.status) return false;                            // tylko zakończone
     if (k.price == null || k.price === '') return false;   // tylko z ustaloną ceną
     if (!k.capacity || parseFloat(k.capacity) <= 0) return false; // musi być pojemność
+    if ((k.gas||'R134a') !== 'R134a') return false;               // tylko R134a
     const realDate = k.end || k.start || '';
     if (!realDate) return false;
     // Filtr po timestamp resetu (dokładny moment)
@@ -6690,6 +6566,82 @@ window.resetR134aCounter = async function() {
     if (el) el.textContent = new Date(now).toLocaleString('pl-PL');
     showToast('❄ Zapasy uzupełnione — licznik zresetowany', '#06b6d4');
     window.calcR134a('all');
+  } catch(e) {
+    showToast('❌ Błąd: ' + e.message, 'var(--red)');
+  }
+};
+
+window.calcR1234yf = function(period) {
+  ['all','month','week','year'].forEach(p => {
+    const btn = document.getElementById('r1234Btn_' + p);
+    if (!btn) return;
+    const active = p === period;
+    btn.style.background = active ? '#f59e0b' : 'transparent';
+    btn.style.color = active ? '#000' : 'var(--muted)';
+    btn.style.borderColor = active ? '#f59e0b' : 'var(--border)';
+  });
+
+  const now = new Date();
+
+  let dateFrom = null;
+  if (period === 'week') {
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    dateFrom = formatDate(mon);
+  } else if (period === 'month') {
+    dateFrom = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  } else if (period === 'year') {
+    dateFrom = `${now.getFullYear()}-01-01`;
+  }
+
+  const resetTs = (period === 'all' && window._r1234yfResetDate && typeof window._r1234yfResetDate === 'number')
+    ? window._r1234yfResetDate : null;
+
+  const entries = Object.values(klimas).filter(k => {
+    if (!k) return false;
+    if (!k.status) return false;
+    if (k.price == null || k.price === '') return false;
+    if (!k.capacity || parseFloat(k.capacity) <= 0) return false;
+    if ((k.gas||'R134a') !== 'R1234yf') return false;
+    const realDate = k.end || k.start || '';
+    if (!realDate) return false;
+    if (resetTs && (k.createdAt || 0) < resetTs) return false;
+    if (!resetTs && dateFrom && realDate < dateFrom) return false;
+    return true;
+  });
+
+  let totalCapacity = 0, totalRecovered = 0, count = 0;
+  entries.forEach(k => {
+    totalCapacity += parseFloat(k.capacity) || 0;
+    totalRecovered += parseFloat(k.recovered) || 0;
+    count++;
+  });
+
+  const net = Math.max(0, totalCapacity - totalRecovered);
+
+  document.getElementById('r1234Filled').textContent = totalCapacity + ' g';
+  document.getElementById('r1234Recovered').textContent = totalRecovered + ' g';
+  document.getElementById('r1234Net').textContent = net + ' g';
+
+  const periodLabel = period === 'all'
+    ? (window._r1234yfResetDate ? `od ${window._r1234yfResetDate}` : 'cały czas')
+    : {month:'bieżący miesiąc', week:'bieżący tydzień', year:'bieżący rok'}[period];
+  const kg = (net / 1000).toFixed(3).replace('.', ',');
+  document.getElementById('r1234Details').textContent = count > 0
+    ? `${periodLabel} · ${count} serwisów · nabito ${totalCapacity}g · odzyskano ${totalRecovered}g · z butli: ${net}g (${kg} kg)`
+    : `${periodLabel} · brak zrealizowanych serwisów z ustaloną ceną`;
+};
+
+window.resetR1234yfCounter = async function() {
+  if (!confirm('Potwierdzasz uzupełnienie zapasów R1234yf?\nLicznik będzie liczył od tego momentu.')) return;
+  const now = Date.now();
+  try {
+    await set(ref(db, 'invoices/r1234yfReset'), now);
+    window._r1234yfResetDate = now;
+    const el = document.getElementById('r1234ResetDate');
+    if (el) el.textContent = new Date(now).toLocaleString('pl-PL');
+    showToast('❄ Zapasy uzupełnione — licznik zresetowany', '#f59e0b');
+    window.calcR1234yf('all');
   } catch(e) {
     showToast('❌ Błąd: ' + e.message, 'var(--red)');
   }
