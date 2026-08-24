@@ -753,7 +753,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 <button onclick="window.exportAllData()" style="background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.4)">⬇ Eksportuj wszystkie dane (JSON)</button>
 <button onclick="window.exportAllDataCSV()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (CSV)</button>
 <button onclick="window.exportAllDataPDF()" style="margin-top:6px;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.3)">⬇ Eksportuj wszystkie dane (PDF)</button>
-<button onclick="window.cleanOldData()" style="margin-top:6px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń wszystkie dane (wizyty, zlecenia, klima)</button>
+<button id="cleanOldDataBtn" onclick="window.cleanOldData()" style="margin-top:6px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.35)">🗑 Usuń wszystkie dane (wizyty, zlecenia, klima)</button>
 </div>
 
 <div class="section" id="archive">
@@ -5887,30 +5887,32 @@ window.cleanOldData = async function() {
   );
   if (!confirmed) return;
 
-  let deleted = 0;
+  const btn = document.getElementById('cleanOldDataBtn');
+  if (btn) { if (btn.disabled) return; btn.disabled = true; btn.textContent = '⟳ Usuwanie...'; }
 
-  // Usuń wszystkie wizyty
-  for (const [k, v] of Object.entries(visits)) {
-    await remove(ref(db, 'wizyty/' + k));
-    await remove(ref(db, 'slots/' + k));
-    deleted++;
+  const visitKeys = Object.keys(visits);
+  const orderKeys = Object.keys(orders);
+  const klimaKeys = Object.keys(klimas).filter(k => klimas[k]);
+  const deleted = visitKeys.length + orderKeys.length + klimaKeys.length;
+
+  showToast('⟳ Usuwanie ' + deleted + ' wpisów...', 'var(--muted)');
+
+  const promises = [];
+  visitKeys.forEach(k => {
+    promises.push(remove(ref(db, 'wizyty/' + k)));
+    promises.push(remove(ref(db, 'slots/' + k)));
+  });
+  orderKeys.forEach(k => promises.push(remove(ref(db, 'zlecenia/' + k))));
+  klimaKeys.forEach(k => promises.push(remove(ref(db, 'klima/' + k))));
+
+  try {
+    await Promise.all(promises);
+    showToast(`✔ Usunięto wszystkie dane (${deleted} wpisów)`, 'var(--green)');
+  } catch(e) {
+    showToast('❌ Błąd podczas usuwania: ' + e.message, 'var(--red)');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🗑 Usuń wszystkie dane (wizyty, zlecenia, klima)'; }
   }
-
-  // Usuń wszystkie zlecenia
-  for (const [k, o] of Object.entries(orders)) {
-    await remove(ref(db, 'zlecenia/' + k));
-    deleted++;
-  }
-
-  // Usuń wszystkie klima
-  for (const [k, kl] of Object.entries(klimas)) {
-    if (kl) {
-      await remove(ref(db, 'klima/' + k));
-      deleted++;
-    }
-  }
-
-  showToast(`✔ Usunięto wszystkie dane (${deleted} wpisów)`);
 };
 
 window.showPrivacyPolicy = function() { document.getElementById('privacyModal').style.display = 'block'; };
