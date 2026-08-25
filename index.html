@@ -3139,6 +3139,10 @@ window.renderList = function renderList() {
             <button id="qe_wh_${k}_Aluminiowe" onclick="qeSet('${k}','wheel','Aluminiowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Aluminiowe'?'#4f8ef7':'var(--surface2)'};color:${v.wheel==='Aluminiowe'?'#000':'var(--text)'};border:1px solid var(--border)">Aluminiowe</button>
             <button id="qe_wh_${k}_Stalowe" onclick="qeSet('${k}','wheel','Stalowe')" style="padding:7px;font-size:12px;margin:0;background:${v.wheel==='Stalowe'?'#4f8ef7':'var(--surface2)'};color:${v.wheel==='Stalowe'?'#000':'var(--text)'};border:1px solid var(--border)">Stalowe</button>
           </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">ILOŚĆ KÓŁ</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;margin-bottom:8px">
+            ${[1,2,3,4].map(n=>`<button id="qe_wc_${k}_${n}" onclick="qeSet('${k}','wheelCount',${n})" style="padding:6px 3px;font-size:12px;font-family:var(--mono);margin:0;background:${(parseInt(v.wheelCount)||4)===n?'#4f8ef7':'var(--surface2)'};color:${(parseInt(v.wheelCount)||4)===n?'#000':'var(--text)'};border:1px solid var(--border)">${n}</button>`).join('')}
+          </div>
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">DODATKI</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;margin-bottom:8px">
             <button id="qe_rf_${k}" onclick="qeToggle('${k}','runflat')" style="padding:6px 3px;font-size:11px;margin:0;background:${v.runflat?'#4f8ef7':'var(--surface2)'};color:${v.runflat?'#000':'var(--text)'};border:1px solid var(--border)">Run-flat</button>
@@ -3525,6 +3529,7 @@ window.toggleSizePicker = function(k) {
       service: v.service || '',
       tireSize: v.tireSize || '',
       wheel: v.wheel || '',
+      wheelCount: parseInt(v.wheelCount) || 4,
       runflat: !!v.runflat,
       low: !!v.low,
       valve: !!v.valve,
@@ -3556,6 +3561,12 @@ window.qeSet = function(k, field, value) {
       if (b) { b.style.background = w===value?'#4f8ef7':'var(--surface2)'; b.style.color = w===value?'#000':'var(--text)'; }
     });
   }
+  if (field === 'wheelCount') {
+    [1,2,3,4].forEach(n => {
+      const b = document.getElementById('qe_wc_' + k + '_' + n);
+      if (b) { b.style.background = n===value?'#4f8ef7':'var(--surface2)'; b.style.color = n===value?'#000':'var(--text)'; }
+    });
+  }
 };
 
 window.qeToggle = function(k, field) {
@@ -3576,7 +3587,7 @@ window.qeSave = async function(k) {
   merged.valveCount = qe.valve ? 4 : 0;
   const price = calcVisitPrice(merged);
   const upd = { service: qe.service, tireSize: merged.tireSize, wheel: qe.wheel,
-    runflat: qe.runflat, low: qe.low, valve: qe.valve, valveCount: merged.valveCount,
+    wheelCount: qe.wheelCount, runflat: qe.runflat, low: qe.low, valve: qe.valve, valveCount: merged.valveCount,
     bus: qe.bus, note: qe.note, price };
   await update(ref(db, 'wizyty/' + k), upd);
   showToast('✔ Zapisano', 'var(--green)');
