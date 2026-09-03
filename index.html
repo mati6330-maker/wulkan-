@@ -3117,11 +3117,10 @@ window.renderList = function renderList() {
                 const base=calcVisitPrice(v);
                 const curr=v.price!==undefined?v.price:base;
                 const tmpPrice = v.storageRef && zamowienia_tmp[v.storageRef] ? (zamowienia_tmp[v.storageRef].price||0) : 0;
-                const total = curr + tmpPrice;
                 const disc=base>0?Math.round((1-curr/base)*100):0;
                 const discHtml = disc>0?`<span style="font-family:var(--mono);font-size:10px;color:#f59e0b">−${disc}%</span>`:'';
-                const tmpHtml = tmpPrice?`<span style="font-size:10px;color:var(--muted)"> +${tmpPrice}zł</span>`:'';
-                return discHtml+`<span id="price-${k}" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${total} zł</span>`+tmpHtml;
+                const tmpHtml = tmpPrice?`<span style="font-family:var(--mono);font-size:12px;font-weight:700;color:#34d399"> + ${tmpPrice} zł opony</span>`:'';
+                return discHtml+`<span id="price-${k}" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${curr} zł</span>`+tmpHtml;
               })()}
           </div>
         </div>
@@ -3242,8 +3241,8 @@ window.printVisit = function(k) {
       ${extras ? `<tr><td>Dodatki</td><td>${extras}</td></tr>` : ''}
       ${v.note ? `<tr><td>Notatka</td><td>${v.note}</td></tr>` : ''}
       ${v.storageNote ? `<tr><td>Przechowalnia</td><td>${v.storageNote}</td></tr>` : ''}
-      ${tmpPrice ? `<tr><td>Opony (cena)</td><td>${tmpPrice} zł</td></tr>` : ''}
-      ${tmpPrice ? `<tr><td>Usługa</td><td>${price} zł</td></tr>` : ''}
+      <tr><td>Usługa</td><td>${price} zł</td></tr>
+      <tr><td>Opony (cena)</td><td>${tmpPrice} zł</td></tr>
       <tr class="total"><td>Do zapłaty</td><td>${totalPrice} zł</td></tr>
     </table>
   </body></html>`;
