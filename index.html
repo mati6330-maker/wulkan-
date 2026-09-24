@@ -1781,6 +1781,146 @@ function calcVisitPrice(v, isOrder = false) {
 
   return Math.max(0, price);
 }
+// ── Dopasowanie kwoty do usługi (Podgląd — szybki wpis kwoty) ──
+function buildPriceCandidates() {
+  const cands = [];
+  const push = (label, v) => {
+    const price = calcVisitPrice(v);
+    if (price > 0) cands.push({ label, price, v });
+  };
+  [4, 3, 2, 1].forEach(wc => {
+    const wcTag = wc < 4 ? ` (${wc} szt.)` : '';
+    push(`Wymiana opon, Stalowe ≤16"${wcTag}`, { service: 'Wymiana opon', wheel: 'Stalowe', tireSize: 16, wheelCount: wc });
+    push(`Wymiana opon, Stalowe ≥17"${wcTag}`, { service: 'Wymiana opon', wheel: 'Stalowe', tireSize: 17, wheelCount: wc });
+    [16, 17, 18, 19, 20, 21, 22].forEach(size => {
+      push(`Wymiana opon, Aluminiowe ${size}"${wcTag}`, { service: 'Wymiana opon', wheel: 'Aluminiowe', tireSize: size, wheelCount: wc });
+    });
+    ['Stalowe', 'Aluminiowe'].forEach(wheel => {
+      push(`Wymiana kół, ${wheel} ≤16"${wcTag}`, { service: 'Wymiana kół', wheel, tireSize: 16, wheelCount: wc });
+      push(`Wymiana kół, ${wheel} ≥17"${wcTag}`, { service: 'Wymiana kół', wheel, tireSize: 17, wheelCount: wc });
+    });
+    push(`Wyważenie kół, Stalowe ≤16"${wcTag}`, { service: 'Wyważenie kół', wheel: 'Stalowe', tireSize: 16, wheelCount: wc });
+    push(`Wyważenie kół, Stalowe >16"${wcTag}`, { service: 'Wyważenie kół', wheel: 'Stalowe', tireSize: 17, wheelCount: wc });
+    push(`Wyważenie kół, Aluminiowe ≤15"${wcTag}`, { service: 'Wyważenie kół', wheel: 'Aluminiowe', tireSize: 15, wheelCount: wc });
+    push(`Wyważenie kół, Aluminiowe 16-17"${wcTag}`, { service: 'Wyważenie kół', wheel: 'Aluminiowe', tireSize: 17, wheelCount: wc });
+    push(`Wyważenie kół, Aluminiowe >17"${wcTag}`, { service: 'Wyważenie kół', wheel: 'Aluminiowe', tireSize: 18, wheelCount: wc });
+  });
+  [1, 2, 3, 4].forEach(rc => {
+    const rcTag = ` (${rc} szt.)`;
+    push(`Naprawa opony${rcTag}`, { service: 'Naprawa opony', wheel: 'Stalowe', tireSize: 16, wheelCount: rc });
+    push(`Naprawa opony${rcTag} + Run-flat`, { service: 'Naprawa opony', wheel: 'Stalowe', tireSize: 16, wheelCount: rc, runflat: true });
+    push(`Naprawa opony${rcTag} + Niski profil`, { service: 'Naprawa opony', wheel: 'Stalowe', tireSize: 16, wheelCount: rc, low: true });
+    push(`Naprawa opony${rcTag} + Nowy wentyl`, { service: 'Naprawa opony', wheel: 'Stalowe', tireSize: 16, wheelCount: rc, valve: true, valveCount: rc });
+  });
+  return cands;
+}
+
+window.matchAmountToService = function(amount) {
+  const tolerance = 3;
+  const withDiff = buildPriceCandidates()
+    .map(c => ({ ...c, diff: Math.abs(c.price - amount) }))
+    .filter(c => c.diff <= tolerance);
+  withDiff.sort((a, b) => a.diff - b.diff || a.price - b.price);
+  const exact = withDiff.filter(c => c.diff === 0);
+  const best = exact.length ? exact : withDiff;
+  const seen = new Set();
+  const uniq = [];
+  for (const c of best) {
+    const dedupeKey = c.label + '|' + c.price;
+    if (!seen.has(dedupeKey)) { seen.add(dedupeKey); uniq.push(c); }
+  }
+  return uniq.slice(0, 8);
+};
+
+window.quickPriceEntry = async function(key) {
+  const v = visits[key];
+  if (!v) { showToast('❌ Nie znaleziono wizyty', 'var(--red)'); return; }
+  const current = (v.price !== undefined && v.price !== null) ? v.price : '';
+  const input = prompt(`Kwota za wizytę ${v.time}${v.name ? ' — ' + v.name : ''}:`, current);
+  if (input === null) return;
+  const amount = Math.round(parseFloat(String(input).replace(',', '.')));
+  if (!amount || amount <= 0) { showToast('❌ Nieprawidłowa kwota', 'var(--red)'); return; }
+
+  const chosen = await window.resolvePriceMatch(amount);
+  if (chosen === undefined) return; // anulowano
+  if (chosen === null) {
+    if (!confirm(`Żadna usługa z cennika nie pasuje do kwoty ${amount} zł.\nZapisać samą kwotę bez zmiany usługi?`)) return;
+    await update(ref(db, 'wizyty/' + key), { price: amount });
+    showToast('✔ Zapisano kwotę ' + amount + ' zł');
+    return;
+  }
+
+  const upd = {
+    service: chosen.v.service,
+    wheel: chosen.v.wheel,
+    tireSize: chosen.v.tireSize,
+    wheelCount: chosen.v.wheelCount,
+    price: amount
+  };
+  if (chosen.v.runflat) upd.runflat = true;
+  if (chosen.v.low) upd.low = true;
+  if (chosen.v.valve) { upd.valve = true; upd.valveCount = chosen.v.valveCount; }
+  await update(ref(db, 'wizyty/' + key), upd);
+  showToast(`✔ ${chosen.label} — ${amount} zł`);
+};
+
+// Zajęcie wolnego slotu samą kwotą — appka dopasowuje usługę z cennika
+window.quickPriceBook = async function(date, time) {
+  const input = prompt(`Kwota za wizytę ${time}:`);
+  if (input === null) return;
+  const amount = Math.round(parseFloat(String(input).replace(',', '.')));
+  if (!amount || amount <= 0) { showToast('❌ Nieprawidłowa kwota', 'var(--red)'); return; }
+
+  const chosen = await window.resolvePriceMatch(amount);
+  if (chosen === undefined) return; // anulowano
+  if (chosen === null) {
+    if (!confirm(`Żadna usługa z cennika nie pasuje do kwoty ${amount} zł.\nPrzejść do pełnego formularza rezerwacji?`)) return;
+    goToMainSlot(date, time);
+    return;
+  }
+
+  const name = prompt('Klient (opcjonalnie):', '') || '';
+
+  const v = {
+    name, phone: '', email: '', car: '',
+    service: chosen.v.service,
+    wheel: chosen.v.wheel,
+    tireSize: chosen.v.tireSize,
+    wheelCount: chosen.v.wheelCount,
+    note: '',
+    runflat: !!chosen.v.runflat,
+    low: !!chosen.v.low,
+    valve: !!chosen.v.valve,
+    valveCount: chosen.v.valve ? (chosen.v.valveCount || 0) : 0,
+    bus: false,
+    date, time,
+    price: amount
+  };
+
+  try {
+    setSyncStatus('syncing', '⟳ Zapisywanie...');
+    const newRef = await push(ref(db, 'wizyty'), v);
+    await set(ref(db, 'slots/' + newRef.key), { date: v.date, time: v.time });
+    setSyncStatus('ok', '● Zapisano');
+    showToast(`✔ ${chosen.label} — ${amount} zł`);
+  } catch (e) {
+    showToast('❌ Błąd zapisu', 'var(--red)');
+  }
+};
+
+// Wspólne dopasowanie kwoty do usługi z cennika: zwraca {label,price,v}, null (brak dopasowania) lub undefined (anulowano wybór)
+window.resolvePriceMatch = async function(amount) {
+  const matches = window.matchAmountToService(amount);
+  if (matches.length === 0) return null;
+  if (matches.length === 1) return matches[0];
+  const listText = matches.map((m, i) => `${i + 1}. ${m.label} — ${m.price} zł`).join('\n');
+  const pick = prompt(`Kilka usług pasuje do kwoty ${amount} zł. Wpisz numer:\n${listText}`, '1');
+  if (pick === null) return undefined;
+  const idx = parseInt(pick) - 1;
+  if (isNaN(idx) || !matches[idx]) { showToast('❌ Anulowano', 'var(--muted)'); return undefined; }
+  return matches[idx];
+};
+
 function unsubscribeAll() {
   if (unsubVisits) { unsubVisits(); unsubVisits = null; }
   if (unsubOrders) { unsubOrders(); unsubOrders = null; }
@@ -4937,8 +5077,10 @@ function renderQuickView() {
           const v = entry ? entry[1] : null;
           const main = v ? [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ') : '—';
           const extra = v ? [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ') : '';
+          const priceTag = k ? `<span onclick="event.stopPropagation();window.quickPriceEntry('${k}')" title="Wpisz kwotę" style="float:right;font-size:11px;opacity:0.85;cursor:pointer">💰${v.price?' '+v.price+'zł':''}</span>` : '';
           const click = k ? `onclick="goToVisitInList('${k}')" style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12);cursor:pointer"` : `style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12)"`;
           return `<div ${click}>
+            ${priceTag}
             <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
             <div class="qv-info" style="color:var(--red)">${main}</div>
             ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
@@ -4959,7 +5101,8 @@ function renderQuickView() {
             if (d < getToday()) {
             return `<div style="flex:1;padding:8px;background:rgba(100,100,100,0.1)"><div class="qv-time" style="font-size:15px;color:var(--muted)">${t}</div><div class="qv-info" style="font-size:11px;color:var(--muted)">Miniony</div></div>`;
           }
-          return `<div style="flex:1;padding:8px;cursor:pointer;background:rgba(234,179,8,0.1)" onclick="goToMainSlot('${d}','${t}')">
+          return `<div style="flex:1;padding:8px;cursor:pointer;background:rgba(234,179,8,0.1);position:relative" onclick="goToMainSlot('${d}','${t}')">
+              <span onclick="event.stopPropagation();window.quickPriceBook('${d}','${t}')" title="Zajmij kwotą" style="position:absolute;top:4px;right:4px;font-size:14px;opacity:0.6">💰</span>
               <div class="qv-time" style="font-size:15px;color:#eab308">${t}</div>
               <div class="qv-info" style="font-size:11px;color:#eab308">Wolny — zarezerwuj</div>
             </div>`;
@@ -4968,7 +5111,9 @@ function renderQuickView() {
           const v = entry[1];
           const main = [v.service, v.wheel, v.tireSize?v.tireSize+'"':''].filter(Boolean).join(' · ');
           const extra = [v.name, v.phone, v.car, v.runflat?'Run-flat':'', v.low?'Niski profil':'', v.valve?'Nowy wentyl':'', v.note].filter(Boolean).join(' · ');
+          const priceTag = `<span onclick="event.stopPropagation();window.quickPriceEntry('${k}')" title="Wpisz kwotę" style="float:right;font-size:11px;opacity:0.85;cursor:pointer">💰${v.price?' '+v.price+'zł':''}</span>`;
           return `<div onclick="goToVisitInList('${k}')" style="flex:1;padding:8px;overflow:hidden;background:rgba(248,113,113,0.12);cursor:pointer">
+            ${priceTag}
             <div class="qv-time" style="font-size:15px;color:var(--red)">${t}</div>
             <div class="qv-info" style="color:var(--red)">${main}</div>
             ${extra?`<div class="qv-info" style="font-size:10px;opacity:0.75;margin-top:2px;color:var(--red)">${extra}</div>`:''}
@@ -4988,6 +5133,7 @@ function renderQuickView() {
     return currentUser
       ? `<div class="qv-slot free" style="display:flex;align-items:center;gap:8px" onclick="goToMainSlot('${d}','${baseTime}')">
           <span style="flex:1"><div class="qv-time">${baseTime}</div><div class="qv-info">Wolny — kliknij aby zarezerwować</div></span>
+          <span onclick="event.stopPropagation();window.quickPriceBook('${d}','${baseTime}')" title="Zajmij kwotą" style="font-size:18px;opacity:0.5;cursor:pointer;padding:4px;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">💰</span>
           <span onclick="event.stopPropagation();toggleSlotBlock('${d}','${baseTime}')" title="Zablokuj slot" style="font-size:18px;opacity:0.35;cursor:pointer;padding:4px;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.35'">🔒</span>
         </div>`
       : `<div class="qv-slot free" onclick="showTab('main',document.querySelector('.tab[onclick*=\'main\']'))">
