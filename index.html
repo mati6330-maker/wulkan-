@@ -288,6 +288,27 @@ button:active{transform:translateY(0);box-shadow:none}
 .qv-slot.blocked{background:rgba(100,100,100,0.1);border-color:rgba(100,100,100,0.3);color:var(--muted);cursor:not-allowed;}
 .qv-time{font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:2px;}
 .qv-info{font-size:12px;margin-top:4px;opacity:0.85;}
+
+/* ── Modal: szybki wpis kwoty (Podgląd) ── */
+.qp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:10000;align-items:center;justify-content:center;padding:16px;}
+.qp-card{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:12px;width:100%;max-width:360px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,0.55);animation:qpPop 0.14s ease-out;}
+@keyframes qpPop{from{transform:scale(0.96);opacity:0}to{transform:scale(1);opacity:1}}
+.qp-title{font-family:var(--font);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);text-align:center;margin-bottom:16px;}
+.qp-sub{color:var(--muted);font-size:13px;line-height:1.5;text-align:center;margin:-8px 0 16px;}
+.qp-amount-wrap{position:relative;margin-bottom:16px;}
+.qp-amount-wrap .suffix{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-family:var(--mono);font-size:18px;pointer-events:none;}
+.qp-input{width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:26px;text-align:center;padding:14px 40px 14px 14px;transition:border-color 0.12s;}
+.qp-input.text{font-size:16px;text-align:left;padding:12px 14px;}
+.qp-input:focus{outline:none;border-color:var(--accent);}
+.qp-row{display:flex;gap:10px;}
+.qp-btn{flex:1;padding:13px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);font-weight:600;font-size:14px;cursor:pointer;transition:background 0.12s,border-color 0.12s;}
+.qp-btn:hover{border-color:var(--accent);}
+.qp-btn.primary{background:var(--accent);border-color:var(--accent);color:#111;}
+.qp-btn.primary:hover{background:var(--accent2);}
+.qp-list{display:flex;flex-direction:column;gap:8px;max-height:min(340px,50vh);overflow-y:auto;margin-bottom:16px;}
+.qp-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;text-align:left;font-family:var(--font);color:var(--text);font-size:13px;transition:border-color 0.12s,background 0.12s;}
+.qp-opt:hover{border-color:var(--accent);background:rgba(245,158,11,0.08);}
+.qp-opt .qp-price{font-family:var(--mono);color:var(--accent);font-weight:700;white-space:nowrap;flex-shrink:0;}
 .slot{padding:13px 6px;border-radius:3px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;transition:all 0.12s;border:1px solid #4a4a4a;}
 .slot-cb-label{display:flex;align-items:center;gap:5px;font-size:12px;font-family:var(--mono);cursor:pointer;padding:8px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;transition:all 0.12s;}
 .slot-cb-label:has(input:checked){background:rgba(248,113,113,0.2);border-color:var(--red);color:var(--red);}
@@ -1815,6 +1836,7 @@ function buildPriceCandidates() {
   return cands;
 }
 
+// ── Modal: szybki wpis kwoty (silnik) ──
 window.matchAmountToService = function(amount) {
   const tolerance = 3;
   const withDiff = buildPriceCandidates()
@@ -1832,19 +1854,128 @@ window.matchAmountToService = function(amount) {
   return uniq.slice(0, 8);
 };
 
+function qpOpenModal(html) {
+  let el = document.getElementById('qpModal');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'qpModal';
+    el.className = 'qp-overlay';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<div class="qp-card">${html}</div>`;
+  el.style.display = 'flex';
+  el.onclick = (e) => {
+    if (e.target !== el) return;
+    const fallback = document.getElementById('qpCancelBtn') || document.getElementById('qpSkipBtn');
+    if (fallback) fallback.click();
+  };
+}
+function qpCloseModal() {
+  const el = document.getElementById('qpModal');
+  if (el) el.style.display = 'none';
+}
+
+function qpPromptAmount(title, sub, defVal) {
+  return new Promise(resolve => {
+    qpOpenModal(`
+      <div class="qp-title">${title}</div>
+      ${sub ? `<div class="qp-sub">${sub}</div>` : ''}
+      <div class="qp-amount-wrap">
+        <input id="qpAmountInput" class="qp-input" type="number" inputmode="decimal" placeholder="0" value="${defVal !== undefined && defVal !== '' ? defVal : ''}" />
+        <span class="suffix">zł</span>
+      </div>
+      <div class="qp-row">
+        <button class="qp-btn" id="qpCancelBtn">Anuluj</button>
+        <button class="qp-btn primary" id="qpOkBtn">Dalej →</button>
+      </div>
+    `);
+    const input = document.getElementById('qpAmountInput');
+    const finish = (val) => { qpCloseModal(); resolve(val); };
+    document.getElementById('qpCancelBtn').onclick = () => finish(null);
+    const submit = () => {
+      const amount = Math.round(parseFloat(String(input.value).replace(',', '.')));
+      if (!amount || amount <= 0) { input.style.borderColor = 'var(--red)'; input.focus(); return; }
+      finish(amount);
+    };
+    document.getElementById('qpOkBtn').onclick = submit;
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    setTimeout(() => { input.focus(); }, 50);
+  });
+}
+
+function qpPromptChoice(title, sub, options) {
+  return new Promise(resolve => {
+    const optsHtml = options.map((o, i) => `<div class="qp-opt" data-i="${i}"><span>${o.label}</span><span class="qp-price">${o.priceLabel}</span></div>`).join('');
+    qpOpenModal(`
+      <div class="qp-title">${title}</div>
+      ${sub ? `<div class="qp-sub">${sub}</div>` : ''}
+      <div class="qp-list">${optsHtml}</div>
+      <div class="qp-row"><button class="qp-btn" id="qpCancelBtn">Anuluj</button></div>
+    `);
+    const finish = (val) => { qpCloseModal(); resolve(val); };
+    document.getElementById('qpCancelBtn').onclick = () => finish(undefined);
+    document.querySelectorAll('#qpModal .qp-opt').forEach(el => {
+      el.onclick = () => finish(options[parseInt(el.dataset.i)].value);
+    });
+  });
+}
+
+function qpPromptText(title, placeholder) {
+  return new Promise(resolve => {
+    qpOpenModal(`
+      <div class="qp-title">${title}</div>
+      <input id="qpTextInput" class="qp-input text" type="text" placeholder="${placeholder || ''}" />
+      <div class="qp-row">
+        <button class="qp-btn" id="qpSkipBtn">Pomiń</button>
+        <button class="qp-btn primary" id="qpOkBtn">Zapisz</button>
+      </div>
+    `);
+    const input = document.getElementById('qpTextInput');
+    const finish = (val) => { qpCloseModal(); resolve(val); };
+    document.getElementById('qpSkipBtn').onclick = () => finish('');
+    document.getElementById('qpOkBtn').onclick = () => finish(input.value.trim());
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('qpOkBtn').click(); });
+    setTimeout(() => input.focus(), 50);
+  });
+}
+
+function qpConfirm(title, message, confirmLabel, cancelLabel) {
+  return new Promise(resolve => {
+    qpOpenModal(`
+      <div class="qp-title">${title}</div>
+      <div class="qp-sub" style="margin-top:0">${message}</div>
+      <div class="qp-row">
+        <button class="qp-btn" id="qpCancelBtn">${cancelLabel || 'Anuluj'}</button>
+        <button class="qp-btn primary" id="qpOkBtn">${confirmLabel || 'OK'}</button>
+      </div>
+    `);
+    const finish = (val) => { qpCloseModal(); resolve(val); };
+    document.getElementById('qpCancelBtn').onclick = () => finish(false);
+    document.getElementById('qpOkBtn').onclick = () => finish(true);
+  });
+}
+
+// Wspólne dopasowanie kwoty do usługi z cennika: zwraca {label,price,v}, null (brak dopasowania) lub undefined (anulowano wybór)
+window.resolvePriceMatch = async function(amount) {
+  const matches = window.matchAmountToService(amount);
+  if (matches.length === 0) return null;
+  if (matches.length === 1) return matches[0];
+  const options = matches.map(m => ({ label: m.label, priceLabel: m.price + ' zł', value: m }));
+  return await qpPromptChoice('Wybierz usługę', `Kilka pozycji z cennika pasuje do kwoty ${amount} zł`, options);
+};
+
 window.quickPriceEntry = async function(key) {
   const v = visits[key];
   if (!v) { showToast('❌ Nie znaleziono wizyty', 'var(--red)'); return; }
   const current = (v.price !== undefined && v.price !== null) ? v.price : '';
-  const input = prompt(`Kwota za wizytę ${v.time}${v.name ? ' — ' + v.name : ''}:`, current);
-  if (input === null) return;
-  const amount = Math.round(parseFloat(String(input).replace(',', '.')));
-  if (!amount || amount <= 0) { showToast('❌ Nieprawidłowa kwota', 'var(--red)'); return; }
+  const amount = await qpPromptAmount('Kwota za wizytę', `${v.time}${v.name ? ' · ' + v.name : ''}`, current);
+  if (amount === null) return;
 
   const chosen = await window.resolvePriceMatch(amount);
-  if (chosen === undefined) return; // anulowano
+  if (chosen === undefined) return;
   if (chosen === null) {
-    if (!confirm(`Żadna usługa z cennika nie pasuje do kwoty ${amount} zł.\nZapisać samą kwotę bez zmiany usługi?`)) return;
+    const ok = await qpConfirm('Brak dopasowania', `Żadna usługa z cennika nie pasuje do kwoty ${amount} zł. Zapisać samą kwotę bez zmiany usługi?`, 'Zapisz kwotę', 'Anuluj');
+    if (!ok) return;
     await update(ref(db, 'wizyty/' + key), { price: amount });
     showToast('✔ Zapisano kwotę ' + amount + ' zł');
     return;
@@ -1866,20 +1997,18 @@ window.quickPriceEntry = async function(key) {
 
 // Zajęcie wolnego slotu samą kwotą — appka dopasowuje usługę z cennika
 window.quickPriceBook = async function(date, time) {
-  const input = prompt(`Kwota za wizytę ${time}:`);
-  if (input === null) return;
-  const amount = Math.round(parseFloat(String(input).replace(',', '.')));
-  if (!amount || amount <= 0) { showToast('❌ Nieprawidłowa kwota', 'var(--red)'); return; }
+  const amount = await qpPromptAmount('Kwota za wizytę', time);
+  if (amount === null) return;
 
   const chosen = await window.resolvePriceMatch(amount);
-  if (chosen === undefined) return; // anulowano
+  if (chosen === undefined) return;
   if (chosen === null) {
-    if (!confirm(`Żadna usługa z cennika nie pasuje do kwoty ${amount} zł.\nPrzejść do pełnego formularza rezerwacji?`)) return;
-    goToMainSlot(date, time);
+    const ok = await qpConfirm('Brak dopasowania', `Żadna usługa z cennika nie pasuje do kwoty ${amount} zł. Przejść do pełnego formularza rezerwacji?`, 'Formularz', 'Anuluj');
+    if (ok) goToMainSlot(date, time);
     return;
   }
 
-  const name = prompt('Klient (opcjonalnie):', '') || '';
+  const name = await qpPromptText('Klient (opcjonalnie)', 'Imię i nazwisko');
 
   const v = {
     name, phone: '', email: '', car: '',
@@ -1906,19 +2035,6 @@ window.quickPriceBook = async function(date, time) {
   } catch (e) {
     showToast('❌ Błąd zapisu', 'var(--red)');
   }
-};
-
-// Wspólne dopasowanie kwoty do usługi z cennika: zwraca {label,price,v}, null (brak dopasowania) lub undefined (anulowano wybór)
-window.resolvePriceMatch = async function(amount) {
-  const matches = window.matchAmountToService(amount);
-  if (matches.length === 0) return null;
-  if (matches.length === 1) return matches[0];
-  const listText = matches.map((m, i) => `${i + 1}. ${m.label} — ${m.price} zł`).join('\n');
-  const pick = prompt(`Kilka usług pasuje do kwoty ${amount} zł. Wpisz numer:\n${listText}`, '1');
-  if (pick === null) return undefined;
-  const idx = parseInt(pick) - 1;
-  if (isNaN(idx) || !matches[idx]) { showToast('❌ Anulowano', 'var(--muted)'); return undefined; }
-  return matches[idx];
 };
 
 function unsubscribeAll() {
