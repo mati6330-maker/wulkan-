@@ -5252,7 +5252,7 @@ function renderQuickView() {
           <span onclick="event.stopPropagation();window.quickPriceBook('${d}','${baseTime}')" title="Zajmij kwotą" style="font-size:18px;opacity:0.5;cursor:pointer;padding:4px;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">💰</span>
           <span onclick="event.stopPropagation();toggleSlotBlock('${d}','${baseTime}')" title="Zablokuj slot" style="font-size:18px;opacity:0.35;cursor:pointer;padding:4px;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.35'">🔒</span>
         </div>`
-      : `<div class="qv-slot free" onclick="showTab('main',document.querySelector('.tab[onclick*=\'main\']'))">
+      : `<div class="qv-slot free" onclick="goToMainSlot('${d}','${baseTime}')">
           <div class="qv-time">${baseTime}</div>
           <div class="qv-info">Wolny — zapisz się online</div>
         </div>`;
