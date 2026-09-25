@@ -616,6 +616,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
       <div id="nextVisitCountdownQV" style="font-family:var(--mono);font-size:16px;font-weight:700;color:#eab308"></div>
     </div>
   </div>
+  <button id="qvQuickAddBtn" onclick="window.quickPriceBookAnywhere()" style="display:none;margin-bottom:10px;background:var(--accent);color:#111;font-weight:700">💰 Szybki wpis kwotą</button>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px">
     <button id="qvPrevBtn" onclick="window.qvChangePeriod(-1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">◀</button>
     <div style="text-align:center;flex:1">
@@ -1716,6 +1717,8 @@ onAuthStateChanged(auth, user => {
     document.getElementById('printBtn').style.display = 'block';
     document.getElementById('printWeekBtn').style.display = 'block';
     document.getElementById('noteField').style.display = 'block';
+    const qvBtn = document.getElementById('qvQuickAddBtn');
+    if (qvBtn) qvBtn.style.display = 'block';
     // Odblokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.remove('tab-locked');
@@ -1734,6 +1737,8 @@ onAuthStateChanged(auth, user => {
     document.getElementById('printBtn').style.display = 'none';
     document.getElementById('printWeekBtn').style.display = 'none';
     document.getElementById('noteField').style.display = 'none';
+    const qvBtn2 = document.getElementById('qvQuickAddBtn');
+    if (qvBtn2) qvBtn2.style.display = 'none';
     // Zablokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.add('tab-locked');
@@ -2027,9 +2032,83 @@ window.quickPriceBook = async function(date, time) {
   }
 
   const name = await qpPromptText('Klient (opcjonalnie)', 'Imię i nazwisko');
+  await qpSaveNewVisit(chosen, amount, date, time, name);
+};
 
+// Siatka slotów biznesowych dla danego dnia, krok 30 min, każdy z dwiema połówkami po 15 min
+function qvGetDaySlotGrid(dt) {
+  if (dt.getDay() === 0) return []; // niedziela — zamknięte
+  const out = [];
+  for (const [hFrom, hTo] of [[8,8],[9,13],[15,17],[18,18]]) {
+    for (let h = hFrom; h <= hTo; h++) {
+      for (const half of [0, 30]) {
+        const base = String(h).padStart(2,'0') + ':' + String(half).padStart(2,'0');
+        const t2 = String(h).padStart(2,'0') + ':' + String(half + 15).padStart(2,'0');
+        out.push({ base, halves: [base, t2], minutes: h*60+half });
+      }
+    }
+  }
+  return out;
+}
+
+// Najbliższy wolny termin w danym dniu. mode 'full30' = szuka całych wolnych 30-min slotów,
+// mode 'half15' = szuka pojedynczych wolnych połówek 15-min (gdy druga połówka jest zajęta)
+function qvFindNearestSlot(dt, mode) {
+  const grid = qvGetDaySlotGrid(dt);
+  if (!grid.length) return null;
+  const d = formatDate(dt);
+  const dayVisits = Object.entries(visits).filter(([k,v]) => v.date === d);
+  const isFree = (t) => !dayVisits.some(([k,v]) => v.time === t);
+  const isToday = d === getToday();
+  const now = new Date();
+  const nowMinutes = isToday ? (now.getHours()*60 + now.getMinutes()) : null;
+
+  const candidates = [];
+  grid.forEach(slot => {
+    if (isSlotBlockedForDate(d, slot.base)) return;
+    if (mode === 'full30') {
+      if (slot.halves.every(isFree)) candidates.push({ time: slot.base, minutes: slot.minutes });
+    } else {
+      slot.halves.forEach((t, idx) => { if (isFree(t)) candidates.push({ time: t, minutes: slot.minutes + idx*15 }); });
+    }
+  });
+  if (!candidates.length) return null;
+  if (nowMinutes == null) { candidates.sort((a,b) => a.minutes-b.minutes); return candidates[0].time; }
+  candidates.sort((a,b) => Math.abs(a.minutes-nowMinutes) - Math.abs(b.minutes-nowMinutes) || a.minutes-b.minutes);
+  return candidates[0].time;
+}
+
+// Zajęcie najbliższego wolnego terminu samą kwotą — bez wskazywania konkretnego slotu
+window.quickPriceBookAnywhere = async function() {
+  const amount = await qpPromptAmount('Kwota za wizytę', 'Zapisze się w najbliższym wolnym terminie');
+  if (amount === null) return;
+
+  const chosen = await window.resolvePriceMatch(amount);
+  if (chosen === undefined) return;
+  if (chosen === null || chosen === 'NONE') {
+    showToast('Anulowano — brak wybranej usługi', 'var(--muted)');
+    return;
+  }
+
+  let targetDate = null, targetTime = null;
+  for (const mode of ['full30', 'half15']) {
+    for (let i = 0; i < 14; i++) {
+      const dt = new Date(); dt.setDate(dt.getDate() + i); dt.setHours(0,0,0,0);
+      const slot = qvFindNearestSlot(dt, mode);
+      if (slot) { targetDate = formatDate(dt); targetTime = slot; break; }
+    }
+    if (targetDate) break;
+  }
+  if (!targetDate) { showToast('❌ Brak wolnych terminów w najbliższych 14 dniach', 'var(--red)'); return; }
+
+  const name = await qpPromptText('Klient (opcjonalnie)', 'Imię i nazwisko');
+  await qpSaveNewVisit(chosen, amount, targetDate, targetTime, name);
+};
+
+// Wspólny zapis nowej wizyty na podstawie dopasowanej usługi
+async function qpSaveNewVisit(chosen, amount, date, time, name) {
   const v = {
-    name, phone: '', email: '', car: '',
+    name: name || '', phone: '', email: '', car: '',
     service: chosen.v.service,
     wheel: chosen.v.wheel,
     tireSize: chosen.v.tireSize,
@@ -2049,11 +2128,12 @@ window.quickPriceBook = async function(date, time) {
     const newRef = await push(ref(db, 'wizyty'), v);
     await set(ref(db, 'slots/' + newRef.key), { date: v.date, time: v.time });
     setSyncStatus('ok', '● Zapisano');
-    showToast(`✔ ${chosen.label} — ${amount} zł`);
+    const dateLabel = parseDate(date).toLocaleDateString('pl-PL', { day:'2-digit', month:'2-digit' });
+    showToast(`✔ ${chosen.label} — ${amount} zł · ${dateLabel} ${time}`);
   } catch (e) {
     showToast('❌ Błąd zapisu', 'var(--red)');
   }
-};
+}
 
 function unsubscribeAll() {
   if (unsubVisits) { unsubVisits(); unsubVisits = null; }
