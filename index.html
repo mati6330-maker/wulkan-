@@ -1851,20 +1851,19 @@ function buildPriceCandidates() {
 
 // ── Modal: szybki wpis kwoty (silnik) ──
 window.matchAmountToService = function(amount) {
-  const tolerance = 3;
-  const withDiff = buildPriceCandidates()
-    .map(c => ({ ...c, diff: Math.abs(c.price - amount) }))
-    .filter(c => c.diff <= tolerance);
-  withDiff.sort((a, b) => a.diff - b.diff || a.price - b.price);
-  const exact = withDiff.filter(c => c.diff === 0);
-  const best = exact.length ? exact : withDiff;
+  const all = buildPriceCandidates().map(c => ({ ...c, diff: Math.abs(c.price - amount) }));
+  if (!all.length) return [];
+  all.sort((a, b) => a.diff - b.diff || a.price - b.price);
+  // najbliższa cena + wszystko w promieniu ok. 2 zł od niej (żeby złapać "prawie remisy" na tym samym dystansie)
+  const minDiff = all[0].diff;
+  const pool = all.filter(c => c.diff <= minDiff + 2);
   const seen = new Set();
   const uniq = [];
-  for (const c of best) {
+  for (const c of pool) {
     const dedupeKey = c.label + '|' + c.price;
     if (!seen.has(dedupeKey)) { seen.add(dedupeKey); uniq.push(c); }
   }
-  return uniq.slice(0, 8);
+  return uniq.slice(0, 6);
 };
 
 function qpOpenModal(html) {
@@ -1968,13 +1967,21 @@ function qpConfirm(title, message, confirmLabel, cancelLabel) {
   });
 }
 
-// Wspólne dopasowanie kwoty do usługi z cennika: zwraca {label,price,v}, null (brak dopasowania) lub undefined (anulowano wybór)
+// Wspólne dopasowanie kwoty do usługi z cennika: zwraca {label,price,v}, 'NONE' (świadomie żadne), null (pusty cennik) lub undefined (anulowano)
 window.resolvePriceMatch = async function(amount) {
   const matches = window.matchAmountToService(amount);
   if (matches.length === 0) return null;
-  if (matches.length === 1) return matches[0];
-  const options = matches.map(m => ({ label: m.label, priceLabel: m.price + ' zł', value: m }));
-  return await qpPromptChoice('Wybierz usługę', `Kilka pozycji z cennika pasuje do kwoty ${amount} zł`, options);
+  if (matches.length === 1 && matches[0].diff === 0) return matches[0];
+  const options = matches.map(m => ({
+    label: m.diff === 0 ? m.label : `${m.label} (różnica ${m.diff} zł)`,
+    priceLabel: m.price + ' zł',
+    value: m
+  }));
+  options.push({ label: 'Żadne z powyższych', priceLabel: '', value: 'NONE' });
+  const sub = matches[0].diff === 0
+    ? `Kilka pozycji pasuje dokładnie do kwoty ${amount} zł`
+    : `Najbliższe pozycje z cennika dla kwoty ${amount} zł`;
+  return await qpPromptChoice('Wybierz usługę', sub, options);
 };
 
 window.quickPriceEntry = async function(key) {
@@ -1986,9 +1993,7 @@ window.quickPriceEntry = async function(key) {
 
   const chosen = await window.resolvePriceMatch(amount);
   if (chosen === undefined) return;
-  if (chosen === null) {
-    const ok = await qpConfirm('Brak dopasowania', `Żadna usługa z cennika nie pasuje do kwoty ${amount} zł. Zapisać samą kwotę bez zmiany usługi?`, 'Zapisz kwotę', 'Anuluj');
-    if (!ok) return;
+  if (chosen === null || chosen === 'NONE') {
     await update(ref(db, 'wizyty/' + key), { price: amount });
     showToast('✔ Zapisano kwotę ' + amount + ' zł');
     return;
@@ -2015,8 +2020,8 @@ window.quickPriceBook = async function(date, time) {
 
   const chosen = await window.resolvePriceMatch(amount);
   if (chosen === undefined) return;
-  if (chosen === null) {
-    const ok = await qpConfirm('Brak dopasowania', `Żadna usługa z cennika nie pasuje do kwoty ${amount} zł. Przejść do pełnego formularza rezerwacji?`, 'Formularz', 'Anuluj');
+  if (chosen === null || chosen === 'NONE') {
+    const ok = await qpConfirm('Brak dopasowania', `Nie wybrano usługi dla kwoty ${amount} zł. Przejść do pełnego formularza rezerwacji?`, 'Formularz', 'Anuluj');
     if (ok) goToMainSlot(date, time);
     return;
   }
