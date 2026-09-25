@@ -4399,13 +4399,13 @@ window.calculateCash = function calculateCash() {
       <canvas id="chartTrend" height="200"></canvas>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-      <div class="card" style="padding:12px">
+      <div class="card" style="padding:12px;min-width:0">
         <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TOP USŁUGI</div>
-        <canvas id="chartServices" height="200"></canvas>
+        <div style="position:relative;width:100%;height:140px"><canvas id="chartServices"></canvas></div>
       </div>
-      <div class="card" style="padding:12px">
+      <div class="card" style="padding:12px;min-width:0">
         <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TYP FELG</div>
-        <canvas id="chartWheels" height="200"></canvas>
+        <div style="position:relative;width:100%;height:140px"><canvas id="chartWheels"></canvas></div>
       </div>
     </div>
     <button onclick="window.printStatsCharts()" style="margin-top:12px">🖨 Drukuj wykresy</button>`;
@@ -4487,7 +4487,7 @@ window.renderStatsCharts = async function(data) {
     statsChartInstances.chartServices = new Chart(svcCtx, {
       type: 'doughnut',
       data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: palette }] },
-      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 8 }, padding: 6 } } } }
     });
   }
 
@@ -4497,7 +4497,7 @@ window.renderStatsCharts = async function(data) {
     statsChartInstances.chartWheels = new Chart(whCtx, {
       type: 'doughnut',
       data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: palette }] },
-      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 8 }, padding: 6 } } } }
     });
   }
 };
