@@ -1638,6 +1638,28 @@ onValue(ref(db, 'zamowienia_tmp'), snap => {
   if (document.getElementById('zamList')) window.renderZamowienia();
 });
 
+// Cennik opon – zapisane cenniki synchronizowane między urządzeniami
+{
+  let data = {}, loaded = false, failed = null;
+  const subs = new Set(), errs = new Set();
+  onValue(ref(db, 'cenniki_opon'), snap => {
+    data = snap.val() || {}; loaded = true; failed = null;
+    subs.forEach(f => { try { f(data); } catch (e) {} });
+  }, err => {
+    failed = err;
+    errs.forEach(f => { try { f(err); } catch (e) {} });
+  });
+  window.cennikOponDB = {
+    subscribe(f, onErr) {
+      subs.add(f); if (onErr) errs.add(onErr);
+      if (loaded) { try { f(data); } catch (e) {} }
+      else if (failed && onErr) { try { onErr(failed); } catch (e) {} }
+    },
+    add(entry) { return push(ref(db, 'cenniki_opon'), entry); },
+    del(id) { return remove(ref(db, 'cenniki_opon/' + id)); }
+  };
+}
+
 let prices = {
   wos_s: 70, wos_l: 80,                          // wymiana opon stalowe ≤16 / ≥17
   woa_16: 100, woa_17: 120, woa_18: 140,          // wymiana opon aluminiowe
@@ -7715,7 +7737,7 @@ main{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-temp
 h1{font-size:22px;margin:0 0 4px;font-weight:700}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
 label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
-input[type=number],select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input[type=number],input[type=tel],input[type=search],select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
 textarea{resize:vertical}
 #src{min-height:200px;font-size:13px}
 .row{display:flex;gap:12px}.row>div{flex:1}
@@ -7735,6 +7757,13 @@ td.f{font-weight:700}
 .note{font-size:12px;color:var(--mute)}
 .miss{color:var(--warn);margin-top:8px;font-size:14px}
 .info{color:var(--mute);font-size:14px}
+.sv{margin-left:12px;padding:6px 12px;font-size:13px;vertical-align:middle}
+.save{margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
+.item{border-bottom:1px solid var(--line);padding:8px 0}
+.item summary{cursor:pointer}
+.item summary span{margin-right:10px}
+pre{white-space:pre-wrap;font:13px/1.45 inherit;margin:8px 0;padding:8px;background:var(--bg);border-radius:6px}
+.item .bar{margin:0 0 4px}
 </style>
 </head>
 <body>
@@ -7754,8 +7783,15 @@ td.f{font-weight:700}
   <div class="bar"><button class="sec" id="clr" type="button">Wyczyść tekst</button></div>
 </section>
 <section class="box">
+  <div id="ph" hidden><label for="tel">Telefon klienta (opcjonalnie, do zapisu)</label><input type="tel" id="tel" inputmode="tel" autocomplete="off"></div>
   <div id="out" class="info">Wklej tekst, cennik pojawi się tutaj.</div>
   <div class="bar" id="cb" hidden><button id="cp" type="button">Kopiuj cennik</button></div>
+  <div class="save">
+    <div class="size">Zapisane cenniki</div>
+    <input type="search" id="sq" placeholder="Szukaj po rozmiarze lub telefonie" autocomplete="off">
+    <div class="note" id="svnote"></div>
+    <div id="sl"></div>
+  </div>
 </section>
 </main>
 <script>
@@ -7780,7 +7816,7 @@ function parse(t){
     return{title,price:pm?parseInt(pm[1].replace(/[ \u00a0]/g,''),10):null,year:ym?+ym[1]:null,size:sm?sm[1]+' R'+sm[2]:'Rozmiar nieznany'};
   }).filter(x=>x.price);
 }
-let plain='';
+let plain='',sizeTxt={};
 function render(){
   const src=$('src').value, out=$('out');
   const brands=$('br').value.split(',').map(s=>s.trim()).filter(Boolean);
@@ -7788,13 +7824,14 @@ function render(){
   $('year').disabled=all;
   save('cennik_qty',$('qty').value);save('cennik_br',$('br').value);
   const items=parse(src);
-  if(!items.length){out.className='info';out.textContent=src.trim()?'Nie znaleziono opon w wklejonym tekście. Wklej listę z Oponeo (od "Zbliżenie bieżnika...").':'Wklej tekst, cennik pojawi się tutaj.';$('cb').hidden=true;plain='';return}
+  if(!items.length){$('ph').hidden=true;out.className='info';out.textContent=src.trim()?'Nie znaleziono opon w wklejonym tekście. Wklej listę z Oponeo (od "Zbliżenie bieżnika...").':'Wklej tekst, cennik pojawi się tutaj.';$('cb').hidden=true;plain='';return}
   const sizes=[...new Set(items.map(i=>i.size))];
-  let html='',txt=[];
+  let html='',txt=[];sizeTxt={};
   sizes.forEach(sz=>{
     const its=items.filter(i=>i.size===sz);
-    html+=`<h2 class="size">${esc(sz)}</h2><div class="tw"><table><thead><tr><th>Opona</th><th>Rok</th><th class="n">Cena za szt.</th><th class="n">Razem (${qty} szt.)</th></tr></thead><tbody>`;
+    html+=`<h2 class="size">${esc(sz)}<button class="sv" type="button" data-sz="${esc(sz)}">💾 Zapisz</button></h2><div class="tw"><table><thead><tr><th>Opona</th><th>Rok</th><th class="n">Cena za szt.</th><th class="n">Razem (${qty} szt.)</th></tr></thead><tbody>`;
     txt.push(sz);
+    const lines=[];
     const missing=[];
     brands.forEach(b=>{
       const nb=norm(b);
@@ -7805,27 +7842,78 @@ function render(){
       const cheaper=all?null:ofBrand.filter(i=>i.year!==yr&&i.price<best.price).sort((a,c)=>a.price-c.price)[0];
       const fin=best.price*qty;
       html+=`<tr><td>${esc(best.title)}${cheaper?`<div class="note">Taniej w innym roczniku: ${fmt(cheaper.price)} zł (${cheaper.year||'brak roku'}) – ${esc(cheaper.title)}</div>`:''}</td><td>${best.year||'–'}</td><td class="n">${fmt(best.price)} zł</td><td class="n f">${fmt(fin)} zł</td></tr>`;
-      txt.push(qty>1?`${best.title} – ${qty} × ${fmt(best.price)} zł = ${fmt(fin)} zł`:`${best.title} – ${fmt(fin)} zł`);
+      const ln=qty>1?`${best.title} – ${qty} × ${fmt(best.price)} zł = ${fmt(fin)} zł`:`${best.title} – ${fmt(fin)} zł`;txt.push(ln);lines.push(ln);
     });
     html+=`</tbody></table></div>`;
-    if(missing.length){html+=`<div class="miss">Brak: ${esc(missing.join(', '))}</div>`;txt.push('Brak: '+missing.join(', '))}
+    if(missing.length){html+=`<div class="miss">Brak: ${esc(missing.join(', '))}</div>`;txt.push('Brak: '+missing.join(', '));lines.push('Brak: '+missing.join(', '))}
+    sizeTxt[sz]=lines.join('\n');
     txt.push('');
   });
   out.className='';out.innerHTML=html;
   plain=txt.join('\n').trim();
-  $('cb').hidden=false;
+  $('cb').hidden=false;$('ph').hidden=false;
 }
 ['src','year','qty','br','all'].forEach(id=>$(id).addEventListener('input',render));
 $('clr').onclick=()=>{$('src').value='';render();$('src').focus()};
-$('cp').onclick=async()=>{
-  const b=$('cp');let ok=false;
-  try{await navigator.clipboard.writeText(plain);ok=true}catch(e){
-    const ta=document.createElement('textarea');ta.value=plain;document.body.appendChild(ta);ta.select();
-    try{ok=document.execCommand('copy')}catch(e2){}ta.remove();
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true}catch(e){
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy')}catch(e2){}ta.remove();return ok;
   }
+}
+$('cp').onclick=async()=>{
+  const b=$('cp');const ok=await copyText(plain);
   b.textContent=ok?'Skopiowano':'Nie udało się skopiować';
   setTimeout(()=>b.textContent='Kopiuj cennik',1800);
 };
+const bridge=(()=>{try{return window.parent!==window&&window.parent.cennikOponDB||null}catch(e){return null}})();
+let saved=[],savedErr='';
+function getSaved(){return saved}
+function localLoad(){try{const a=JSON.parse(load('cennik_saved','[]'));return Array.isArray(a)?a:[]}catch(e){return[]}}
+function localPut(){save('cennik_saved',JSON.stringify(saved))}
+function addSaved(x){
+  if(bridge){const {id,...v}=x;return Promise.resolve(bridge.add(v))}
+  saved.push(x);localPut();renderSaved();return Promise.resolve();
+}
+function delSaved(id){
+  if(bridge){return Promise.resolve(bridge.del(id))}
+  saved=saved.filter(v=>v.id!==id);localPut();renderSaved();return Promise.resolve();
+}
+function renderSaved(){
+  if(savedErr){$('sl').innerHTML='<div class="miss">'+esc(savedErr)+'</div>';return}
+  const q=norm($('sq').value).replace(/\s/g,'');
+  const a=getSaved().filter(x=>!q||norm(x.size).replace(/\s/g,'').includes(q)||(x.phone||'').replace(/\s/g,'').includes(q));
+  a.sort((x,y)=>x.size.localeCompare(y.size)||y.ts-x.ts);
+  $('sl').innerHTML=a.length?a.map(x=>`<details class="item"><summary><b>${esc(x.size)}</b> <span>${x.qty} szt.</span>${x.phone?`<span>tel. ${esc(x.phone)}</span>`:''}<span class="note">${new Date(x.ts).toLocaleString('pl-PL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></summary><pre>${esc(x.text)}</pre><div class="bar"><button type="button" class="cpy" data-id="${esc(x.id)}">Kopiuj</button><button type="button" class="sec del" data-id="${esc(x.id)}">Usuń</button></div></details>`).join(''):'<div class="info" style="margin-top:8px">Brak zapisanych cenników.</div>';
+}
+if(bridge){
+  $('svnote').textContent='Zapisane cenniki są widoczne na wszystkich urządzeniach.';
+  bridge.subscribe(obj=>{savedErr='';saved=Object.entries(obj||{}).map(([id,v])=>({...v,id}));renderSaved()},
+    e=>{savedErr='Brak dostępu do zapisanych cenników w bazie (ścieżka cenniki_opon): '+((e&&e.message)||e)+'. Sprawdź reguły Firebase.';renderSaved()});
+}else{
+  $('svnote').textContent='Zapis tylko w tej przeglądarce, na tym urządzeniu.';
+  saved=localLoad();
+}
+$('out').addEventListener('click',e=>{
+  const b=e.target.closest('.sv');if(!b)return;
+  const sz=b.dataset.sz;
+  addSaved({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),size:sz,phone:$('tel').value.trim(),qty:parseInt($('qty').value,10)||1,ts:Date.now(),text:sizeTxt[sz]||''})
+    .catch(err=>alert('Nie udało się zapisać cennika: '+((err&&err.message)||err)));
+  b.textContent='Zapisano ✓';setTimeout(()=>{b.textContent='💾 Zapisz'},1500);
+});
+$('sl').addEventListener('click',async e=>{
+  const c=e.target.closest('.cpy'),d=e.target.closest('.del');
+  if(c){
+    const x=getSaved().find(v=>v.id===c.dataset.id);if(!x)return;
+    const ok=await copyText(x.size+'\n'+x.text);
+    c.textContent=ok?'Skopiowano':'Nie udało się skopiować';setTimeout(()=>{c.textContent='Kopiuj'},1500);
+  }else if(d){
+    if(!confirm('Usunąć zapisany cennik?'))return;
+    delSaved(d.dataset.id).catch(err=>alert('Nie udało się usunąć: '+((err&&err.message)||err)));
+  }
+});
+$('sq').addEventListener('input',renderSaved);
+renderSaved();
 render();
 <\/script>
 </body>
