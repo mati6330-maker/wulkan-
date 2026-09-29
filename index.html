@@ -1141,6 +1141,8 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 
 <div class="section" id="przechowalnia">
 
+  <button onclick="window.openCennikOpon()" style="width:100%;margin-bottom:14px;letter-spacing:2px">🛞 CENNIK OPON</button>
+
   <!-- FORMULARZ PRZECHOWALNIA -->
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🗄 DODAJ DO PRZECHOWALNI</div>
@@ -7565,6 +7567,17 @@ setInterval(updateClock,1000); updateClock();
   </div>
 </div>
 
+<!-- MODAL CENNIK OPON -->
+<div id="cennikOponModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2000;flex-direction:column;padding:12px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;max-width:1150px;width:100%;margin:0 auto;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px">🛞 CENNIK OPON</div>
+      <button onclick="window.closeCennikOpon()" style="width:auto;padding:5px 12px;font-size:12px;letter-spacing:0;background:transparent;color:var(--muted);border:1px solid var(--border)">✕ Zamknij</button>
+    </div>
+    <iframe id="cennikOponFrame" title="Cennik opon" style="flex:1;width:100%;border:0;min-height:0"></iframe>
+  </div>
+</div>
+
 <!-- MODAL RESET NUMERU FAKTURY -->
 <div id="invoiceResetModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2002;overflow-y:auto">
   <div style="background:var(--surface);margin:80px auto;max-width:360px;border-radius:8px;border:1px solid var(--border);padding:20px">
@@ -7679,5 +7692,151 @@ function fabGoTo(tabId){
 document.addEventListener('click',e=>{if(_fabOpen&&!e.target.closest('.fab-container'))closeFab();});
 </script>
 
+<script type="text/html" id="cennikOponSrc">
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cennik opon</title>
+<style>
+:root{--bg:#eceef0;--panel:#fff;--ink:#15181c;--mute:#5d6670;--line:#d5d9de;--acc:#f2b705;--accink:#1a1500;--ok:#1d7a3e;--warn:#b3261e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171a;--panel:#1e2226;--ink:#eceef0;--mute:#9aa4ae;--line:#333a41;--ok:#5fd18a;--warn:#ff8a80}}
+:root[data-theme="dark"]{--bg:#14171a;--panel:#1e2226;--ink:#eceef0;--mute:#9aa4ae;--line:#333a41;--ok:#5fd18a;--warn:#ff8a80}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:900px){main{grid-template-columns:380px 1fr;align-items:start}}
+h1{font-size:22px;margin:0 0 4px;font-weight:700}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
+input[type=number],select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{resize:vertical}
+#src{min-height:200px;font-size:13px}
+.row{display:flex;gap:12px}.row>div{flex:1}
+.chk{display:flex;align-items:center;gap:8px;font-weight:400;margin:8px 0 0}
+button{font:inherit;font-weight:700;border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:var(--acc);color:var(--accink)}
+button.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+.bar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.size{font-size:18px;font-weight:700;margin:0 0 8px}
+.size:not(:first-child){margin-top:20px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--mute);font-weight:600}
+td.n,th.n{text-align:right;white-space:nowrap}
+td.f{font-weight:700}
+.note{font-size:12px;color:var(--mute)}
+.miss{color:var(--warn);margin-top:8px;font-size:14px}
+.info{color:var(--mute);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<section class="box">
+  <h1>Cennik opon</h1>
+  <div class="info">Wklej tekst z Oponeo (można kilka rozmiarów).</div>
+  <label for="src">Tekst z Oponeo</label>
+  <textarea id="src" spellcheck="false"></textarea>
+  <div class="row">
+    <div><label for="year">Rocznik</label><input type="number" id="year" min="2000" max="2100"></div>
+    <div><label for="qty">Ilość opon</label><select id="qty"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+  </div>
+  <label class="chk"><input type="checkbox" id="all"> Wszystkie roczniki</label>
+  <label for="br">Marki (po przecinku)</label>
+  <textarea id="br" rows="3" spellcheck="false"></textarea>
+  <div class="bar"><button class="sec" id="clr" type="button">Wyczyść tekst</button></div>
+</section>
+<section class="box">
+  <div id="out" class="info">Wklej tekst, cennik pojawi się tutaj.</div>
+  <div class="bar" id="cb" hidden><button id="cp" type="button">Kopiuj cennik</button></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const DEF={brands:"Zeetex, Imperial, Kormoran, Dębica, Kleber, Yokohama, Bridgestone, Michelin",qty:4};
+const norm=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[łŁ]/g,'l').toLowerCase().replace(/\s+/g,' ').trim();
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>n.toLocaleString('pl-PL');
+function load(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+$('year').value=new Date().getFullYear();
+$('qty').value=load('cennik_qty',DEF.qty);
+$('br').value=load('cennik_br',DEF.brands);
+$('all').checked=false;
+
+function parse(t){
+  return t.split(/Zbliżenie bieżnika\s+/).slice(1).map(p=>{
+    const title=p.split('\n')[0].trim();
+    const pm=p.match(/(\d{1,3}(?:[ \u00a0]\d{3})+|\d+)\s*zł\s*szt/);
+    const ym=p.match(/\b(20\d\d)\s*r\./);
+    const sm=title.match(/(\d{3}\/\d{2})\s*Z?R\s*(\d{2})/i);
+    return{title,price:pm?parseInt(pm[1].replace(/[ \u00a0]/g,''),10):null,year:ym?+ym[1]:null,size:sm?sm[1]+' R'+sm[2]:'Rozmiar nieznany'};
+  }).filter(x=>x.price);
+}
+let plain='';
+function render(){
+  const src=$('src').value, out=$('out');
+  const brands=$('br').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const qty=parseInt($('qty').value,10)||1, yr=+$('year').value, all=$('all').checked;
+  $('year').disabled=all;
+  save('cennik_qty',$('qty').value);save('cennik_br',$('br').value);
+  const items=parse(src);
+  if(!items.length){out.className='info';out.textContent=src.trim()?'Nie znaleziono opon w wklejonym tekście. Wklej listę z Oponeo (od "Zbliżenie bieżnika...").':'Wklej tekst, cennik pojawi się tutaj.';$('cb').hidden=true;plain='';return}
+  const sizes=[...new Set(items.map(i=>i.size))];
+  let html='',txt=[];
+  sizes.forEach(sz=>{
+    const its=items.filter(i=>i.size===sz);
+    html+=`<h2 class="size">${esc(sz)}</h2><div class="tw"><table><thead><tr><th>Opona</th><th>Rok</th><th class="n">Cena za szt.</th><th class="n">Razem (${qty} szt.)</th></tr></thead><tbody>`;
+    txt.push(sz);
+    const missing=[];
+    brands.forEach(b=>{
+      const nb=norm(b);
+      const ofBrand=its.filter(i=>{const nt=norm(i.title);return nt===nb||nt.startsWith(nb+' ')});
+      const ok=ofBrand.filter(i=>all||i.year===yr).sort((a,c)=>a.price-c.price);
+      if(!ok.length){missing.push(b);return}
+      const best=ok[0];
+      const cheaper=all?null:ofBrand.filter(i=>i.year!==yr&&i.price<best.price).sort((a,c)=>a.price-c.price)[0];
+      const fin=best.price*qty;
+      html+=`<tr><td>${esc(best.title)}${cheaper?`<div class="note">Taniej w innym roczniku: ${fmt(cheaper.price)} zł (${cheaper.year||'brak roku'}) – ${esc(cheaper.title)}</div>`:''}</td><td>${best.year||'–'}</td><td class="n">${fmt(best.price)} zł</td><td class="n f">${fmt(fin)} zł</td></tr>`;
+      txt.push(qty>1?`${best.title} – ${qty} × ${fmt(best.price)} zł = ${fmt(fin)} zł`:`${best.title} – ${fmt(fin)} zł`);
+    });
+    html+=`</tbody></table></div>`;
+    if(missing.length){html+=`<div class="miss">Brak: ${esc(missing.join(', '))}</div>`;txt.push('Brak: '+missing.join(', '))}
+    txt.push('');
+  });
+  out.className='';out.innerHTML=html;
+  plain=txt.join('\n').trim();
+  $('cb').hidden=false;
+}
+['src','year','qty','br','all'].forEach(id=>$(id).addEventListener('input',render));
+$('clr').onclick=()=>{$('src').value='';render();$('src').focus()};
+$('cp').onclick=async()=>{
+  const b=$('cp');let ok=false;
+  try{await navigator.clipboard.writeText(plain);ok=true}catch(e){
+    const ta=document.createElement('textarea');ta.value=plain;document.body.appendChild(ta);ta.select();
+    try{ok=document.execCommand('copy')}catch(e2){}ta.remove();
+  }
+  b.textContent=ok?'Skopiowano':'Nie udało się skopiować';
+  setTimeout(()=>b.textContent='Kopiuj cennik',1800);
+};
+render();
+<\/script>
+</body>
+</html>
+
+</script>
+<script>
+window.openCennikOpon=function(){
+  var f=document.getElementById('cennikOponFrame');
+  if(!f.srcdoc){f.srcdoc=document.getElementById('cennikOponSrc').textContent.split('<\\/script>').join('<'+'/script>');}
+  document.getElementById('cennikOponModal').style.display='flex';
+};
+window.closeCennikOpon=function(){document.getElementById('cennikOponModal').style.display='none';};
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.getElementById('cennikOponModal').style.display==='flex')window.closeCennikOpon();});
+</script>
 </body>
 </html>
