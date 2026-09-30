@@ -1141,8 +1141,6 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
 
 <div class="section" id="przechowalnia">
 
-  <button onclick="window.openCennikOpon()" style="width:100%;margin-bottom:14px;letter-spacing:2px">🛞 CENNIK OPON</button>
-
   <!-- FORMULARZ PRZECHOWALNIA -->
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px">🗄 DODAJ DO PRZECHOWALNI</div>
@@ -1638,28 +1636,6 @@ onValue(ref(db, 'zamowienia_tmp'), snap => {
   if (document.getElementById('zamList')) window.renderZamowienia();
 });
 
-// Cennik opon – zapisane cenniki synchronizowane między urządzeniami
-{
-  let data = {}, loaded = false, failed = null;
-  const subs = new Set(), errs = new Set();
-  onValue(ref(db, 'cenniki_opon'), snap => {
-    data = snap.val() || {}; loaded = true; failed = null;
-    subs.forEach(f => { try { f(data); } catch (e) {} });
-  }, err => {
-    failed = err;
-    errs.forEach(f => { try { f(err); } catch (e) {} });
-  });
-  window.cennikOponDB = {
-    subscribe(f, onErr) {
-      subs.add(f); if (onErr) errs.add(onErr);
-      if (loaded) { try { f(data); } catch (e) {} }
-      else if (failed && onErr) { try { onErr(failed); } catch (e) {} }
-    },
-    add(entry) { return push(ref(db, 'cenniki_opon'), entry); },
-    del(id) { return remove(ref(db, 'cenniki_opon/' + id)); }
-  };
-}
-
 let prices = {
   wos_s: 70, wos_l: 80,                          // wymiana opon stalowe ≤16 / ≥17
   woa_16: 100, woa_17: 120, woa_18: 140,          // wymiana opon aluminiowe
@@ -2075,8 +2051,8 @@ function qvGetDaySlotGrid(dt) {
   return out;
 }
 
-// Najbliższy wolny termin w danym dniu. mode 'full30' = szuka całych wolnych 30-min slotów,
-// mode 'half15' = szuka pojedynczych wolnych połówek 15-min (gdy druga połówka jest zajęta)
+// Najbliższy wolny termin w PRZESZŁOŚCI (usługa już się skończyła, więc jej start musi być przed "teraz").
+// mode 'full30' = szuka całych wolnych 30-min slotów, mode 'half15' = szuka pojedynczych wolnych połówek 15-min
 function qvFindNearestSlot(dt, mode) {
   const grid = qvGetDaySlotGrid(dt);
   if (!grid.length) return null;
@@ -2085,7 +2061,7 @@ function qvFindNearestSlot(dt, mode) {
   const isFree = (t) => !dayVisits.some(([k,v]) => v.time === t);
   const isToday = d === getToday();
   const now = new Date();
-  const nowMinutes = isToday ? (now.getHours()*60 + now.getMinutes()) : null;
+  const nowMinutes = now.getHours()*60 + now.getMinutes();
 
   const candidates = [];
   grid.forEach(slot => {
@@ -2096,10 +2072,11 @@ function qvFindNearestSlot(dt, mode) {
       slot.halves.forEach((t, idx) => { if (isFree(t)) candidates.push({ time: t, minutes: slot.minutes + idx*15 }); });
     }
   });
-  if (!candidates.length) return null;
-  if (nowMinutes == null) { candidates.sort((a,b) => a.minutes-b.minutes); return candidates[0].time; }
-  candidates.sort((a,b) => Math.abs(a.minutes-nowMinutes) - Math.abs(b.minutes-nowMinutes) || a.minutes-b.minutes);
-  return candidates[0].time;
+  // dziś liczą się tylko terminy, które już minęły; dni wcześniejsze są w całości "przeszłością"
+  const valid = isToday ? candidates.filter(c => c.minutes <= nowMinutes) : candidates;
+  if (!valid.length) return null;
+  valid.sort((a,b) => b.minutes - a.minutes); // najpóźniejszy, czyli najbliższy "teraz", pierwszy
+  return valid[0].time;
 }
 
 // Zajęcie najbliższego wolnego terminu samą kwotą — bez wskazywania konkretnego slotu
@@ -2116,14 +2093,14 @@ window.quickPriceBookAnywhere = async function() {
 
   let targetDate = null, targetTime = null;
   for (const mode of ['full30', 'half15']) {
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i >= -13; i--) {
       const dt = new Date(); dt.setDate(dt.getDate() + i); dt.setHours(0,0,0,0);
       const slot = qvFindNearestSlot(dt, mode);
       if (slot) { targetDate = formatDate(dt); targetTime = slot; break; }
     }
     if (targetDate) break;
   }
-  if (!targetDate) { showToast('❌ Brak wolnych terminów w najbliższych 14 dniach', 'var(--red)'); return; }
+  if (!targetDate) { showToast('❌ Brak wolnych terminów w ostatnich 14 dniach', 'var(--red)'); return; }
 
   const name = await qpPromptText('Klient (opcjonalnie)', 'Imię i nazwisko');
   await qpSaveNewVisit(chosen, amount, targetDate, targetTime, name);
@@ -4423,13 +4400,13 @@ window.calculateCash = function calculateCash() {
       <canvas id="chartTrend" height="200"></canvas>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-      <div class="card" style="padding:12px;min-width:0">
+      <div class="card" style="padding:12px">
         <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TOP USŁUGI</div>
-        <div style="position:relative;width:100%;height:140px"><canvas id="chartServices"></canvas></div>
+        <canvas id="chartServices" height="200"></canvas>
       </div>
-      <div class="card" style="padding:12px;min-width:0">
+      <div class="card" style="padding:12px">
         <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TYP FELG</div>
-        <div style="position:relative;width:100%;height:140px"><canvas id="chartWheels"></canvas></div>
+        <canvas id="chartWheels" height="200"></canvas>
       </div>
     </div>
     <button onclick="window.printStatsCharts()" style="margin-top:12px">🖨 Drukuj wykresy</button>`;
@@ -4511,7 +4488,7 @@ window.renderStatsCharts = async function(data) {
     statsChartInstances.chartServices = new Chart(svcCtx, {
       type: 'doughnut',
       data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: palette }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 8 }, padding: 6 } } } }
+      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
     });
   }
 
@@ -4521,7 +4498,7 @@ window.renderStatsCharts = async function(data) {
     statsChartInstances.chartWheels = new Chart(whCtx, {
       type: 'doughnut',
       data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: palette }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 8 }, padding: 6 } } } }
+      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
     });
   }
 };
@@ -7589,20 +7566,6 @@ setInterval(updateClock,1000); updateClock();
   </div>
 </div>
 
-<!-- MODAL CENNIK OPON -->
-<div id="cennikOponModal" onclick="if(event.target===this)window.closeCennikOpon()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2000;flex-direction:column;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;max-width:1150px;width:100%;margin:0 auto;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
-      <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px">🛞 CENNIK OPON</div>
-      <button onclick="window.closeCennikOpon()" style="width:auto;margin:0;padding:8px 14px;font-size:13px;letter-spacing:0;background:var(--accent);color:#000;border:none">✕ Zamknij</button>
-    </div>
-    <iframe id="cennikOponFrame" title="Cennik opon" style="flex:1;width:100%;border:0;min-height:0"></iframe>
-    <div style="padding:8px 14px;border-top:1px solid var(--border);flex-shrink:0">
-      <button onclick="window.closeCennikOpon()" style="width:100%;margin:0;padding:12px;font-size:14px;letter-spacing:1px;background:var(--accent);color:#000;border:none">✕ ZAMKNIJ CENNIK</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL RESET NUMERU FAKTURY -->
 <div id="invoiceResetModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:2002;overflow-y:auto">
   <div style="background:var(--surface);margin:80px auto;max-width:360px;border-radius:8px;border:1px solid var(--border);padding:20px">
@@ -7717,217 +7680,5 @@ function fabGoTo(tabId){
 document.addEventListener('click',e=>{if(_fabOpen&&!e.target.closest('.fab-container'))closeFab();});
 </script>
 
-<script type="text/html" id="cennikOponSrc">
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Cennik opon</title>
-<style>
-:root{--bg:#eceef0;--panel:#fff;--ink:#15181c;--mute:#5d6670;--line:#d5d9de;--acc:#f2b705;--accink:#1a1500;--ok:#1d7a3e;--warn:#b3261e;
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171a;--panel:#1e2226;--ink:#eceef0;--mute:#9aa4ae;--line:#333a41;--ok:#5fd18a;--warn:#ff8a80}}
-:root[data-theme="dark"]{--bg:#14171a;--panel:#1e2226;--ink:#eceef0;--mute:#9aa4ae;--line:#333a41;--ok:#5fd18a;--warn:#ff8a80}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-main{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:1fr}
-@media(min-width:900px){main{grid-template-columns:380px 1fr;align-items:start}}
-h1{font-size:22px;margin:0 0 4px;font-weight:700}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
-label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
-input[type=number],input[type=tel],input[type=search],select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
-textarea{resize:vertical}
-#src{min-height:200px;font-size:13px}
-.row{display:flex;gap:12px}.row>div{flex:1}
-.chk{display:flex;align-items:center;gap:8px;font-weight:400;margin:8px 0 0}
-button{font:inherit;font-weight:700;border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:var(--acc);color:var(--accink)}
-button.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
-.bar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.size{font-size:18px;font-weight:700;margin:0 0 8px}
-.size:not(:first-child){margin-top:20px}
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:15px}
-th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-size:13px;color:var(--mute);font-weight:600}
-td.n,th.n{text-align:right;white-space:nowrap}
-td.f{font-weight:700}
-.note{font-size:12px;color:var(--mute)}
-.miss{color:var(--warn);margin-top:8px;font-size:14px}
-.info{color:var(--mute);font-size:14px}
-.sv{margin-left:12px;padding:6px 12px;font-size:13px;vertical-align:middle}
-.save{margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
-.item{border-bottom:1px solid var(--line);padding:8px 0}
-.item summary{cursor:pointer}
-.item summary span{margin-right:10px}
-pre{white-space:pre-wrap;font:13px/1.45 inherit;margin:8px 0;padding:8px;background:var(--bg);border-radius:6px}
-.item .bar{margin:0 0 4px}
-</style>
-</head>
-<body>
-<main>
-<section class="box">
-  <h1>Cennik opon</h1>
-  <div class="info">Wklej tekst z Oponeo (można kilka rozmiarów).</div>
-  <label for="src">Tekst z Oponeo</label>
-  <textarea id="src" spellcheck="false"></textarea>
-  <div class="row">
-    <div><label for="year">Rocznik</label><input type="number" id="year" min="2000" max="2100"></div>
-    <div><label for="qty">Ilość opon</label><select id="qty"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
-  </div>
-  <label class="chk"><input type="checkbox" id="all"> Wszystkie roczniki</label>
-  <label for="br">Marki (po przecinku)</label>
-  <textarea id="br" rows="3" spellcheck="false"></textarea>
-  <div class="bar"><button class="sec" id="clr" type="button">Wyczyść tekst</button></div>
-</section>
-<section class="box">
-  <div id="ph" hidden><label for="tel">Telefon klienta (opcjonalnie, do zapisu)</label><input type="tel" id="tel" inputmode="tel" autocomplete="off"></div>
-  <div id="out" class="info">Wklej tekst, cennik pojawi się tutaj.</div>
-  <div class="bar" id="cb" hidden><button id="cp" type="button">Kopiuj cennik</button></div>
-  <div class="save">
-    <div class="size">Zapisane cenniki</div>
-    <input type="search" id="sq" placeholder="Szukaj po rozmiarze lub telefonie" autocomplete="off">
-    <div class="note" id="svnote"></div>
-    <div id="sl"></div>
-  </div>
-</section>
-</main>
-<script>
-const $=id=>document.getElementById(id);
-const DEF={brands:"Zeetex, Imperial, Kormoran, Dębica, Kleber, Yokohama, Bridgestone, Michelin",qty:4};
-const norm=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[łŁ]/g,'l').toLowerCase().replace(/\s+/g,' ').trim();
-const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt=n=>n.toLocaleString('pl-PL');
-function load(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}}
-function save(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-$('year').value=new Date().getFullYear();
-$('qty').value=load('cennik_qty',DEF.qty);
-$('br').value=load('cennik_br',DEF.brands);
-$('all').checked=false;
-
-function parse(t){
-  return t.split(/Zbliżenie bieżnika\s+/).slice(1).map(p=>{
-    const title=p.split('\n')[0].trim();
-    const pm=p.match(/(\d{1,3}(?:[ \u00a0]\d{3})+|\d+)\s*zł\s*szt/);
-    const ym=p.match(/\b(20\d\d)\s*r\./);
-    const sm=title.match(/(\d{3}\/\d{2})\s*Z?R\s*(\d{2})/i);
-    return{title,price:pm?parseInt(pm[1].replace(/[ \u00a0]/g,''),10):null,year:ym?+ym[1]:null,size:sm?sm[1]+' R'+sm[2]:'Rozmiar nieznany'};
-  }).filter(x=>x.price);
-}
-let plain='',sizeTxt={};
-function render(){
-  const src=$('src').value, out=$('out');
-  const brands=$('br').value.split(',').map(s=>s.trim()).filter(Boolean);
-  const qty=parseInt($('qty').value,10)||1, yr=+$('year').value, all=$('all').checked;
-  $('year').disabled=all;
-  save('cennik_qty',$('qty').value);save('cennik_br',$('br').value);
-  const items=parse(src);
-  if(!items.length){$('ph').hidden=true;out.className='info';out.textContent=src.trim()?'Nie znaleziono opon w wklejonym tekście. Wklej listę z Oponeo (od "Zbliżenie bieżnika...").':'Wklej tekst, cennik pojawi się tutaj.';$('cb').hidden=true;plain='';return}
-  const sizes=[...new Set(items.map(i=>i.size))];
-  let html='',txt=[];sizeTxt={};
-  sizes.forEach(sz=>{
-    const its=items.filter(i=>i.size===sz);
-    html+=`<h2 class="size">${esc(sz)}<button class="sv" type="button" data-sz="${esc(sz)}">💾 Zapisz</button></h2><div class="tw"><table><thead><tr><th>Opona</th><th>Rok</th><th class="n">Cena za szt.</th><th class="n">Razem (${qty} szt.)</th></tr></thead><tbody>`;
-    txt.push(sz);
-    const lines=[];
-    const missing=[];
-    brands.forEach(b=>{
-      const nb=norm(b);
-      const ofBrand=its.filter(i=>{const nt=norm(i.title);return nt===nb||nt.startsWith(nb+' ')});
-      const ok=ofBrand.filter(i=>all||i.year===yr).sort((a,c)=>a.price-c.price);
-      if(!ok.length){missing.push(b);return}
-      const best=ok[0];
-      const cheaper=all?null:ofBrand.filter(i=>i.year!==yr&&i.price<best.price).sort((a,c)=>a.price-c.price)[0];
-      const fin=best.price*qty;
-      html+=`<tr><td>${esc(best.title)}${cheaper?`<div class="note">Taniej w innym roczniku: ${fmt(cheaper.price)} zł (${cheaper.year||'brak roku'}) – ${esc(cheaper.title)}</div>`:''}</td><td>${best.year||'–'}</td><td class="n">${fmt(best.price)} zł</td><td class="n f">${fmt(fin)} zł</td></tr>`;
-      const ln=qty>1?`${best.title} – ${qty} × ${fmt(best.price)} zł = ${fmt(fin)} zł`:`${best.title} – ${fmt(fin)} zł`;txt.push(ln);lines.push(ln);
-    });
-    html+=`</tbody></table></div>`;
-    if(missing.length){html+=`<div class="miss">Brak: ${esc(missing.join(', '))}</div>`;txt.push('Brak: '+missing.join(', '));lines.push('Brak: '+missing.join(', '))}
-    sizeTxt[sz]=lines.join('\n');
-    txt.push('');
-  });
-  out.className='';out.innerHTML=html;
-  plain=txt.join('\n').trim();
-  $('cb').hidden=false;$('ph').hidden=false;
-}
-['src','year','qty','br','all'].forEach(id=>$(id).addEventListener('input',render));
-$('clr').onclick=()=>{$('src').value='';render();$('src').focus()};
-async function copyText(t){
-  try{await navigator.clipboard.writeText(t);return true}catch(e){
-    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
-    let ok=false;try{ok=document.execCommand('copy')}catch(e2){}ta.remove();return ok;
-  }
-}
-$('cp').onclick=async()=>{
-  const b=$('cp');const ok=await copyText(plain);
-  b.textContent=ok?'Skopiowano':'Nie udało się skopiować';
-  setTimeout(()=>b.textContent='Kopiuj cennik',1800);
-};
-const bridge=(()=>{try{return window.parent!==window&&window.parent.cennikOponDB||null}catch(e){return null}})();
-let saved=[],savedErr='';
-function getSaved(){return saved}
-function localLoad(){try{const a=JSON.parse(load('cennik_saved','[]'));return Array.isArray(a)?a:[]}catch(e){return[]}}
-function localPut(){save('cennik_saved',JSON.stringify(saved))}
-function addSaved(x){
-  if(bridge){const {id,...v}=x;return Promise.resolve(bridge.add(v))}
-  saved.push(x);localPut();renderSaved();return Promise.resolve();
-}
-function delSaved(id){
-  if(bridge){return Promise.resolve(bridge.del(id))}
-  saved=saved.filter(v=>v.id!==id);localPut();renderSaved();return Promise.resolve();
-}
-function renderSaved(){
-  if(savedErr){$('sl').innerHTML='<div class="miss">'+esc(savedErr)+'</div>';return}
-  const q=norm($('sq').value).replace(/\s/g,'');
-  const a=getSaved().filter(x=>!q||norm(x.size).replace(/\s/g,'').includes(q)||(x.phone||'').replace(/\s/g,'').includes(q));
-  a.sort((x,y)=>x.size.localeCompare(y.size)||y.ts-x.ts);
-  $('sl').innerHTML=a.length?a.map(x=>`<details class="item"><summary><b>${esc(x.size)}</b> <span>${x.qty} szt.</span>${x.phone?`<span>tel. ${esc(x.phone)}</span>`:''}<span class="note">${new Date(x.ts).toLocaleString('pl-PL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></summary><pre>${esc(x.text)}</pre><div class="bar"><button type="button" class="cpy" data-id="${esc(x.id)}">Kopiuj</button><button type="button" class="sec del" data-id="${esc(x.id)}">Usuń</button></div></details>`).join(''):'<div class="info" style="margin-top:8px">Brak zapisanych cenników.</div>';
-}
-if(bridge){
-  $('svnote').textContent='Zapisane cenniki są widoczne na wszystkich urządzeniach.';
-  bridge.subscribe(obj=>{savedErr='';saved=Object.entries(obj||{}).map(([id,v])=>({...v,id}));renderSaved()},
-    e=>{savedErr='Brak dostępu do zapisanych cenników w bazie (ścieżka cenniki_opon): '+((e&&e.message)||e)+'. Sprawdź reguły Firebase.';renderSaved()});
-}else{
-  $('svnote').textContent='Zapis tylko w tej przeglądarce, na tym urządzeniu.';
-  saved=localLoad();
-}
-$('out').addEventListener('click',e=>{
-  const b=e.target.closest('.sv');if(!b)return;
-  const sz=b.dataset.sz;
-  addSaved({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),size:sz,phone:$('tel').value.trim(),qty:parseInt($('qty').value,10)||1,ts:Date.now(),text:sizeTxt[sz]||''})
-    .catch(err=>alert('Nie udało się zapisać cennika: '+((err&&err.message)||err)));
-  b.textContent='Zapisano ✓';setTimeout(()=>{b.textContent='💾 Zapisz'},1500);
-});
-$('sl').addEventListener('click',async e=>{
-  const c=e.target.closest('.cpy'),d=e.target.closest('.del');
-  if(c){
-    const x=getSaved().find(v=>v.id===c.dataset.id);if(!x)return;
-    const ok=await copyText(x.size+'\n'+x.text);
-    c.textContent=ok?'Skopiowano':'Nie udało się skopiować';setTimeout(()=>{c.textContent='Kopiuj'},1500);
-  }else if(d){
-    if(!confirm('Usunąć zapisany cennik?'))return;
-    delSaved(d.dataset.id).catch(err=>alert('Nie udało się usunąć: '+((err&&err.message)||err)));
-  }
-});
-$('sq').addEventListener('input',renderSaved);
-renderSaved();
-render();
-<\/script>
-</body>
-</html>
-
-</script>
-<script>
-window.openCennikOpon=function(){
-  var f=document.getElementById('cennikOponFrame');
-  if(!f.srcdoc){f.srcdoc=document.getElementById('cennikOponSrc').textContent.split('<\\/script>').join('<'+'/script>');}
-  document.getElementById('cennikOponModal').style.display='flex';
-};
-window.closeCennikOpon=function(){document.getElementById('cennikOponModal').style.display='none';};
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.getElementById('cennikOponModal').style.display==='flex')window.closeCennikOpon();});
-</script>
 </body>
 </html>
