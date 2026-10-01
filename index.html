@@ -1937,6 +1937,38 @@ function qpPromptChoice(title, sub, options) {
   });
 }
 
+function qpPromptMultiChoice(title, sub, options) {
+  return new Promise(resolve => {
+    const optsHtml = options.map((o, i) => `
+      <label class="qp-opt" data-i="${i}">
+        <span>${o.label}</span>
+        <input type="checkbox" data-i="${i}" style="width:19px;height:19px;accent-color:var(--accent);flex-shrink:0" />
+      </label>`).join('');
+    qpOpenModal(`
+      <div class="qp-title">${title}</div>
+      ${sub ? `<div class="qp-sub">${sub}</div>` : ''}
+      <div class="qp-list">${optsHtml}</div>
+      <div class="qp-row">
+        <button class="qp-btn" id="qpCancelBtn">Anuluj</button>
+        <button class="qp-btn primary" id="qpOkBtn">Dalej →</button>
+      </div>
+    `);
+    const finish = (val) => { qpCloseModal(); resolve(val); };
+    document.getElementById('qpCancelBtn').onclick = () => finish(undefined);
+    document.getElementById('qpOkBtn').onclick = () => {
+      const checked = Array.from(document.querySelectorAll('#qpModal input[type=checkbox]:checked')).map(el => options[parseInt(el.dataset.i)].value);
+      finish(checked);
+    };
+    document.querySelectorAll('#qpModal .qp-opt').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.tagName === 'INPUT') return;
+        const cb = el.querySelector('input[type=checkbox]');
+        cb.checked = !cb.checked;
+      });
+    });
+  });
+}
+
 function qpPromptText(title, placeholder) {
   return new Promise(resolve => {
     qpOpenModal(`
@@ -1989,6 +2021,38 @@ window.resolvePriceMatch = async function(amount) {
   return await qpPromptChoice('Wybierz usługę', sub, options);
 };
 
+// Kreator krok po kroku: rozmiar felg → typ → dodatki → imię/marka auta. Zwraca szczegóły lub undefined (anulowano).
+async function qpCollectTireJob() {
+  const sizeOptions = [13,14,15,16,17,18,19,20,21,22].map(s => ({ label: `${s}"`, priceLabel: '', value: s }));
+  const tireSize = await qpPromptChoice('Rozmiar felg', '', sizeOptions);
+  if (tireSize === undefined) return undefined;
+
+  const wheel = await qpPromptChoice('Typ felg', '', [
+    { label: 'Stalowe', priceLabel: '', value: 'Stalowe' },
+    { label: 'Aluminiowe', priceLabel: '', value: 'Aluminiowe' }
+  ]);
+  if (wheel === undefined) return undefined;
+
+  const extras = await qpPromptMultiChoice('Dodatki', 'Zaznacz jeśli dotyczy, albo pomiń', [
+    { label: 'Run-flat', value: 'runflat' },
+    { label: 'Niski profil', value: 'low' },
+    { label: 'Nowy wentyl', value: 'valve' }
+  ]);
+  if (extras === undefined) return undefined;
+
+  const nameOrCar = await qpPromptText('Imię lub marka samochodu', 'np. Kowalski / Golf');
+
+  return {
+    tireSize,
+    wheel,
+    runflat: extras.includes('runflat'),
+    low: extras.includes('low'),
+    valve: extras.includes('valve'),
+    valveCount: extras.includes('valve') ? 4 : 0,
+    nameOrCar: nameOrCar || ''
+  };
+}
+
 window.quickPriceEntry = async function(key) {
   const v = visits[key];
   if (!v) { showToast('❌ Nie znaleziono wizyty', 'var(--red)'); return; }
@@ -1996,43 +2060,34 @@ window.quickPriceEntry = async function(key) {
   const amount = await qpPromptAmount('Kwota za wizytę', `${v.time}${v.name ? ' · ' + v.name : ''}`, current);
   if (amount === null) return;
 
-  const chosen = await window.resolvePriceMatch(amount);
-  if (chosen === undefined) return;
-  if (chosen === null || chosen === 'NONE') {
-    await update(ref(db, 'wizyty/' + key), { price: amount });
-    showToast('✔ Zapisano kwotę ' + amount + ' zł');
-    return;
-  }
+  const job = await qpCollectTireJob();
+  if (job === undefined) return;
 
   const upd = {
-    service: chosen.v.service,
-    wheel: chosen.v.wheel,
-    tireSize: chosen.v.tireSize,
-    wheelCount: chosen.v.wheelCount,
+    service: 'Wymiana opon',
+    wheel: job.wheel,
+    tireSize: job.tireSize,
+    wheelCount: 4,
+    runflat: job.runflat,
+    low: job.low,
+    valve: job.valve,
+    valveCount: job.valveCount,
     price: amount
   };
-  if (chosen.v.runflat) upd.runflat = true;
-  if (chosen.v.low) upd.low = true;
-  if (chosen.v.valve) { upd.valve = true; upd.valveCount = chosen.v.valveCount; }
+  if (job.nameOrCar) upd.name = job.nameOrCar;
   await update(ref(db, 'wizyty/' + key), upd);
-  showToast(`✔ ${chosen.label} — ${amount} zł`);
+  showToast(`✔ Wymiana opon ${job.wheel} ${job.tireSize}" — ${amount} zł`);
 };
 
-// Zajęcie wolnego slotu samą kwotą — appka dopasowuje usługę z cennika
+// Zajęcie wolnego slotu samą kwotą — rozmiar/typ/dodatki/klient wpisywane ręcznie
 window.quickPriceBook = async function(date, time) {
   const amount = await qpPromptAmount('Kwota za wizytę', time);
   if (amount === null) return;
 
-  const chosen = await window.resolvePriceMatch(amount);
-  if (chosen === undefined) return;
-  if (chosen === null || chosen === 'NONE') {
-    const ok = await qpConfirm('Brak dopasowania', `Nie wybrano usługi dla kwoty ${amount} zł. Przejść do pełnego formularza rezerwacji?`, 'Formularz', 'Anuluj');
-    if (ok) goToMainSlot(date, time);
-    return;
-  }
+  const job = await qpCollectTireJob();
+  if (job === undefined) return;
 
-  const name = await qpPromptText('Klient (opcjonalnie)', 'Imię i nazwisko');
-  await qpSaveNewVisit(chosen, amount, date, time, name);
+  await qpSaveNewVisit(job, amount, date, time);
 };
 
 // Siatka slotów biznesowych dla danego dnia, krok 30 min, każdy z dwiema połówkami po 15 min
@@ -2084,12 +2139,8 @@ window.quickPriceBookAnywhere = async function() {
   const amount = await qpPromptAmount('Kwota za wizytę', 'Zapisze się w najbliższym wolnym terminie');
   if (amount === null) return;
 
-  const chosen = await window.resolvePriceMatch(amount);
-  if (chosen === undefined) return;
-  if (chosen === null || chosen === 'NONE') {
-    showToast('Anulowano — brak wybranej usługi', 'var(--muted)');
-    return;
-  }
+  const job = await qpCollectTireJob();
+  if (job === undefined) return;
 
   let targetDate = null, targetTime = null;
   for (const mode of ['full30', 'half15']) {
@@ -2102,23 +2153,22 @@ window.quickPriceBookAnywhere = async function() {
   }
   if (!targetDate) { showToast('❌ Brak wolnych terminów w ostatnich 14 dniach', 'var(--red)'); return; }
 
-  const name = await qpPromptText('Klient (opcjonalnie)', 'Imię i nazwisko');
-  await qpSaveNewVisit(chosen, amount, targetDate, targetTime, name);
+  await qpSaveNewVisit(job, amount, targetDate, targetTime);
 };
 
-// Wspólny zapis nowej wizyty na podstawie dopasowanej usługi
-async function qpSaveNewVisit(chosen, amount, date, time, name) {
+// Wspólny zapis nowej wizyty na podstawie danych z kreatora (rozmiar/typ/dodatki/klient)
+async function qpSaveNewVisit(job, amount, date, time) {
   const v = {
-    name: name || '', phone: '', email: '', car: '',
-    service: chosen.v.service,
-    wheel: chosen.v.wheel,
-    tireSize: chosen.v.tireSize,
-    wheelCount: chosen.v.wheelCount,
+    name: job.nameOrCar || '', phone: '', email: '', car: '',
+    service: 'Wymiana opon',
+    wheel: job.wheel,
+    tireSize: job.tireSize,
+    wheelCount: 4,
     note: '',
-    runflat: !!chosen.v.runflat,
-    low: !!chosen.v.low,
-    valve: !!chosen.v.valve,
-    valveCount: chosen.v.valve ? (chosen.v.valveCount || 0) : 0,
+    runflat: !!job.runflat,
+    low: !!job.low,
+    valve: !!job.valve,
+    valveCount: job.valveCount || 0,
     bus: false,
     date, time,
     price: amount
@@ -2130,7 +2180,7 @@ async function qpSaveNewVisit(chosen, amount, date, time, name) {
     await set(ref(db, 'slots/' + newRef.key), { date: v.date, time: v.time });
     setSyncStatus('ok', '● Zapisano');
     const dateLabel = parseDate(date).toLocaleDateString('pl-PL', { day:'2-digit', month:'2-digit' });
-    showToast(`✔ ${chosen.label} — ${amount} zł · ${dateLabel} ${time}`);
+    showToast(`✔ Wymiana opon ${job.wheel} ${job.tireSize}" — ${amount} zł · ${dateLabel} ${time}`);
   } catch (e) {
     showToast('❌ Błąd zapisu', 'var(--red)');
   }
