@@ -307,6 +307,9 @@ button:active{transform:translateY(0);box-shadow:none}
 .qp-btn.primary:hover{background:var(--accent2);}
 .qp-list{display:flex;flex-direction:column;gap:8px;max-height:min(340px,50vh);overflow-y:auto;margin-bottom:16px;}
 .qp-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;text-align:left;font-family:var(--font);color:var(--text);font-size:13px;transition:border-color 0.12s,background 0.12s;}
+.qp-chip-row{display:flex;gap:6px;margin-bottom:16px;}
+.qp-chip{flex:1;min-width:0;padding:10px 4px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:11px;font-weight:600;line-height:1.3;text-align:center;cursor:pointer;transition:background 0.12s,border-color 0.12s,color 0.12s;user-select:none;}
+.qp-chip.active{background:var(--accent);border-color:var(--accent);color:#111;}
 .qp-opt:hover{border-color:var(--accent);background:rgba(245,158,11,0.08);}
 .qp-opt .qp-price{font-family:var(--mono);color:var(--accent);font-weight:700;white-space:nowrap;flex-shrink:0;}
 .slot{padding:13px 6px;border-radius:3px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;transition:all 0.12s;border:1px solid #4a4a4a;}
@@ -1939,15 +1942,11 @@ function qpPromptChoice(title, sub, options) {
 
 function qpPromptMultiChoice(title, sub, options) {
   return new Promise(resolve => {
-    const optsHtml = options.map((o, i) => `
-      <label class="qp-opt" data-i="${i}">
-        <span>${o.label}</span>
-        <input type="checkbox" data-i="${i}" style="width:19px;height:19px;accent-color:var(--accent);flex-shrink:0" />
-      </label>`).join('');
+    const optsHtml = options.map((o, i) => `<div class="qp-chip" data-i="${i}">${o.label}</div>`).join('');
     qpOpenModal(`
       <div class="qp-title">${title}</div>
       ${sub ? `<div class="qp-sub">${sub}</div>` : ''}
-      <div class="qp-list">${optsHtml}</div>
+      <div class="qp-chip-row">${optsHtml}</div>
       <div class="qp-row">
         <button class="qp-btn" id="qpCancelBtn">Anuluj</button>
         <button class="qp-btn primary" id="qpOkBtn">Dalej →</button>
@@ -1955,17 +1954,13 @@ function qpPromptMultiChoice(title, sub, options) {
     `);
     const finish = (val) => { qpCloseModal(); resolve(val); };
     document.getElementById('qpCancelBtn').onclick = () => finish(undefined);
+    document.querySelectorAll('#qpModal .qp-chip').forEach(el => {
+      el.onclick = () => el.classList.toggle('active');
+    });
     document.getElementById('qpOkBtn').onclick = () => {
-      const checked = Array.from(document.querySelectorAll('#qpModal input[type=checkbox]:checked')).map(el => options[parseInt(el.dataset.i)].value);
+      const checked = Array.from(document.querySelectorAll('#qpModal .qp-chip.active')).map(el => options[parseInt(el.dataset.i)].value);
       finish(checked);
     };
-    document.querySelectorAll('#qpModal .qp-opt').forEach(el => {
-      el.addEventListener('click', e => {
-        if (e.target.tagName === 'INPUT') return;
-        const cb = el.querySelector('input[type=checkbox]');
-        cb.checked = !cb.checked;
-      });
-    });
   });
 }
 
@@ -2036,7 +2031,8 @@ async function qpCollectTireJob() {
   const extras = await qpPromptMultiChoice('Dodatki', 'Zaznacz jeśli dotyczy, albo pomiń', [
     { label: 'Run-flat', value: 'runflat' },
     { label: 'Niski profil', value: 'low' },
-    { label: 'Nowy wentyl', value: 'valve' }
+    { label: 'Nowy wentyl', value: 'valve' },
+    { label: 'Przech. (+40 zł)', value: 'storage' }
   ]);
   if (extras === undefined) return undefined;
 
@@ -2049,9 +2045,12 @@ async function qpCollectTireJob() {
     low: extras.includes('low'),
     valve: extras.includes('valve'),
     valveCount: extras.includes('valve') ? 4 : 0,
+    storage: extras.includes('storage'),
     nameOrCar: nameOrCar || ''
   };
 }
+
+const QP_STORAGE_FEE = 40;
 
 window.quickPriceEntry = async function(key) {
   const v = visits[key];
@@ -2062,6 +2061,7 @@ window.quickPriceEntry = async function(key) {
 
   const job = await qpCollectTireJob();
   if (job === undefined) return;
+  const finalPrice = amount + (job.storage ? QP_STORAGE_FEE : 0);
 
   const upd = {
     service: 'Wymiana opon',
@@ -2072,11 +2072,12 @@ window.quickPriceEntry = async function(key) {
     low: job.low,
     valve: job.valve,
     valveCount: job.valveCount,
-    price: amount
+    price: finalPrice
   };
   if (job.nameOrCar) upd.name = job.nameOrCar;
+  if (job.storage) upd.note = `Przechowanie opon (+${QP_STORAGE_FEE} zł)`;
   await update(ref(db, 'wizyty/' + key), upd);
-  showToast(`✔ Wymiana opon ${job.wheel} ${job.tireSize}" — ${amount} zł`);
+  showToast(`✔ Wymiana opon ${job.wheel} ${job.tireSize}" — ${finalPrice} zł`);
 };
 
 // Zajęcie wolnego slotu samą kwotą — rozmiar/typ/dodatki/klient wpisywane ręcznie
@@ -2158,20 +2159,21 @@ window.quickPriceBookAnywhere = async function() {
 
 // Wspólny zapis nowej wizyty na podstawie danych z kreatora (rozmiar/typ/dodatki/klient)
 async function qpSaveNewVisit(job, amount, date, time) {
+  const finalPrice = amount + (job.storage ? QP_STORAGE_FEE : 0);
   const v = {
     name: job.nameOrCar || '', phone: '', email: '', car: '',
     service: 'Wymiana opon',
     wheel: job.wheel,
     tireSize: job.tireSize,
     wheelCount: 4,
-    note: '',
+    note: job.storage ? `Przechowanie opon (+${QP_STORAGE_FEE} zł)` : '',
     runflat: !!job.runflat,
     low: !!job.low,
     valve: !!job.valve,
     valveCount: job.valveCount || 0,
     bus: false,
     date, time,
-    price: amount
+    price: finalPrice
   };
 
   try {
@@ -2180,7 +2182,7 @@ async function qpSaveNewVisit(job, amount, date, time) {
     await set(ref(db, 'slots/' + newRef.key), { date: v.date, time: v.time });
     setSyncStatus('ok', '● Zapisano');
     const dateLabel = parseDate(date).toLocaleDateString('pl-PL', { day:'2-digit', month:'2-digit' });
-    showToast(`✔ Wymiana opon ${job.wheel} ${job.tireSize}" — ${amount} zł · ${dateLabel} ${time}`);
+    showToast(`✔ Wymiana opon ${job.wheel} ${job.tireSize}" — ${finalPrice} zł · ${dateLabel} ${time}`);
   } catch (e) {
     showToast('❌ Błąd zapisu', 'var(--red)');
   }
