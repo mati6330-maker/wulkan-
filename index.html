@@ -2190,6 +2190,12 @@ async function qpSaveNewVisit(job, amount, date, time) {
   }
 }
 
+// Zapis cennika opon (z narzędzia "Cennik opon" / Oponeo) do Firebase — wywoływane z iframe'a
+window.qpSaveCennikOpon = async function(payload) {
+  await push(ref(db, 'cenniki_opon'), payload);
+  showToast('✔ Cennik zapisany');
+};
+
 function unsubscribeAll() {
   if (unsubVisits) { unsubVisits(); unsubVisits = null; }
   if (unsubOrders) { unsubOrders(); unsubOrders = null; }
@@ -7808,7 +7814,7 @@ td.f{font-weight:700}
 </section>
 <section class="box">
   <div id="out" class="info">Wklej tekst, cennik pojawi się tutaj.</div>
-  <div class="bar" id="cb" hidden><button id="cp" type="button">Kopiuj cennik</button></div>
+  <div class="bar" id="cb" hidden><button id="cp" type="button">Kopiuj cennik</button><button id="sv" class="sec" type="button">💾 Zapisz cennik</button></div>
 </section>
 </main>
 <script>
@@ -7878,6 +7884,23 @@ $('cp').onclick=async()=>{
   }
   b.textContent=ok?'Skopiowano':'Nie udało się skopiować';
   setTimeout(()=>b.textContent='Kopiuj cennik',1800);
+};
+$('sv').onclick=async()=>{
+  const b=$('sv');
+  if(!plain){b.textContent='Brak cennika do zapisania';setTimeout(()=>b.textContent='💾 Zapisz cennik',1800);return;}
+  const payload={
+    savedAt:new Date().toISOString(),
+    year:$('year').value, all:$('all').checked, qty:$('qty').value,
+    brands:$('br').value, sourceText:$('src').value, summary:plain
+  };
+  try{
+    if(!(window.parent && window.parent.qpSaveCennikOpon)) throw new Error('brak połączenia z appką');
+    await window.parent.qpSaveCennikOpon(payload);
+    b.textContent='Zapisano ✔';
+  }catch(e){
+    b.textContent='Błąd zapisu';
+  }
+  setTimeout(()=>b.textContent='💾 Zapisz cennik',1800);
 };
 render();
 <\/script>
