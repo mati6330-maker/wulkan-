@@ -2120,6 +2120,9 @@ function qvGetDaySlotGrid(dt) {
 
 // Najbliższy wolny termin w PRZESZŁOŚCI (usługa już się skończyła, więc jej start musi być przed "teraz").
 // mode 'full30' = szuka całych wolnych 30-min slotów, mode 'half15' = szuka pojedynczych wolnych połówek 15-min
+// Najbliższy wolny termin w danym dniu, szukając w OBIE strony od "teraz" (do przodu i wstecz),
+// rozszerzając zasięg aż coś znajdzie; przy takiej samej odległości wygrywa termin "do przodu".
+// mode 'full30' = cały wolny 30-min slot, mode 'half15' = pojedyncza wolna połówka 15-min
 function qvFindNearestSlot(dt, mode) {
   const grid = qvGetDaySlotGrid(dt);
   if (!grid.length) return null;
@@ -2127,8 +2130,6 @@ function qvFindNearestSlot(dt, mode) {
   const dayVisits = Object.entries(visits).filter(([k,v]) => v.date === d);
   const isFree = (t) => !dayVisits.some(([k,v]) => v.time === t);
   const isToday = d === getToday();
-  const now = new Date();
-  const nowMinutes = now.getHours()*60 + now.getMinutes();
 
   const candidates = [];
   grid.forEach(slot => {
@@ -2139,14 +2140,28 @@ function qvFindNearestSlot(dt, mode) {
       slot.halves.forEach((t, idx) => { if (isFree(t)) candidates.push({ time: t, minutes: slot.minutes + idx*15 }); });
     }
   });
-  // dziś liczą się tylko terminy, które już minęły; dni wcześniejsze są w całości "przeszłością"
-  const valid = isToday ? candidates.filter(c => c.minutes <= nowMinutes) : candidates;
-  if (!valid.length) return null;
-  valid.sort((a,b) => b.minutes - a.minutes); // najpóźniejszy, czyli najbliższy "teraz", pierwszy
-  return valid[0].time;
+  if (!candidates.length) return null;
+
+  if (!isToday) {
+    // inny dzień — brak punktu odniesienia "teraz", bierz najwcześniejszy wolny od otwarcia
+    candidates.sort((a, b) => a.minutes - b.minutes);
+    return candidates[0].time;
+  }
+
+  const now = new Date();
+  const nowMinutes = now.getHours()*60 + now.getMinutes();
+  candidates.sort((a, b) => {
+    const da = Math.abs(a.minutes - nowMinutes), db = Math.abs(b.minutes - nowMinutes);
+    if (da !== db) return da - db; // najpierw najbliższy w czasie, niezależnie od kierunku
+    const aFwd = a.minutes >= nowMinutes, bFwd = b.minutes >= nowMinutes;
+    if (aFwd !== bFwd) return aFwd ? -1 : 1; // remis odległości — wygrywa "do przodu"
+    return a.minutes - b.minutes;
+  });
+  return candidates[0].time;
 }
 
-// Zajęcie najbliższego wolnego terminu samą kwotą — bez wskazywania konkretnego slotu
+// Zajęcie najbliższego wolnego terminu samą kwotą — bez wskazywania konkretnego slotu.
+// Najpierw dziś (w obie strony od "teraz"), potem kolejne dni do przodu, dopiero na końcu dni wstecz.
 window.quickPriceBookAnywhere = async function() {
   const amount = await qpPromptAmount('Kwota za wizytę', 'Zapisze się w najbliższym wolnym terminie');
   if (amount === null) return;
@@ -2156,14 +2171,25 @@ window.quickPriceBookAnywhere = async function() {
 
   let targetDate = null, targetTime = null;
   for (const mode of ['full30', 'half15']) {
-    for (let i = 0; i >= -13; i--) {
+    const todayDt = new Date(); todayDt.setHours(0,0,0,0);
+    let slot = qvFindNearestSlot(todayDt, mode);
+    if (slot) { targetDate = formatDate(todayDt); targetTime = slot; break; }
+
+    for (let i = 1; i <= 13 && !targetDate; i++) {
       const dt = new Date(); dt.setDate(dt.getDate() + i); dt.setHours(0,0,0,0);
-      const slot = qvFindNearestSlot(dt, mode);
-      if (slot) { targetDate = formatDate(dt); targetTime = slot; break; }
+      slot = qvFindNearestSlot(dt, mode);
+      if (slot) { targetDate = formatDate(dt); targetTime = slot; }
+    }
+    if (targetDate) break;
+
+    for (let i = 1; i <= 13 && !targetDate; i++) {
+      const dt = new Date(); dt.setDate(dt.getDate() - i); dt.setHours(0,0,0,0);
+      slot = qvFindNearestSlot(dt, mode);
+      if (slot) { targetDate = formatDate(dt); targetTime = slot; }
     }
     if (targetDate) break;
   }
-  if (!targetDate) { showToast('❌ Brak wolnych terminów w ostatnich 14 dniach', 'var(--red)'); return; }
+  if (!targetDate) { showToast('❌ Brak wolnych terminów w pobliskich dniach', 'var(--red)'); return; }
 
   await qpSaveNewVisit(job, amount, targetDate, targetTime);
 };
