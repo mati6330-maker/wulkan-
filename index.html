@@ -7980,8 +7980,9 @@ $('ld').onclick=async()=>{
       };
     });
   }catch(e){
-    btn.textContent='Błąd wczytywania';
-    setTimeout(()=>btn.textContent='📂 Wczytaj zapisany',1800);
+    btn.textContent='📂 Wczytaj zapisany';
+    box.innerHTML=`<div class="miss">Błąd wczytywania: ${esc((e&&e.message)||String(e))}</div>`;
+    box.style.display='block';
   }
 };
 render();
