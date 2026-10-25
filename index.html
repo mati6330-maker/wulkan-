@@ -4450,20 +4450,45 @@ window.calculateCash = function calculateCash() {
   const oDone=oArr.filter(o=>o.status).length;
   const kDone=kArr.filter(k=>k&&k.status).length;
 
-  // Trend przychodów — ostatnie 14 dni
-  const trendLabels=[], trendData=[];
-  for (let i=13; i>=0; i--) {
-    const dt=new Date(now); dt.setDate(now.getDate()-i); dt.setHours(0,0,0,0);
-    const ds=formatDate(dt);
-    trendLabels.push(dt.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit'}));
-    let sum=0;
-    vArr.forEach(v=>{ if(v.status && v.date===ds) sum+=(v.price||calcVisitPrice(v)); });
-    oArr.forEach(o=>{ if(o.status && ((o.dateStamp||o.startDate)===ds)) sum+=(o.price||0); });
-    kArr.forEach(k=>{ if(k&&k.status&&k.price!=null && ((k.end||k.start)===ds)) sum+=k.price; });
-    trendData.push(sum);
+  // Trend przychodów — zakres wybierany: dni / tygodnie / miesiące
+  const rangeMode = window._statsRangeMode || 'day';
+  const buckets = [];
+  const fmtDM = d => d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit'});
+  let trendTitle, rangeShort;
+  if (rangeMode === 'week') {
+    for (let k=11; k>=0; k--) {
+      const s=new Date(startWeek); s.setDate(s.getDate()-7*k);
+      const e=new Date(s); e.setDate(s.getDate()+6);
+      buckets.push({s,e,label:fmtDM(s)});
+    }
+    trendTitle='Trend — ostatnie 12 tygodni'; rangeShort='12 tyg.';
+  } else if (rangeMode === 'month') {
+    for (let k=11; k>=0; k--) {
+      const s=new Date(now.getFullYear(), now.getMonth()-k, 1);
+      const e=new Date(s.getFullYear(), s.getMonth()+1, 0);
+      buckets.push({s,e,label:s.toLocaleDateString('pl-PL',{month:'short',year:'2-digit'})});
+    }
+    trendTitle='Trend — ostatnie 12 miesięcy'; rangeShort='12 mies.';
+  } else {
+    for (let i=13; i>=0; i--) {
+      const dt=new Date(now); dt.setDate(now.getDate()-i); dt.setHours(0,0,0,0);
+      buckets.push({s:dt,e:dt,label:fmtDM(dt)});
+    }
+    trendTitle='Trend — ostatnie 14 dni'; rangeShort='14 dni';
   }
+  const paid=[];
+  vArr.forEach(v=>{ if(v.status) paid.push([v.date, v.price||calcVisitPrice(v)]); });
+  oArr.forEach(o=>{ if(o.status) paid.push([(o.dateStamp||o.startDate)||today, o.price||0]); });
+  kArr.forEach(k=>{ if(k&&k.status&&k.price!=null) paid.push([(k.end||k.start)||today, k.price]); });
+  const trendLabels=buckets.map(b=>b.label);
+  const trendData=buckets.map(b=>{ const sS=formatDate(b.s), eS=formatDate(b.e); return paid.reduce((sum,[ds,p])=>(ds>=sS&&ds<=eS)?sum+p:sum,0); });
 
-  window._statsSnapshot = { dayV,dayO,dayK,weekV,weekO,weekK,monthV,monthO,monthK,total,trendLabels,trendData,services,wheels };
+  // Usługi i felgi w wybranym zakresie
+  const rStart=formatDate(buckets[0].s), rEnd=formatDate(buckets[buckets.length-1].e);
+  const servicesRange={}, wheelsRange={};
+  vArr.forEach(v=>{ if(v.date>=rStart && v.date<=rEnd){ servicesRange[v.service]=(servicesRange[v.service]||0)+1; wheelsRange[v.wheel]=(wheelsRange[v.wheel]||0)+1; } });
+
+  window._statsSnapshot = { dayV,dayO,dayK,weekV,weekO,weekK,monthV,monthO,monthK,total,trendLabels,trendData,services,wheels,servicesRange,wheelsRange,trendTitle,rangeShort };
 
   const breakdown = (v,o,k) => `
     <div style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
@@ -4519,21 +4544,26 @@ window.calculateCash = function calculateCash() {
     <div class="card" style="margin-top:8px"><span style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px">TYP FELG</span><br><span style="font-size:12px;color:var(--text)">${topWheel}</span></div>
 
     <div class="section-label" style="margin-top:18px">WYKRESY</div>
+    <div class="qp-chip-row" style="margin-bottom:10px">
+      <div class="qp-chip ${rangeMode==='day'?'active':''}" onclick="window.setStatsRange('day')">Dni</div>
+      <div class="qp-chip ${rangeMode==='week'?'active':''}" onclick="window.setStatsRange('week')">Tygodnie</div>
+      <div class="qp-chip ${rangeMode==='month'?'active':''}" onclick="window.setStatsRange('month')">Miesiące</div>
+    </div>
     <div class="card" style="padding:12px">
       <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">PRZYCHODY: DZIEŃ / TYDZIEŃ / MIESIĄC</div>
       <canvas id="chartRevenue" height="200"></canvas>
     </div>
     <div class="card" style="padding:12px;margin-top:8px">
-      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TREND — OSTATNIE 14 DNI</div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">${trendTitle.toUpperCase()}</div>
       <canvas id="chartTrend" height="200"></canvas>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
       <div class="card" style="padding:12px">
-        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TOP USŁUGI</div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TOP USŁUGI · ${rangeShort.toUpperCase()}</div>
         <canvas id="chartServices" height="200"></canvas>
       </div>
       <div class="card" style="padding:12px">
-        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TYP FELG</div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TYP FELG · ${rangeShort.toUpperCase()}</div>
         <canvas id="chartWheels" height="200"></canvas>
       </div>
     </div>
@@ -4544,6 +4574,10 @@ window.calculateCash = function calculateCash() {
 
 // ── WYKRESY STATYSTYK ──
 let statsChartInstances = {};
+window.setStatsRange = function(mode) {
+  window._statsRangeMode = mode;
+  window.calculateCash();
+};
 window.renderStatsCharts = async function(data) {
   if (!data) return;
   try { await ensureChartJS(); } catch (e) { return; }
@@ -4612,7 +4646,7 @@ window.renderStatsCharts = async function(data) {
 
   const svcCtx = document.getElementById('chartServices');
   if (svcCtx) {
-    const top = topN(data.services, 4);
+    const top = topN(data.servicesRange, 4);
     statsChartInstances.chartServices = new Chart(svcCtx, {
       type: 'doughnut',
       data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: palette }] },
@@ -4622,7 +4656,7 @@ window.renderStatsCharts = async function(data) {
 
   const whCtx = document.getElementById('chartWheels');
   if (whCtx) {
-    const top = topN(data.wheels, 4);
+    const top = topN(data.wheelsRange, 4);
     statsChartInstances.chartWheels = new Chart(whCtx, {
       type: 'doughnut',
       data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: palette }] },
@@ -4633,7 +4667,8 @@ window.renderStatsCharts = async function(data) {
 
 window.printStatsCharts = function() {
   const ids = ['chartRevenue','chartTrend','chartServices','chartWheels'];
-  const titles = { chartRevenue:'Przychody: dzień / tydzień / miesiąc', chartTrend:'Trend — ostatnie 14 dni', chartServices:'Top usługi', chartWheels:'Typ felg' };
+  const snapT = window._statsSnapshot || {};
+  const titles = { chartRevenue:'Przychody: dzień / tydzień / miesiąc', chartTrend:snapT.trendTitle||'Trend', chartServices:'Top usługi ('+(snapT.rangeShort||'')+')', chartWheels:'Typ felg ('+(snapT.rangeShort||'')+')' };
   const imgs = {};
   ids.forEach(id => { const inst = statsChartInstances[id]; if (inst) imgs[id] = inst.toBase64Image('image/png', 1); });
 
