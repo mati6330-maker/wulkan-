@@ -2314,7 +2314,8 @@ window.openBatchEntry = function() {
     <div class="qp-title">Wpis zbiorczy</div>
     <div class="qp-sub">Wpisz kwoty, każdą w nowej linii (od pierwszej wizyty dnia)</div>
     <input id="bmDate" type="date" class="qp-input text" value="${formatDate(qvDate)}" style="margin-bottom:8px"/>
-    <textarea id="bmText" class="qp-input text" rows="5" placeholder="60&#10;60&#10;70&#10;130" style="resize:vertical;font-family:var(--mono)"></textarea>
+    <textarea id="bmText" class="qp-input text" rows="5" inputmode="numeric" enterkeyhint="enter" autocomplete="off" placeholder="60&#10;60&#10;70&#10;130" style="resize:vertical;font-family:var(--mono)"></textarea>
+    <button class="qp-btn" id="bmNl" type="button" style="width:100%;margin-top:6px;padding:10px">↵ Nowa linia</button>
     <div id="bmPreview" class="bm-preview"></div>
     <div class="qp-row">
       <button class="qp-btn" id="qpCancelBtn">Anuluj</button>
@@ -2356,6 +2357,17 @@ window.openBatchEntry = function() {
     $s.textContent = ok === rows.length ? `Zapisz ${ok}` : `Zapisz ${ok} z ${rows.length}`;
     $s.disabled = ok === 0;
   };
+
+  // Klawiatura numeryczna często nie ma Entera — ten przycisk wstawia nową linię w miejscu kursora
+  const nl = document.getElementById('bmNl');
+  nl.addEventListener('mousedown', e => e.preventDefault());
+  nl.addEventListener('click', () => {
+    const st = $t.selectionStart, en = $t.selectionEnd;
+    $t.value = $t.value.slice(0, st) + '\n' + $t.value.slice(en);
+    $t.selectionStart = $t.selectionEnd = st + 1;
+    $t.focus();
+    render();
+  });
 
   $p.addEventListener('change', e => {
     const sel = e.target.closest('.bm-sel');
