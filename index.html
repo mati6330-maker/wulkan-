@@ -313,6 +313,14 @@ button:active{transform:translateY(0);box-shadow:none}
 .qp-chip-row{display:flex;gap:6px;margin-bottom:16px;}
 .qp-chip{flex:1;min-width:0;padding:10px 4px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:11px;font-weight:600;line-height:1.3;text-align:center;cursor:pointer;transition:background 0.12s,border-color 0.12s,color 0.12s;user-select:none;}
 .qp-chip.active{background:var(--accent);border-color:var(--accent);color:#111;}
+.bm-preview{max-height:min(260px,36vh);overflow-y:auto;margin:10px 0 14px;display:flex;flex-direction:column;gap:6px;}
+.bm-row{display:grid;grid-template-columns:50px 58px 1fr;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);font-size:12px;}
+.bm-row.none{border-color:var(--red);}
+.bm-time{font-family:var(--mono);font-weight:700;color:var(--accent);}
+.bm-row.none .bm-time{color:var(--red);font-size:10px;}
+.bm-amt{font-family:var(--mono);font-weight:700;}
+.bm-sel{margin:0;padding:6px 4px;font-size:11px;border-radius:6px;min-width:0;width:100%;}
+.bm-empty{color:var(--muted);font-size:12px;text-align:center;padding:6px 0;}
 .qp-opt:hover{border-color:var(--accent);background:rgba(245,158,11,0.08);}
 .qp-opt .qp-price{font-family:var(--mono);color:var(--accent);font-weight:700;white-space:nowrap;flex-shrink:0;}
 .slot{padding:13px 6px;border-radius:3px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;transition:all 0.12s;border:1px solid #4a4a4a;}
@@ -624,6 +632,7 @@ body.light .day-count.partial{color:var(--accent);background:rgba(37,99,235,0.08
     </div>
   </div>
   <button id="qvQuickAddBtn" onclick="window.quickPriceBookAnywhere()" style="display:none;margin-bottom:10px;background:var(--accent);color:#111;font-weight:700">💰 Szybki wpis kwotą</button>
+  <button id="qvBatchBtn" onclick="window.openBatchEntry()" style="display:none;margin-bottom:10px;background:transparent;color:var(--accent);border:1px solid var(--accent);font-weight:700">📋 Wpis zbiorczy</button>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px">
     <button id="qvPrevBtn" onclick="window.qvChangePeriod(-1)" style="width:auto;padding:8px 16px;font-size:18px;background:transparent;border:1px solid var(--border);color:var(--muted)">◀</button>
     <div style="text-align:center;flex:1">
@@ -1748,6 +1757,8 @@ onAuthStateChanged(auth, user => {
     if (qvBtn) qvBtn.style.display = 'block';
     const fBar = document.getElementById('frozenBar');
     if (fBar) fBar.style.display = 'block';
+    const bmBtn = document.getElementById('qvBatchBtn');
+    if (bmBtn) bmBtn.style.display = 'block';
     // Odblokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.remove('tab-locked');
@@ -1770,6 +1781,8 @@ onAuthStateChanged(auth, user => {
     if (qvBtn2) qvBtn2.style.display = 'none';
     const fBar2 = document.getElementById('frozenBar');
     if (fBar2) fBar2.style.display = 'none';
+    const bmBtn2 = document.getElementById('qvBatchBtn');
+    if (bmBtn2) bmBtn2.style.display = 'none';
     // Zablokuj zakładki admina
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.add('tab-locked');
@@ -2245,6 +2258,153 @@ async function qpSaveNewVisit(job, amount, date, time) {
     showToast(`✔ ${job.service} ${job.wheel} ${job.tireSize}" — ${finalPrice} zł · ${dateLabel} ${time}`);
   } catch (e) {
     showToast('❌ Błąd zapisu', 'var(--red)');
+  }
+}
+
+// ── WPIS ZBIORCZY: lista kwot → wolne sloty + usługa dopasowana po cenie ──
+function qpRankMatches(amount) {
+  const all = buildPriceCandidates().map(c => ({ ...c, diff: Math.abs(c.price - amount) }));
+  if (!all.length) return [];
+  const minDiff = Math.min(...all.map(c => c.diff));
+  const svcOrder = { 'Wymiana opon': 0, 'Wymiana kół': 1, 'Wyważenie kół': 2, 'Naprawa opony': 3 };
+  const key = c => [
+    c.diff,
+    (c.v.service === 'Naprawa opony' ? c.v.wheelCount === 1 : c.v.wheelCount === 4) ? 0 : 1,
+    (c.v.runflat || c.v.low || c.v.valve) ? 1 : 0,
+    svcOrder[c.v.service] ?? 9,
+    c.price
+  ];
+  const cmp = (a, b) => { const ka = key(a), kb = key(b); for (let i = 0; i < ka.length; i++) if (ka[i] !== kb[i]) return ka[i] - kb[i]; return 0; };
+  const pool = all.filter(c => c.diff <= minDiff + 2).sort(cmp);
+  const seen = new Set(), out = [];
+  for (const c of pool) { const k = c.label + '|' + c.price; if (!seen.has(k)) { seen.add(k); out.push(c); } }
+  return out.slice(0, 8);
+}
+
+// n wolnych terminów w danym dniu: najpierw całe 30-min sloty, potem pojedyncze wolne połówki 15-min; wynik chronologicznie
+function qpBatchSlots(dateStr, n) {
+  if (!dateStr || n <= 0) return [];
+  const grid = qvGetDaySlotGrid(parseDate(dateStr));
+  if (!grid.length) return [];
+  const taken = new Set(Object.values(visits).filter(v => v.date === dateStr).map(v => v.time));
+  const full = [], halves = [];
+  grid.forEach(slot => {
+    if (isSlotBlockedForDate(dateStr, slot.base)) return;
+    const free = slot.halves.map(t => !taken.has(t));
+    if (free[0] && free[1]) full.push({ time: slot.base, minutes: slot.minutes });
+    else slot.halves.forEach((t, i) => { if (free[i]) halves.push({ time: t, minutes: slot.minutes + i * 15 }); });
+  });
+  const chosen = full.slice(0, n);
+  if (chosen.length < n) chosen.push(...halves.slice(0, n - chosen.length));
+  chosen.sort((a, b) => a.minutes - b.minutes);
+  return chosen.map(c => c.time);
+}
+
+function qpParseAmounts(text) {
+  return String(text || '').split(/[\s;]+/).map(t => t.trim()).filter(Boolean)
+    .map(t => Math.round(parseFloat(t.replace(',', '.'))))
+    .filter(n => !isNaN(n) && n > 0 && n <= 3000);
+}
+
+window.openBatchEntry = function() {
+  if (!currentUser) return;
+  const overrides = {};
+  let rows = [];
+  qpOpenModal(`
+    <div class="qp-title">Wpis zbiorczy</div>
+    <div class="qp-sub">Wpisz kwoty, każdą w nowej linii (od pierwszej wizyty dnia)</div>
+    <input id="bmDate" type="date" class="qp-input text" value="${formatDate(qvDate)}" style="margin-bottom:8px"/>
+    <textarea id="bmText" class="qp-input text" rows="5" placeholder="60&#10;60&#10;70&#10;130" style="resize:vertical;font-family:var(--mono)"></textarea>
+    <div id="bmPreview" class="bm-preview"></div>
+    <div class="qp-row">
+      <button class="qp-btn" id="qpCancelBtn">Anuluj</button>
+      <button class="qp-btn primary" id="bmSave">Zapisz</button>
+    </div>
+  `);
+  const card = document.querySelector('#qpModal .qp-card');
+  card.style.maxWidth = '440px';
+  card.style.maxHeight = 'calc(100vh - 32px)';
+  card.style.overflowY = 'auto';
+
+  const $d = document.getElementById('bmDate'), $t = document.getElementById('bmText');
+  const $p = document.getElementById('bmPreview'), $s = document.getElementById('bmSave');
+
+  const render = () => {
+    const amounts = qpParseAmounts($t.value);
+    const times = qpBatchSlots($d.value, amounts.length);
+    rows = amounts.map((amount, i) => {
+      const cands = qpRankMatches(amount);
+      const ov = overrides[i + ':' + amount];
+      const idx = Math.max(0, cands.findIndex(c => c.label === ov));
+      return { amount, cands, idx, time: times[i] || null };
+    });
+    if (!rows.length) {
+      $p.innerHTML = '<div class="bm-empty">Wpisz kwoty, a pojawi się podgląd z godzinami i usługami</div>';
+      $s.textContent = 'Zapisz'; $s.disabled = true;
+      return;
+    }
+    $p.innerHTML = rows.map((r, i) => {
+      const opts = r.cands.map((c, k) => `<option value="${k}" ${k === r.idx ? 'selected' : ''}>${c.label} — ${c.price} zł</option>`).join('');
+      return `<div class="bm-row ${r.time ? '' : 'none'}">
+        <span class="bm-time">${r.time || 'brak slotu'}</span>
+        <span class="bm-amt">${r.amount} zł</span>
+        <select class="bm-sel" data-i="${i}">${opts}</select>
+      </div>`;
+    }).join('');
+    const ok = rows.filter(r => r.time).length;
+    $s.textContent = ok === rows.length ? `Zapisz ${ok}` : `Zapisz ${ok} z ${rows.length}`;
+    $s.disabled = ok === 0;
+  };
+
+  $p.addEventListener('change', e => {
+    const sel = e.target.closest('.bm-sel');
+    if (!sel) return;
+    const i = parseInt(sel.dataset.i), r = rows[i];
+    r.idx = parseInt(sel.value);
+    overrides[i + ':' + r.amount] = r.cands[r.idx].label;
+  });
+  $t.addEventListener('input', render);
+  $d.addEventListener('change', render);
+
+  $s.onclick = async () => {
+    const dateStr = $d.value;
+    if (!dateStr) { showToast('❌ Wybierz dzień', 'var(--red)'); return; }
+    const times = qpBatchSlots(dateStr, rows.length);
+    const toSave = rows.slice(0, times.length).map((r, i) => ({ amount: r.amount, cand: r.cands[r.idx], time: times[i] }));
+    if (!toSave.length) { showToast('❌ Brak wolnych slotów tego dnia', 'var(--red)'); return; }
+    qpCloseModal();
+    await qpSaveBatch(toSave, dateStr, rows.length - toSave.length);
+  };
+
+  render();
+  setTimeout(() => $t.focus(), 60);
+};
+
+async function qpSaveBatch(list, date, skipped) {
+  let ok = 0;
+  try {
+    setSyncStatus('syncing', '⟳ Zapisywanie...');
+    for (const r of list) {
+      const c = r.cand.v;
+      const v = {
+        name: '', phone: '', email: '', car: '',
+        service: c.service, wheel: c.wheel, tireSize: c.tireSize,
+        wheelCount: c.wheelCount || 4,
+        note: '',
+        runflat: !!c.runflat, low: !!c.low, valve: !!c.valve,
+        valveCount: c.valve ? (c.valveCount || 0) : 0,
+        bus: false,
+        date, time: r.time,
+        price: r.amount
+      };
+      const newRef = await push(ref(db, 'wizyty'), v);
+      await set(ref(db, 'slots/' + newRef.key), { date, time: r.time });
+      ok++;
+    }
+    setSyncStatus('ok', '● Zapisano');
+    showToast(`✔ Zapisano ${ok} wizyt${skipped ? ' · pominięto ' + skipped + ' (brak slotów)' : ''}`);
+  } catch (e) {
+    showToast(`❌ Błąd zapisu (zapisano ${ok} z ${list.length})`, 'var(--red)');
   }
 }
 
