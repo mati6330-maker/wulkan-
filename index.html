@@ -363,6 +363,8 @@ input[type=checkbox].custom-cb:checked::after{content:'✕';position:absolute;to
 #pricing .card{font-size:15px;line-height:2;}
 #pricing .card b{display:block;color:var(--accent);font-size:14px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 #cashBox .card{font-family:var(--mono);font-size:15px;letter-spacing:1px;}
+#cashBox{max-width:100%;overflow-x:hidden;}
+#cashBox canvas{max-width:100%;}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}::-webkit-scrollbar-thumb:hover{background:var(--accent)}
 
 /* ── EKRAN LOGOWANIA ── */
@@ -2281,23 +2283,21 @@ function qpRankMatches(amount) {
   return out.slice(0, 8);
 }
 
-// n wolnych terminów w danym dniu: najpierw całe 30-min sloty, potem pojedyncze wolne połówki 15-min; wynik chronologicznie
+// n kolejnych wolnych terminów w danym dniu, co 15 minut, chronologicznie od otwarcia
 function qpBatchSlots(dateStr, n) {
   if (!dateStr || n <= 0) return [];
   const grid = qvGetDaySlotGrid(parseDate(dateStr));
   if (!grid.length) return [];
   const taken = new Set(Object.values(visits).filter(v => v.date === dateStr).map(v => v.time));
-  const full = [], halves = [];
-  grid.forEach(slot => {
-    if (isSlotBlockedForDate(dateStr, slot.base)) return;
-    const free = slot.halves.map(t => !taken.has(t));
-    if (free[0] && free[1]) full.push({ time: slot.base, minutes: slot.minutes });
-    else slot.halves.forEach((t, i) => { if (free[i]) halves.push({ time: t, minutes: slot.minutes + i * 15 }); });
-  });
-  const chosen = full.slice(0, n);
-  if (chosen.length < n) chosen.push(...halves.slice(0, n - chosen.length));
-  chosen.sort((a, b) => a.minutes - b.minutes);
-  return chosen.map(c => c.time);
+  const out = [];
+  for (const slot of grid) {
+    if (isSlotBlockedForDate(dateStr, slot.base)) continue;
+    for (const t of slot.halves) {
+      if (!taken.has(t)) out.push(t);
+      if (out.length >= n) return out;
+    }
+  }
+  return out;
 }
 
 function qpParseAmounts(text) {
@@ -4730,15 +4730,13 @@ window.calculateCash = function calculateCash() {
       <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">${trendTitle.toUpperCase()}</div>
       <canvas id="chartTrend" height="200"></canvas>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-      <div class="card" style="padding:12px">
-        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TOP USŁUGI · ${rangeShort.toUpperCase()}</div>
-        <canvas id="chartServices" height="200"></canvas>
-      </div>
-      <div class="card" style="padding:12px">
-        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TYP FELG · ${rangeShort.toUpperCase()}</div>
-        <canvas id="chartWheels" height="200"></canvas>
-      </div>
+    <div class="card" style="padding:12px;margin-top:8px;min-width:0">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TOP USŁUGI · ${rangeShort.toUpperCase()}</div>
+      <div style="position:relative;width:100%;max-width:320px;margin:0 auto"><canvas id="chartServices"></canvas></div>
+    </div>
+    <div class="card" style="padding:12px;margin-top:8px;min-width:0">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">TYP FELG · ${rangeShort.toUpperCase()}</div>
+      <div style="position:relative;width:100%;max-width:320px;margin:0 auto"><canvas id="chartWheels"></canvas></div>
     </div>
     <button onclick="window.printStatsCharts()" style="margin-top:12px">🖨 Drukuj wykresy</button>`;
 
@@ -4763,6 +4761,42 @@ window.renderStatsCharts = async function(data) {
   Chart.defaults.color = textColor;
   Chart.defaults.font.family = "'Inter',sans-serif";
 
+  // Procenty rysowane na wycinkach (kołowe) i segmentach słupków (udział w sumie słupka)
+  const pctPlugin = {
+    id: 'pctLabels',
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx, type = chart.config.type;
+      ctx.save();
+      ctx.font = '700 12px Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.fillStyle = '#ffffff';
+      const draw = (txt, pt) => { ctx.strokeText(txt, pt.x, pt.y); ctx.fillText(txt, pt.x, pt.y); };
+      if (type === 'doughnut') {
+        const vals = chart.data.datasets[0].data, total = vals.reduce((x, y) => x + y, 0);
+        chart.getDatasetMeta(0).data.forEach((arc, i) => {
+          if (!total || !vals[i]) return;
+          const pct = vals[i] / total * 100;
+          if (pct < 4) return;
+          draw(Math.round(pct) + '%', arc.getCenterPoint());
+        });
+      } else if (type === 'bar') {
+        chart.data.labels.forEach((_, i) => {
+          const total = chart.data.datasets.reduce((sum, d, di) => chart.isDatasetVisible(di) ? sum + (d.data[i] || 0) : sum, 0);
+          if (!total) return;
+          chart.data.datasets.forEach((d, di) => {
+            if (!chart.isDatasetVisible(di)) return;
+            const v = d.data[i] || 0;
+            if (!v) return;
+            const el = chart.getDatasetMeta(di).data[i];
+            if (Math.abs(el.base - el.y) < 16) return;
+            draw(Math.round(v / total * 100) + '%', el.getCenterPoint());
+          });
+        });
+      }
+      ctx.restore();
+    }
+  };
+
   const destroy = (id) => { if (statsChartInstances[id]) { statsChartInstances[id].destroy(); delete statsChartInstances[id]; } };
   ['chartRevenue','chartTrend','chartServices','chartWheels'].forEach(destroy);
 
@@ -4780,12 +4814,19 @@ window.renderStatsCharts = async function(data) {
       },
       options: {
         responsive: true,
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+          tooltip: { callbacks: { label: c => {
+            const tot = c.chart.data.datasets.reduce((sum, d) => sum + (d.data[c.dataIndex] || 0), 0);
+            return ` ${c.dataset.label}: ${c.parsed.y} zł (${tot ? Math.round(c.parsed.y / tot * 100) : 0}%)`;
+          } } }
+        },
         scales: {
           x: { stacked: true, grid: { color: gridColor } },
           y: { stacked: true, grid: { color: gridColor }, ticks: { callback: v => v + ' zł' } }
         }
-      }
+      },
+      plugins: [pctPlugin]
     });
   }
 
@@ -4799,7 +4840,13 @@ window.renderStatsCharts = async function(data) {
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => {
+            const tot = data.trendData.reduce((x, y) => x + y, 0);
+            return ` ${c.parsed.y} zł (${tot ? Math.round(c.parsed.y / tot * 100) : 0}% okresu)`;
+          } } }
+        },
         scales: {
           x: { grid: { color: gridColor } },
           y: { grid: { color: gridColor }, ticks: { callback: v => v + ' zł' } }
@@ -4817,25 +4864,30 @@ window.renderStatsCharts = async function(data) {
     return top;
   };
 
-  const svcCtx = document.getElementById('chartServices');
-  if (svcCtx) {
-    const top = topN(data.servicesRange, 4);
-    statsChartInstances.chartServices = new Chart(svcCtx, {
+  const doughnutCfg = (top) => {
+    const total = top.reduce((x, [, v]) => x + v, 0) || 1;
+    return {
       type: 'doughnut',
-      data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: palette }] },
-      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-    });
-  }
+      data: {
+        labels: top.map(([k, v]) => `${k} · ${Math.round(v / total * 100)}%`),
+        datasets: [{ data: top.map(([, v]) => v), backgroundColor: palette }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+          tooltip: { callbacks: { label: c => ` ${c.parsed} szt. (${Math.round(c.parsed / total * 100)}%)` } }
+        }
+      },
+      plugins: [pctPlugin]
+    };
+  };
+
+  const svcCtx = document.getElementById('chartServices');
+  if (svcCtx) statsChartInstances.chartServices = new Chart(svcCtx, doughnutCfg(topN(data.servicesRange, 4)));
 
   const whCtx = document.getElementById('chartWheels');
-  if (whCtx) {
-    const top = topN(data.wheelsRange, 4);
-    statsChartInstances.chartWheels = new Chart(whCtx, {
-      type: 'doughnut',
-      data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: palette }] },
-      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-    });
-  }
+  if (whCtx) statsChartInstances.chartWheels = new Chart(whCtx, doughnutCfg(topN(data.wheelsRange, 4)));
 };
 
 window.printStatsCharts = function() {
