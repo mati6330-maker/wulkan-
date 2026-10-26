@@ -2328,6 +2328,7 @@ window.openBatchEntry = function() {
 
   const $d = document.getElementById('bmDate'), $t = document.getElementById('bmText');
   const $p = document.getElementById('bmPreview'), $s = document.getElementById('bmSave');
+  document.getElementById('qpCancelBtn').onclick = qpCloseModal;
 
   const render = () => {
     const amounts = qpParseAmounts($t.value);
