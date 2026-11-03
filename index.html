@@ -4761,6 +4761,10 @@ window.renderStatsCharts = async function(data) {
   Chart.defaults.color = textColor;
   Chart.defaults.font.family = "'Inter',sans-serif";
 
+  // Dokładne wartości w podpowiedziach (dotknięcie / najechanie)
+  const fmtZl = v => (Math.round((Number(v) || 0) * 100) / 100).toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' zł';
+  const tipBase = { padding: 10, titleFont: { size: 13 }, bodyFont: { size: 13 }, footerFont: { size: 13 }, boxPadding: 4 };
+
   // Procenty rysowane na wycinkach (kołowe) i segmentach słupków (udział w sumie słupka)
   const pctPlugin = {
     id: 'pctLabels',
@@ -4814,12 +4818,16 @@ window.renderStatsCharts = async function(data) {
       },
       options: {
         responsive: true,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-          tooltip: { callbacks: { label: c => {
-            const tot = c.chart.data.datasets.reduce((sum, d) => sum + (d.data[c.dataIndex] || 0), 0);
-            return ` ${c.dataset.label}: ${c.parsed.y} zł (${tot ? Math.round(c.parsed.y / tot * 100) : 0}%)`;
-          } } }
+          tooltip: { ...tipBase, callbacks: {
+            label: c => {
+              const tot = c.chart.data.datasets.reduce((sum, d) => sum + (d.data[c.dataIndex] || 0), 0);
+              return ` ${c.dataset.label}: ${fmtZl(c.parsed.y)} (${tot ? Math.round(c.parsed.y / tot * 100) : 0}%)`;
+            },
+            footer: items => 'Razem: ' + fmtZl(items.reduce((sum, i) => sum + (i.parsed.y || 0), 0))
+          } }
         },
         scales: {
           x: { stacked: true, grid: { color: gridColor } },
@@ -4836,15 +4844,16 @@ window.renderStatsCharts = async function(data) {
       type: 'line',
       data: {
         labels: data.trendLabels,
-        datasets: [{ label: 'Przychód dzienny', data: data.trendData, borderColor: accent, backgroundColor: 'rgba(245,158,11,0.15)', fill: true, tension: 0.3, pointRadius: 3 }]
+        datasets: [{ label: 'Przychód dzienny', data: data.trendData, borderColor: accent, backgroundColor: 'rgba(245,158,11,0.15)', fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 7, pointHitRadius: 24 }]
       },
       options: {
         responsive: true,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: c => {
+          tooltip: { ...tipBase, callbacks: { label: c => {
             const tot = data.trendData.reduce((x, y) => x + y, 0);
-            return ` ${c.parsed.y} zł (${tot ? Math.round(c.parsed.y / tot * 100) : 0}% okresu)`;
+            return ` ${fmtZl(c.parsed.y)} (${tot ? Math.round(c.parsed.y / tot * 100) : 0}% okresu)`;
           } } }
         },
         scales: {
@@ -4876,7 +4885,10 @@ window.renderStatsCharts = async function(data) {
         responsive: true,
         plugins: {
           legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
-          tooltip: { callbacks: { label: c => ` ${c.parsed} szt. (${Math.round(c.parsed / total * 100)}%)` } }
+          tooltip: { ...tipBase, callbacks: {
+            title: items => String(items[0].label).split(' · ')[0],
+            label: c => ` ${c.parsed} szt. (${Math.round(c.parsed / total * 100)}%)`
+          } }
         }
       },
       plugins: [pctPlugin]
@@ -4895,7 +4907,21 @@ window.printStatsCharts = function() {
   const snapT = window._statsSnapshot || {};
   const titles = { chartRevenue:'Przychody: dzień / tydzień / miesiąc', chartTrend:snapT.trendTitle||'Trend', chartServices:'Top usługi ('+(snapT.rangeShort||'')+')', chartWheels:'Typ felg ('+(snapT.rangeShort||'')+')' };
   const imgs = {};
-  ids.forEach(id => { const inst = statsChartInstances[id]; if (inst) imgs[id] = inst.toBase64Image('image/png', 1); });
+  // Na ekranie (ciemny motyw) tekst wykresów jest jasny — do druku przełączamy na ciemny, potem przywracamy
+  const prevColor = Chart.defaults.color;
+  const gridBackup = [];
+  Chart.defaults.color = '#111111';
+  ids.forEach(id => {
+    const inst = statsChartInstances[id];
+    if (!inst) return;
+    const sc = inst.config.options.scales;
+    if (sc) Object.values(sc).forEach(a => { if (a.grid) { gridBackup.push([a.grid, a.grid.color]); a.grid.color = '#c8c8c8'; } });
+    inst.update('none');
+    imgs[id] = inst.toBase64Image('image/png', 1);
+  });
+  Chart.defaults.color = prevColor;
+  gridBackup.forEach(([g, c]) => { g.color = c; });
+  ids.forEach(id => { if (statsChartInstances[id]) statsChartInstances[id].update('none'); });
 
   if (!Object.keys(imgs).length) { alert('Brak wykresów do wydrukowania — odśwież statystyki.'); return; }
 
@@ -4908,13 +4934,13 @@ window.printStatsCharts = function() {
     <style>
       body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:24px;}
       h1{font-size:18px;margin-bottom:2px;}
-      .sub{color:#666;font-size:12px;margin-bottom:20px;}
+      .sub{color:#222;font-size:12px;margin-bottom:20px;}
       .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}
       .summary div{border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center;}
-      .summary .label{font-size:10px;color:#666;letter-spacing:1px;text-transform:uppercase;}
+      .summary .label{font-size:10px;color:#222;letter-spacing:1px;text-transform:uppercase;}
       .summary .val{font-size:18px;font-weight:700;margin-top:4px;}
       .chart-block{page-break-inside:avoid;margin-bottom:26px;}
-      .chart-block h2{font-size:13px;color:#333;margin-bottom:8px;}
+      .chart-block h2{font-size:13px;color:#111;margin-bottom:8px;}
       img{max-width:100%;height:auto;}
     </style></head><body>
     <h1>Wulkanizacja Mielczarek — Statystyki</h1>
