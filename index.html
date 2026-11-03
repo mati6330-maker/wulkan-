@@ -4830,8 +4830,8 @@ window.renderStatsCharts = async function(data) {
           } }
         },
         scales: {
-          x: { stacked: true, grid: { color: gridColor } },
-          y: { stacked: true, grid: { color: gridColor }, ticks: { callback: v => v + ' zł' } }
+          x: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor } },
+          y: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor, callback: v => v + ' zł' } }
         }
       },
       plugins: [pctPlugin]
@@ -4857,8 +4857,8 @@ window.renderStatsCharts = async function(data) {
           } } }
         },
         scales: {
-          x: { grid: { color: gridColor } },
-          y: { grid: { color: gridColor }, ticks: { callback: v => v + ' zł' } }
+          x: { grid: { color: gridColor }, ticks: { color: textColor } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, callback: v => v + ' zł' } }
         }
       }
     });
@@ -4915,12 +4915,15 @@ window.printStatsCharts = function() {
     const inst = statsChartInstances[id];
     if (!inst) return;
     const sc = inst.config.options.scales;
-    if (sc) Object.values(sc).forEach(a => { if (a.grid) { gridBackup.push([a.grid, a.grid.color]); a.grid.color = '#c8c8c8'; } });
+    if (sc) Object.values(sc).forEach(a => {
+      if (a.grid) { gridBackup.push([a.grid, 'color', a.grid.color]); a.grid.color = '#c8c8c8'; }
+      if (a.ticks) { gridBackup.push([a.ticks, 'color', a.ticks.color]); a.ticks.color = '#111111'; }
+    });
     inst.update('none');
     imgs[id] = inst.toBase64Image('image/png', 1);
   });
   Chart.defaults.color = prevColor;
-  gridBackup.forEach(([g, c]) => { g.color = c; });
+  gridBackup.forEach(([o, k, v]) => { o[k] = v; });
   ids.forEach(id => { if (statsChartInstances[id]) statsChartInstances[id].update('none'); });
 
   if (!Object.keys(imgs).length) { alert('Brak wykresów do wydrukowania — odśwież statystyki.'); return; }
